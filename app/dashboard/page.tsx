@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AGENTS } from "@/utils/constants";
 
@@ -30,20 +32,23 @@ export default function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-3">
         {[
-          "Business Profile",
-          "Agent Manager",
-          "Leads Manager (CRM)",
-          "Campaigns",
-          "Reports",
-          "Billing",
-          "Settings",
-        ].map((name) => (
+          ["Business Profile", "/onboarding"],
+          ["Agent Manager", "/dashboard/agents"],
+          ["Leads Manager (CRM)", "/dashboard/leads"],
+          ["Campaigns", "/dashboard/campaigns"],
+          ["Reports", "/dashboard/reports"],
+          ["Billing", "/dashboard/billing"],
+          ["Settings", "/dashboard/settings"],
+          ["Lead Funnel Builder", "/funnel"],
+        ].map(([name, href]) => (
           <Card key={name}>
             <CardHeader>
               <CardTitle>{name}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              Section scaffold complete for modular feature integration.
+              <Link className="underline" href={href}>
+                Open module
+              </Link>
             </CardContent>
           </Card>
         ))}

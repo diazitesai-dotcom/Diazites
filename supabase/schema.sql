@@ -42,6 +42,17 @@ create table if not exists agents (
   activated_at timestamptz,
   created_at timestamptz not null default now()
 );
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'agents_business_agent_type_key'
+  ) then
+    alter table agents
+      add constraint agents_business_agent_type_key unique (business_id, agent_type);
+  end if;
+end $$;
 
 create table if not exists campaigns (
   id uuid primary key default gen_random_uuid(),

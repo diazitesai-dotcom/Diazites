@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -44,25 +45,32 @@ export default async function AdminPage() {
       </section>
       <section className="grid gap-4 md:grid-cols-3">
         {[
-          "Client Management",
-          "Agent Management",
-          "Campaigns",
-          "Leads",
-          "AI Automation",
-          "Billing",
-          "Templates",
-          "Reports",
-          "Support",
-          "Roles",
-          "Alerts",
-          "Settings",
-        ].map((name) => (
+          ["Client Management", "#"],
+          ["Agent Management", "#"],
+          ["Campaigns", "#"],
+          ["Leads", "#"],
+          ["AI Automation", "#"],
+          ["Billing", "#"],
+          ["Templates", "/admin/templates"],
+          ["Reports", "#"],
+          ["Support", "#"],
+          ["Roles", "#"],
+          ["Alerts", "#"],
+          ["Settings", "#"],
+          ["Onboarding Tracker", "/admin/onboarding"],
+        ].map(([name, href]) => (
           <Card key={name}>
             <CardHeader>
               <CardTitle>{name}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              Internal module scaffold ready.
+              {href === "#" ? (
+                "Internal module scaffold ready."
+              ) : (
+                <Link className="underline" href={href}>
+                  Open module
+                </Link>
+              )}
             </CardContent>
           </Card>
         ))}
