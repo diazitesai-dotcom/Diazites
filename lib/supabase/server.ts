@@ -1,14 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { env } from "@/lib/env";
+import { requireSupabasePublicEnv, requireSupabaseServiceEnv } from "@/lib/env";
 
 export async function createServerSupabaseClient() {
+  const { url, anonKey } = requireSupabasePublicEnv();
   const cookieStore = await cookies();
 
   return createServerClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    url,
+    anonKey,
     {
       cookies: {
         getAll() {
@@ -25,9 +26,10 @@ export async function createServerSupabaseClient() {
 }
 
 export function createServiceRoleClient() {
+  const { url, serviceKey } = requireSupabaseServiceEnv();
   return createServerClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.SUPABASE_SERVICE_KEY,
+    url,
+    serviceKey,
     {
       cookies: {
         getAll() {

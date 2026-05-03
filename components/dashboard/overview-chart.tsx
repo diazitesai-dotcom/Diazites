@@ -10,17 +10,17 @@ import {
   YAxis,
 } from "recharts";
 
-const data = [
-  { d: "Mon", v: 12 },
-  { d: "Tue", v: 18 },
-  { d: "Wed", v: 15 },
-  { d: "Thu", v: 22 },
-  { d: "Fri", v: 28 },
-  { d: "Sat", v: 24 },
-  { d: "Sun", v: 31 },
+const defaultSeries = [
+  { d: "Mon", v: 0 },
+  { d: "Tue", v: 0 },
+  { d: "Wed", v: 0 },
+  { d: "Thu", v: 0 },
+  { d: "Fri", v: 0 },
+  { d: "Sat", v: 0 },
+  { d: "Sun", v: 0 },
 ];
 
-export function OverviewSparkChart() {
+export function OverviewSparkChart({ data }: { data?: { d: string; v: number }[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -28,10 +28,12 @@ export function OverviewSparkChart() {
     return <div className="h-[140px] w-full animate-pulse rounded-xl bg-muted/30" />;
   }
 
+  const series = data && data.length > 0 ? data : defaultSeries;
+
   return (
     <div className="h-[140px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        <AreaChart data={series} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <defs>
             <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.35} />

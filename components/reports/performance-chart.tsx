@@ -14,17 +14,24 @@ import {
   YAxis,
 } from "recharts";
 
-const monthly = [
+const demoMonthly = [
   { month: "Jan", leads: 32, spend: 2800, cpl: 87, roi: 2.3, conversions: 8 },
   { month: "Feb", leads: 37, spend: 3100, cpl: 84, roi: 2.5, conversions: 10 },
-  { month: "Mar", leads: 45, spend: 3900, cpl: 86, roi: 2.7, conversions: 13 },
-  { month: "Apr", leads: 52, spend: 4300, cpl: 82, roi: 2.9, conversions: 17 },
 ];
 
 const gridStroke = "rgba(255,255,255,0.06)";
 const axisStroke = "rgba(163,163,163,0.35)";
 
-export function PerformanceChart() {
+export type PerformanceSeriesRow = {
+  month: string;
+  leads: number;
+  spend: number;
+  cpl: number;
+  roi: number;
+  conversions: number;
+};
+
+export function PerformanceChart({ data }: { data?: PerformanceSeriesRow[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -36,6 +43,9 @@ export function PerformanceChart() {
       </div>
     );
   }
+
+  const monthly =
+    data && data.length > 0 ? data : demoMonthly;
 
   const chartWrap =
     "h-72 w-full rounded-2xl border border-white/[0.06] bg-card/40 p-4 backdrop-blur-md shadow-inner";

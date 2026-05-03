@@ -21,7 +21,7 @@ export async function getDashboardMetrics(
 ): Promise<ServiceResult<DashboardMetrics>> {
   const businesses = createBusinessRepository(client);
   const { data: business } = await businesses.getById(businessId);
-  if (!business || business.owner_user_id !== ownerUserId) {
+  if (!business || business.user_id !== ownerUserId) {
     return fail("Forbidden", "FORBIDDEN");
   }
 

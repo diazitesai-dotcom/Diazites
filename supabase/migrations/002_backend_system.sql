@@ -21,7 +21,7 @@ for select using (
   business_id is null
   or exists (
     select 1 from businesses b
-    where b.id = system_events.business_id and b.owner_user_id = auth.uid()
+    where b.id = system_events.business_id and b.user_id = auth.uid()
   )
 );
 
@@ -29,7 +29,7 @@ create policy "system_events owner insert" on system_events
 for insert with check (
   exists (
     select 1 from businesses b
-    where b.id = system_events.business_id and b.owner_user_id = auth.uid()
+    where b.id = system_events.business_id and b.user_id = auth.uid()
   )
 );
 
@@ -56,13 +56,13 @@ create policy "landing_pages business owner full" on landing_pages
 for all using (
   exists (
     select 1 from businesses b
-    where b.id = landing_pages.business_id and b.owner_user_id = auth.uid()
+    where b.id = landing_pages.business_id and b.user_id = auth.uid()
   )
 )
 with check (
   exists (
     select 1 from businesses b
-    where b.id = landing_pages.business_id and b.owner_user_id = auth.uid()
+    where b.id = landing_pages.business_id and b.user_id = auth.uid()
   )
 );
 
@@ -88,12 +88,12 @@ create policy "usage_snapshots business owner" on usage_snapshots
 for all using (
   exists (
     select 1 from businesses b
-    where b.id = usage_snapshots.business_id and b.owner_user_id = auth.uid()
+    where b.id = usage_snapshots.business_id and b.user_id = auth.uid()
   )
 )
 with check (
   exists (
     select 1 from businesses b
-    where b.id = usage_snapshots.business_id and b.owner_user_id = auth.uid()
+    where b.id = usage_snapshots.business_id and b.user_id = auth.uid()
   )
 );

@@ -1,58 +1,37 @@
-"use client";
+import Link from "next/link";
 
-import { DollarSign, LineChart, Target, TrendingUp } from "lucide-react";
+import { ReportsPageClient } from "@/components/reports/reports-page-client";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { loadReportsPageData } from "@/lib/dashboard/load-reports-page";
 
-import { StatCard } from "@/components/dashboard/stat-card";
-import { PageHeader } from "@/components/layout/page-header";
-import { PerformanceChart } from "@/components/reports/performance-chart";
+export default async function ReportsPage() {
+  const loaded = await loadReportsPageData();
+  if (!loaded || !loaded.hasBusiness) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-10">
+        <Card className="border-white/[0.06]">
+          <CardHeader>
+            <CardTitle className="text-lg">No business yet</CardTitle>
+            <CardDescription>
+              Complete onboarding to generate reports from live data.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link
+              href="/onboarding"
+              className={cn(buttonVariants({ variant: "default" }), "rounded-xl")}
+            >
+              Onboarding
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-const kpis = [
-  {
-    label: "Leads",
-    value: "166",
-    icon: Target,
-    hint: "Rolling 30 days",
-    trend: "up" as const,
-  },
-  {
-    label: "Spend",
-    value: "$14,100",
-    icon: DollarSign,
-    hint: "MTD vs plan",
-    trend: "neutral" as const,
-  },
-  {
-    label: "CPL",
-    value: "$84",
-    icon: LineChart,
-    hint: "Down vs prior period",
-    trend: "up" as const,
-  },
-  {
-    label: "ROI",
-    value: "2.9x",
-    icon: TrendingUp,
-    hint: "Attributed revenue model",
-    trend: "neutral" as const,
-  },
-];
-
-export default function ReportsPage() {
   return (
-    <div className="mx-auto max-w-6xl space-y-10">
-      <PageHeader
-        eyebrow="Analytics"
-        title="Reports"
-        description="Executive-grade performance charts with the density operators expect — without exporting to spreadsheets."
-      />
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {kpis.map((k) => (
-          <StatCard key={k.label} {...k} />
-        ))}
-      </section>
-
-      <PerformanceChart />
-    </div>
+    <ReportsPageClient metrics={loaded.metrics} chartSeries={loaded.chartSeries} />
   );
 }

@@ -15,7 +15,7 @@ export function createAdminRepository(client: SupabaseClient) {
         return { data: [], error: bErr };
       }
 
-      const ownerIds = [...new Set(businesses.map((b) => b.owner_user_id))];
+      const ownerIds = [...new Set(businesses.map((b) => b.user_id))];
       const { data: users, error: uErr } = await client
         .from("users")
         .select("id, email")
@@ -28,7 +28,7 @@ export function createAdminRepository(client: SupabaseClient) {
       return {
         data: businesses.map((b) => ({
           ...b,
-          owner_email: emailByUserId.get(b.owner_user_id) ?? null,
+          owner_email: emailByUserId.get(b.user_id) ?? null,
         })),
         error: null,
       };

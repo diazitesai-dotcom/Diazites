@@ -82,7 +82,7 @@ export async function updateBusinessProfile(
 ): Promise<ServiceResult<unknown>> {
   const businesses = createBusinessRepository(client);
   const { data: existing } = await businesses.getById(businessId);
-  if (!existing || existing.owner_user_id !== ownerUserId) {
+  if (!existing || existing.user_id !== ownerUserId) {
     return fail("Forbidden", "FORBIDDEN");
   }
 

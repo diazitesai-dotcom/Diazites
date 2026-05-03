@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { ok, fail, type ServiceResult } from "@/lib/result";
+import { createBusinessRepository } from "@/repositories/business.repository";
 import { createLeadRepository } from "@/repositories/lead.repository";
 import type { LeadCreateInput, LeadUpdateInput } from "@/types/backend";
 import { EVENT_TYPES } from "@/types/backend";
@@ -38,6 +39,64 @@ export async function getLeadsByBusiness(
   const { data, error } = await repo.listByBusiness(businessId);
   if (error) return fail(error.message);
   return ok(data ?? []);
+}
+
+export type LeadBoardRow = {
+  id: string;
+  name: string;
+  source: string;
+  campaign: string;
+  status: PipelineStatus;
+  notes: string;
+};
+
+export async function getLeadsForBoard(
+  client: SupabaseClient,
+  ownerUserId: string,
+  businessId: string,
+): Promise<ServiceResult<LeadBoardRow[]>> {
+  const businesses = createBusinessRepository(client);
+  const { data: business } = await businesses.getById(businessId);
+  if (!business || business.user_id !== ownerUserId) {
+    return fail("Forbidden", "FORBIDDEN");
+  }
+
+  const repo = createLeadRepository(client);
+  const { data, error } = await repo.listByBusinessWithCampaign(businessId);
+  if (error) return fail(error.message);
+
+  const raw = (data ?? []) as unknown[];
+
+  const campaignLabel = (c: unknown): string => {
+    if (c && typeof c === "object" && "platform" in c) {
+      return String((c as { platform: string }).platform);
+    }
+    if (Array.isArray(c) && c[0] && typeof c[0] === "object" && "platform" in c[0]) {
+      return String((c[0] as { platform: string }).platform);
+    }
+    return "—";
+  };
+
+  const mapped: LeadBoardRow[] = raw.map((row) => {
+    const r = row as {
+      id: string;
+      name: string;
+      source: string | null;
+      status: PipelineStatus;
+      notes: string | null;
+      campaigns: unknown;
+    };
+    return {
+      id: r.id,
+      name: r.name,
+      source: r.source ?? "—",
+      campaign: campaignLabel(r.campaigns),
+      status: r.status,
+      notes: r.notes ?? "",
+    };
+  });
+
+  return ok(mapped);
 }
 
 export async function updateLeadStatus(

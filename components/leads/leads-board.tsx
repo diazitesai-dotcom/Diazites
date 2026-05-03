@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 
+import { updateLeadStatusAction } from "@/actions/leads.actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,6 +50,13 @@ function statusBadgeVariant(
 
 export function LeadsBoard({ leads }: { leads: Lead[] }) {
   const [view, setView] = useState<"kanban" | "table">("kanban");
+  const [pending, startTransition] = useTransition();
+
+  function onStatusChange(leadId: string, status: PipelineStatus) {
+    startTransition(async () => {
+      await updateLeadStatusAction(leadId, status);
+    });
+  }
 
   const grouped = useMemo(
     () =>
@@ -61,6 +69,10 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
 
   return (
     <div className="space-y-6">
+      <p className="text-xs text-muted-foreground">
+        {pending ? "Saving…" : "Table view supports quick stage updates."}
+      </p>
+
       <div className="flex flex-wrap gap-2 rounded-xl border border-border/60 bg-muted/20 p-1">
         <Button
           type="button"
@@ -149,15 +161,27 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
               </TableHeader>
               <TableBody>
                 {leads.map((lead) => (
-                  <TableRow key={lead.id} className="border-border/60">
-                    <TableCell className="font-medium">{lead.name}</TableCell>
-                    <TableCell>{lead.source}</TableCell>
-                    <TableCell>{lead.campaign}</TableCell>
-                    <TableCell>
-                      <Badge variant={statusBadgeVariant(lead.status)} className="capitalize">
-                        {lead.status}
-                      </Badge>
-                    </TableCell>
+                <TableRow key={lead.id} className="border-border/60">
+                  <TableCell className="font-medium">{lead.name}</TableCell>
+                  <TableCell>{lead.source}</TableCell>
+                  <TableCell>{lead.campaign}</TableCell>
+                  <TableCell>
+                    <select
+                      className="rounded-md border border-border/60 bg-background/80 px-2 py-1.5 text-xs capitalize outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+                      value={lead.status}
+                      disabled={pending}
+                      onChange={(e) =>
+                        onStatusChange(lead.id, e.target.value as PipelineStatus)
+                      }
+                      aria-label={`Status for ${lead.name}`}
+                    >
+                      {statuses.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </TableCell>
                     <TableCell className="max-w-xs whitespace-normal text-muted-foreground">
                       {lead.notes}
                     </TableCell>

@@ -8,7 +8,7 @@ export function createBusinessRepository(client: SupabaseClient) {
       return client
         .from("businesses")
         .select("*")
-        .eq("owner_user_id", ownerUserId)
+        .eq("user_id", ownerUserId)
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
@@ -32,7 +32,7 @@ export function createBusinessRepository(client: SupabaseClient) {
       return client
         .from("businesses")
         .insert({
-          owner_user_id: input.ownerUserId,
+          user_id: input.ownerUserId,
           name: input.name,
           website: input.website ?? null,
           service_area: input.serviceArea ?? null,

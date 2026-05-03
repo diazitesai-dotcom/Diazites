@@ -34,7 +34,7 @@ export async function updatePlan(
 ): Promise<ServiceResult<unknown>> {
   const businesses = createBusinessRepository(client);
   const { data: business } = await businesses.getById(businessId);
-  if (!business || business.owner_user_id !== ownerUserId) {
+  if (!business || business.user_id !== ownerUserId) {
     return fail("Forbidden", "FORBIDDEN");
   }
 
@@ -67,7 +67,7 @@ export async function trackUsage(
 ): Promise<ServiceResult<{ recorded: boolean }>> {
   const businesses = createBusinessRepository(client);
   const { data: business } = await businesses.getById(businessId);
-  if (!business || business.owner_user_id !== ownerUserId) {
+  if (!business || business.user_id !== ownerUserId) {
     return fail("Forbidden", "FORBIDDEN");
   }
 

@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSystemEventRepository } from "@/repositories/system-event.repository";
 import { EVENT_TYPES, type SystemEventType } from "@/types/backend";
 
+import { dispatchAutomationRules } from "@/services/automation/dispatch-automations.service";
 import { runLeadCreatedAutomation } from "@/services/leads/lead-automation.service";
 
 export type TriggerEventParams = {
@@ -41,4 +42,6 @@ export async function triggerEvent(
   if (params.type === EVENT_TYPES.LEAD_CREATED && params.leadId) {
     await runLeadCreatedAutomation(client, params.businessId, params.leadId);
   }
+
+  await dispatchAutomationRules(client, params);
 }

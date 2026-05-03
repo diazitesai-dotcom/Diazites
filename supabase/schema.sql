@@ -12,7 +12,7 @@ create table if not exists users (
 
 create table if not exists businesses (
   id uuid primary key default gen_random_uuid(),
-  owner_user_id uuid not null references users(id) on delete cascade,
+  user_id uuid not null references users(id) on delete cascade,
   name text not null,
   website text,
   logo_url text,
@@ -115,7 +115,32 @@ create table if not exists billing (
   amount numeric(10,2) not null default 497,
   payment_status text not null default 'active',
   stripe_customer_id text,
+  stripe_subscription_id text,
+  stripe_price_id text,
   updated_at timestamptz not null default now()
+);
+
+create table if not exists automation_rules (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references businesses(id) on delete cascade,
+  name text not null default 'Automation',
+  trigger_event text not null,
+  enabled boolean not null default true,
+  action_type text not null check (action_type in ('webhook', 'sms')),
+  action_config jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists automation_runs (
+  id uuid primary key default gen_random_uuid(),
+  rule_id uuid not null references automation_rules(id) on delete cascade,
+  business_id uuid not null references businesses(id) on delete cascade,
+  event_type text not null,
+  status text not null check (status in ('success', 'error', 'skipped')),
+  detail text,
+  http_status int,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists onboarding (
@@ -165,13 +190,15 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_auth_user();
 
-create index if not exists idx_businesses_owner_user_id on businesses(owner_user_id);
+create index if not exists idx_businesses_user_id on businesses(user_id);
 create index if not exists idx_agents_business_id on agents(business_id);
 create index if not exists idx_campaigns_business_id on campaigns(business_id);
 create index if not exists idx_leads_business_id on leads(business_id);
 create index if not exists idx_leads_status on leads(status);
 create index if not exists idx_ai_messages_lead_id on ai_messages(lead_id);
 create index if not exists idx_reports_business_id on reports(business_id);
+create index if not exists idx_automation_rules_business on automation_rules(business_id);
+create index if not exists idx_automation_runs_business on automation_runs(business_id);
 create index if not exists idx_onboarding_user_id on onboarding(user_id);
 
 alter table users enable row level security;
@@ -183,6 +210,8 @@ alter table leads enable row level security;
 alter table ai_messages enable row level security;
 alter table reports enable row level security;
 alter table billing enable row level security;
+alter table automation_rules enable row level security;
+alter table automation_runs enable row level security;
 alter table onboarding enable row level security;
 alter table admin_users enable row level security;
 
@@ -193,7 +222,7 @@ create policy "users insert own" on users
 for insert with check (id = auth.uid());
 
 create policy "businesses owner full access" on businesses
-for all using (owner_user_id = auth.uid()) with check (owner_user_id = auth.uid());
+for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 create policy "profiles owner full access" on profiles
 for all using (user_id = auth.uid()) with check (user_id = auth.uid());
@@ -202,13 +231,13 @@ create policy "agents business owner access" on agents
 for all using (
   exists (
     select 1 from businesses b
-    where b.id = agents.business_id and b.owner_user_id = auth.uid()
+    where b.id = agents.business_id and b.user_id = auth.uid()
   )
 )
 with check (
   exists (
     select 1 from businesses b
-    where b.id = agents.business_id and b.owner_user_id = auth.uid()
+    where b.id = agents.business_id and b.user_id = auth.uid()
   )
 );
 
@@ -216,13 +245,13 @@ create policy "campaigns business owner access" on campaigns
 for all using (
   exists (
     select 1 from businesses b
-    where b.id = campaigns.business_id and b.owner_user_id = auth.uid()
+    where b.id = campaigns.business_id and b.user_id = auth.uid()
   )
 )
 with check (
   exists (
     select 1 from businesses b
-    where b.id = campaigns.business_id and b.owner_user_id = auth.uid()
+    where b.id = campaigns.business_id and b.user_id = auth.uid()
   )
 );
 
@@ -230,13 +259,13 @@ create policy "leads business owner access" on leads
 for all using (
   exists (
     select 1 from businesses b
-    where b.id = leads.business_id and b.owner_user_id = auth.uid()
+    where b.id = leads.business_id and b.user_id = auth.uid()
   )
 )
 with check (
   exists (
     select 1 from businesses b
-    where b.id = leads.business_id and b.owner_user_id = auth.uid()
+    where b.id = leads.business_id and b.user_id = auth.uid()
   )
 );
 
@@ -244,13 +273,13 @@ create policy "messages business owner access" on ai_messages
 for all using (
   exists (
     select 1 from businesses b
-    where b.id = ai_messages.business_id and b.owner_user_id = auth.uid()
+    where b.id = ai_messages.business_id and b.user_id = auth.uid()
   )
 )
 with check (
   exists (
     select 1 from businesses b
-    where b.id = ai_messages.business_id and b.owner_user_id = auth.uid()
+    where b.id = ai_messages.business_id and b.user_id = auth.uid()
   )
 );
 
@@ -258,13 +287,13 @@ create policy "reports business owner access" on reports
 for all using (
   exists (
     select 1 from businesses b
-    where b.id = reports.business_id and b.owner_user_id = auth.uid()
+    where b.id = reports.business_id and b.user_id = auth.uid()
   )
 )
 with check (
   exists (
     select 1 from businesses b
-    where b.id = reports.business_id and b.owner_user_id = auth.uid()
+    where b.id = reports.business_id and b.user_id = auth.uid()
   )
 );
 
@@ -272,13 +301,43 @@ create policy "billing business owner access" on billing
 for all using (
   exists (
     select 1 from businesses b
-    where b.id = billing.business_id and b.owner_user_id = auth.uid()
+    where b.id = billing.business_id and b.user_id = auth.uid()
   )
 )
 with check (
   exists (
     select 1 from businesses b
-    where b.id = billing.business_id and b.owner_user_id = auth.uid()
+    where b.id = billing.business_id and b.user_id = auth.uid()
+  )
+);
+
+create policy "automation_rules business owner full" on automation_rules
+for all using (
+  exists (
+    select 1 from businesses b
+    where b.id = automation_rules.business_id and b.user_id = auth.uid()
+  )
+)
+with check (
+  exists (
+    select 1 from businesses b
+    where b.id = automation_rules.business_id and b.user_id = auth.uid()
+  )
+);
+
+create policy "automation_runs business owner select" on automation_runs
+for select using (
+  exists (
+    select 1 from businesses b
+    where b.id = automation_runs.business_id and b.user_id = auth.uid()
+  )
+);
+
+create policy "automation_runs business owner insert" on automation_runs
+for insert with check (
+  exists (
+    select 1 from businesses b
+    where b.id = automation_runs.business_id and b.user_id = auth.uid()
   )
 );
 

@@ -32,6 +32,25 @@ export function createLeadRepository(client: SupabaseClient) {
         .order("created_at", { ascending: false });
     },
 
+    async listByBusinessWithCampaign(businessId: string) {
+      return client
+        .from("leads")
+        .select(
+          `
+          id,
+          name,
+          source,
+          status,
+          notes,
+          created_at,
+          campaign_id,
+          campaigns ( platform )
+        `,
+        )
+        .eq("business_id", businessId)
+        .order("created_at", { ascending: false });
+    },
+
     async getById(leadId: string) {
       return client.from("leads").select("*").eq("id", leadId).maybeSingle();
     },

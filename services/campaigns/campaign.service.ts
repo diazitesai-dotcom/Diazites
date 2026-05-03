@@ -15,7 +15,7 @@ export async function createCampaign(
 ): Promise<ServiceResult<{ id: string }>> {
   const businesses = createBusinessRepository(client);
   const { data: business } = await businesses.getById(input.businessId);
-  if (!business || business.owner_user_id !== ownerUserId) {
+  if (!business || business.user_id !== ownerUserId) {
     return fail("Forbidden", "FORBIDDEN");
   }
 
@@ -53,7 +53,7 @@ export async function updateCampaign(
 
   const businesses = createBusinessRepository(client);
   const { data: business } = await businesses.getById(campaign.business_id);
-  if (!business || business.owner_user_id !== ownerUserId) {
+  if (!business || business.user_id !== ownerUserId) {
     return fail("Forbidden", "FORBIDDEN");
   }
 
@@ -76,7 +76,7 @@ export async function getCampaignsByBusiness(
 ): Promise<ServiceResult<unknown[]>> {
   const businesses = createBusinessRepository(client);
   const { data: business } = await businesses.getById(businessId);
-  if (!business || business.owner_user_id !== ownerUserId) {
+  if (!business || business.user_id !== ownerUserId) {
     return fail("Forbidden", "FORBIDDEN");
   }
 

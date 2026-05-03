@@ -14,6 +14,8 @@ export function createBillingRepository(client: SupabaseClient) {
       amount: number;
       paymentStatus?: string;
       stripeCustomerId?: string | null;
+      stripeSubscriptionId?: string | null;
+      stripePriceId?: string | null;
     }) {
       return client
         .from("billing")
@@ -24,6 +26,8 @@ export function createBillingRepository(client: SupabaseClient) {
             amount: input.amount,
             payment_status: input.paymentStatus ?? "active",
             stripe_customer_id: input.stripeCustomerId ?? null,
+            stripe_subscription_id: input.stripeSubscriptionId ?? null,
+            stripe_price_id: input.stripePriceId ?? null,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "business_id" },

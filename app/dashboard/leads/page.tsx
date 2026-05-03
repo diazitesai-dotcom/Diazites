@@ -1,42 +1,50 @@
 import { LeadsBoard } from "@/components/leads/leads-board";
 import { PageHeader } from "@/components/layout/page-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAuth } from "@/lib/auth/session";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createBusinessRepository } from "@/repositories/business.repository";
+import { getLeadsForBoard } from "@/services/leads/lead.service";
+import Link from "next/link";
 
-const sampleLeads = [
-  {
-    id: "1",
-    name: "John Carter",
-    source: "Facebook Ads",
-    campaign: "Storm Season Special",
-    status: "new" as const,
-    notes: "Needs full replacement quote",
-  },
-  {
-    id: "2",
-    name: "Maya Smith",
-    source: "Google Search",
-    campaign: "Emergency Repairs",
-    status: "contacted" as const,
-    notes: "Requested callback after 5PM",
-  },
-  {
-    id: "3",
-    name: "Robert Diaz",
-    source: "Landing Page",
-    campaign: "Metal Roof Upgrade",
-    status: "qualified" as const,
-    notes: "Budget approved",
-  },
-  {
-    id: "4",
-    name: "Nina Hall",
-    source: "Retargeting",
-    campaign: "Roof Inspection Offer",
-    status: "booked" as const,
-    notes: "Appointment Tuesday 10AM",
-  },
-];
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export default function LeadsManagerPage() {
+export default async function LeadsManagerPage() {
+  const user = await requireAuth();
+  const supabase = await createServerSupabaseClient();
+  const businesses = createBusinessRepository(supabase);
+  const { data: business } = await businesses.getByOwnerUserId(user.id);
+
+  if (!business) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-10">
+        <PageHeader
+          eyebrow="Pipeline"
+          title="Leads CRM"
+          description="Track every lead from first touch to won job."
+        />
+        <Card className="border-white/[0.06]">
+          <CardHeader>
+            <CardTitle className="text-lg">No business yet</CardTitle>
+            <CardDescription>Complete onboarding to load your pipeline.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link
+              href="/onboarding"
+              className={cn(buttonVariants({ variant: "default" }), "rounded-xl")}
+            >
+              Onboarding
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const result = await getLeadsForBoard(supabase, user.id, business.id);
+  const leads = result.success && result.data ? result.data : [];
+
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <PageHeader
@@ -44,7 +52,7 @@ export default function LeadsManagerPage() {
         title="Leads CRM"
         description="Track every lead from first touch to won job. Switch between kanban and table without losing context."
       />
-      <LeadsBoard leads={sampleLeads} />
+      <LeadsBoard leads={leads} />
     </div>
   );
 }

@@ -70,7 +70,7 @@ export async function updateAgentStatus(
 ): Promise<ServiceResult<unknown>> {
   const businesses = createBusinessRepository(client);
   const { data: business } = await businesses.getById(businessId);
-  if (!business || business.owner_user_id !== actorUserId) {
+  if (!business || business.user_id !== actorUserId) {
     return fail("Forbidden", "FORBIDDEN");
   }
 

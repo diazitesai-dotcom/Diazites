@@ -18,7 +18,7 @@ begin
   values (v_user_id, 'owner@diazites.com')
   on conflict (id) do update set email = excluded.email;
 
-  insert into businesses (owner_user_id, name, website, service_area, city_state, monthly_budget)
+  insert into businesses (user_id, name, website, service_area, city_state, monthly_budget)
   values (
     v_user_id,
     'EverPeak Roofing',
@@ -31,7 +31,7 @@ begin
 
   select id into v_business_id
   from businesses
-  where owner_user_id = v_user_id
+  where user_id = v_user_id
   order by created_at asc
   limit 1;
 

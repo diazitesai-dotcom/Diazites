@@ -12,7 +12,7 @@ export async function generateLandingPage(
 ): Promise<ServiceResult<{ id: string; slug: string }>> {
   const businesses = createBusinessRepository(client);
   const { data: business } = await businesses.getById(businessId);
-  if (!business || business.owner_user_id !== ownerUserId) {
+  if (!business || business.user_id !== ownerUserId) {
     return fail("Forbidden", "FORBIDDEN");
   }
 
@@ -41,7 +41,7 @@ export async function updateLandingPage(
 ): Promise<ServiceResult<unknown>> {
   const businesses = createBusinessRepository(client);
   const { data: business } = await businesses.getById(businessId);
-  if (!business || business.owner_user_id !== ownerUserId) {
+  if (!business || business.user_id !== ownerUserId) {
     return fail("Forbidden", "FORBIDDEN");
   }
 

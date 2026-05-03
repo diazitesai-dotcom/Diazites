@@ -6,34 +6,16 @@ import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fadeItem } from "@/lib/motion";
 
-const items = [
-  {
-    id: "1",
-    title: "AI follow-up drafted",
-    detail: "Maya Smith · Emergency Repairs",
-    time: "2m ago",
-  },
-  {
-    id: "2",
-    title: "New lead captured",
-    detail: "Facebook Ads · Storm Season Special",
-    time: "14m ago",
-  },
-  {
-    id: "3",
-    title: "Campaign spend pacing",
-    detail: "Google · 78% of monthly budget",
-    time: "1h ago",
-  },
-  {
-    id: "4",
-    title: "Appointment booked",
-    detail: "Nina Hall · Roof Inspection Offer",
-    time: "3h ago",
-  },
-];
+export type ActivityFeedItem = {
+  id: string;
+  title: string;
+  detail: string;
+  time: string;
+};
 
-export function ActivityFeed() {
+export function ActivityFeed({ items }: { items: ActivityFeedItem[] }) {
+  const empty = items.length === 0;
+
   return (
     <motion.div
       variants={fadeItem}
@@ -50,7 +32,13 @@ export function ActivityFeed() {
           </span>
         </CardHeader>
         <CardContent className="space-y-0 divide-y divide-border/60 px-0 pt-0">
-          {items.map((item) => (
+          {empty ? (
+            <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+              No recent events yet. Capture a lead or run a campaign to populate this feed.
+            </div>
+          ) : null}
+          {!empty &&
+            items.map((item) => (
             <div
               key={item.id}
               className="flex gap-4 px-5 py-4 transition-colors hover:bg-white/[0.02]"

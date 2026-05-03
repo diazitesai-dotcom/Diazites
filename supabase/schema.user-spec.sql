@@ -1,0 +1,12 @@
+-- Reference notes for the user-provided ERD (tables: users, businesses.user_id, profiles,
+-- agents, campaigns, leads with lead_status, ai_messages, reports, billing, onboarding, admin_users).
+--
+-- The production app uses `schema.sql` (extends this with pipeline_status, conversation_history,
+-- billing stripe fields, onboarding per-user, etc.) plus migrations `002_*` and `004_*`.
+--
+-- Alignment applied in codebase:
+--   • businesses.owner_user_id renamed to businesses.user_id (see migrations/004_businesses_user_id.sql).
+--
+-- Not yet merged from the paste (would be breaking changes):
+--   • agents.type vs agents.agent_type, ai_messages.message+direction vs message_body+channel,
+--     splitting city/state, services text[], reports shape — schedule a dedicated migration if needed.
