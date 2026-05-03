@@ -1,18 +1,22 @@
-import { Resend } from "resend";
-
-import { assertRequiredEnv, env } from "@/lib/env";
+/**
+ * Legacy facade — prefer `@/services/email/email.service`.
+ */
+import { sendEmail } from "@/services/email/email.service";
 
 export async function sendLeadFollowUpEmail(input: {
   to: string;
   subject: string;
   body: string;
 }) {
-  assertRequiredEnv(["RESEND_API_KEY"]);
-  const resend = new Resend(env.RESEND_API_KEY);
-  return resend.emails.send({
-    from: "Diazites AI <noreply@diazites.com>",
+  const result = await sendEmail({
     to: input.to,
     subject: input.subject,
     text: input.body,
   });
+
+  if (!result.success) {
+    throw new Error(result.error);
+  }
+
+  return result.data;
 }

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { completeOnboardingProfile } from "@/services/onboarding/onboarding-completion.service";
 
 export async function saveOnboardingAction(formData: FormData) {
   const supabase = await createServerSupabaseClient();
@@ -12,27 +13,23 @@ export async function saveOnboardingAction(formData: FormData) {
 
   if (!user) redirect("/login");
 
-  const payload = {
-    user_id: user.id,
-    business_name: String(formData.get("business_name") ?? ""),
-    owner_name: String(formData.get("owner_name") ?? ""),
+  const form = {
+    businessName: String(formData.get("business_name") ?? ""),
+    ownerName: String(formData.get("owner_name") ?? ""),
     email: String(formData.get("email") ?? ""),
     phone: String(formData.get("phone") ?? ""),
     website: String(formData.get("website") ?? ""),
-    service_area: String(formData.get("service_area") ?? ""),
-    city_state: String(formData.get("city_state") ?? ""),
+    serviceArea: String(formData.get("service_area") ?? ""),
+    cityState: String(formData.get("city_state") ?? ""),
     services: String(formData.get("services") ?? ""),
-    business_hours: String(formData.get("business_hours") ?? ""),
-    monthly_budget: Number(formData.get("monthly_budget") ?? 0),
-    status: "completed",
+    businessHours: String(formData.get("business_hours") ?? ""),
+    monthlyBudget: Number(formData.get("monthly_budget") ?? 0),
   };
 
-  const { error } = await supabase.from("onboarding").upsert(payload, {
-    onConflict: "user_id",
-  });
+  const result = await completeOnboardingProfile(supabase, user.id, form);
 
-  if (error) {
-    redirect(`/onboarding?error=${encodeURIComponent(error.message)}`);
+  if (!result.success) {
+    redirect(`/onboarding?error=${encodeURIComponent(result.error)}`);
   }
 
   redirect("/dashboard");

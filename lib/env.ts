@@ -10,6 +10,9 @@ export const env = {
   RESEND_API_KEY: getEnv("RESEND_API_KEY"),
   OPENAI_API_KEY: getEnv("OPENAI_API_KEY"),
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  /** Comma-separated admin emails for agent/onboarding alerts via Resend */
+  ADMIN_NOTIFICATION_EMAILS: getEnv("ADMIN_NOTIFICATION_EMAILS"),
+  RESEND_FROM_EMAIL: getEnv("RESEND_FROM_EMAIL", "Diazites AI <noreply@diazites.com>"),
 };
 
 export function assertRequiredEnv(names: string[]) {

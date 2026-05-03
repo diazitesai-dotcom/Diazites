@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { createUserProfile } from "@/lib/auth/user-profile";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function signupAction(formData: FormData) {
@@ -9,7 +10,7 @@ export async function signupAction(formData: FormData) {
   const password = String(formData.get("password") ?? "");
 
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -19,6 +20,13 @@ export async function signupAction(formData: FormData) {
 
   if (error) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (data.session?.user) {
+    await createUserProfile(supabase, {
+      userId: data.session.user.id,
+      email,
+    });
   }
 
   redirect("/signup?success=check-email");
