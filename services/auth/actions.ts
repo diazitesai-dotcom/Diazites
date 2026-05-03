@@ -9,7 +9,14 @@ export async function signupAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  const supabase = await createServerSupabaseClient();
+  let supabase;
+  try {
+    supabase = await createServerSupabaseClient();
+  } catch (e) {
+    const msg =
+      e instanceof Error ? e.message : "Sign-up is unavailable. Check server configuration.";
+    redirect(`/signup?error=${encodeURIComponent(msg)}`);
+  }
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -36,7 +43,17 @@ export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  const supabase = await createServerSupabaseClient();
+  let supabase;
+  try {
+    supabase = await createServerSupabaseClient();
+  } catch (e) {
+    const msg =
+      e instanceof Error
+        ? e.message
+        : "Sign-in is unavailable. Check server configuration.";
+    redirect(`/login?error=${encodeURIComponent(msg)}`);
+  }
+
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -51,7 +68,14 @@ export async function loginAction(formData: FormData) {
 
 export async function forgotPasswordAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
-  const supabase = await createServerSupabaseClient();
+  let supabase;
+  try {
+    supabase = await createServerSupabaseClient();
+  } catch (e) {
+    const msg =
+      e instanceof Error ? e.message : "Service unavailable. Check server configuration.";
+    redirect(`/forgot-password?error=${encodeURIComponent(msg)}`);
+  }
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
   });
@@ -64,7 +88,12 @@ export async function forgotPasswordAction(formData: FormData) {
 }
 
 export async function signOutAction() {
-  const supabase = await createServerSupabaseClient();
+  let supabase;
+  try {
+    supabase = await createServerSupabaseClient();
+  } catch {
+    redirect("/");
+  }
   await supabase.auth.signOut();
   redirect("/");
 }
@@ -72,7 +101,14 @@ export async function signOutAction() {
 export async function updatePasswordAction(formData: FormData) {
   const password = String(formData.get("password") ?? "");
 
-  const supabase = await createServerSupabaseClient();
+  let supabase;
+  try {
+    supabase = await createServerSupabaseClient();
+  } catch (e) {
+    const msg =
+      e instanceof Error ? e.message : "Service unavailable. Check server configuration.";
+    redirect(`/reset-password?error=${encodeURIComponent(msg)}`);
+  }
   const { error } = await supabase.auth.updateUser({
     password,
   });

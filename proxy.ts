@@ -1,36 +1,17 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest } from "next/server";
 
-const protectedPrefixes = ["/dashboard", "/admin", "/onboarding"];
+import { updateSession } from "@/lib/supabase/middleware";
 
-function hasSupabaseSessionCookie(request: NextRequest) {
-  return request.cookies
-    .getAll()
-    .some(
-      (cookie) =>
-        cookie.name.startsWith("sb-") && cookie.name.includes("auth-token"),
-    );
-}
-
-export function proxy(request: NextRequest) {
-  const path = request.nextUrl.pathname;
-  const isProtected = protectedPrefixes.some((prefix) =>
-    path.startsWith(prefix),
-  );
-
-  if (!isProtected) {
-    return NextResponse.next();
-  }
-
-  if (!hasSupabaseSessionCookie(request)) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    loginUrl.searchParams.set("next", path);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  return NextResponse.next();
+/**
+ * Next.js 16 "proxy" replaces the old middleware file.
+ * Delegates to Supabase session refresh + route protection.
+ */
+export async function proxy(request: NextRequest) {
+  return updateSession(request);
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/onboarding/:path*"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
