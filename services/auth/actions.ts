@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { createUserProfile } from "@/lib/auth/user-profile";
+import { getPublicAppUrl } from "@/lib/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function signupAction(formData: FormData) {
@@ -21,7 +22,7 @@ export async function signupAction(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+      emailRedirectTo: `${getPublicAppUrl()}/dashboard`,
     },
   });
 
@@ -77,7 +78,7 @@ export async function forgotPasswordAction(formData: FormData) {
     redirect(`/forgot-password?error=${encodeURIComponent(msg)}`);
   }
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
+    redirectTo: `${getPublicAppUrl()}/reset-password`,
   });
 
   if (error) {

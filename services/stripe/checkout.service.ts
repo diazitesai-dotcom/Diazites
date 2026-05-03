@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 
-import { env } from "@/lib/env";
+import { env, getPublicAppUrl } from "@/lib/env";
 import { createBillingRepository } from "@/repositories/billing.repository";
 import { requireStripe } from "@/lib/stripe";
 import type { BillingPlanName } from "@/types/backend";
@@ -35,7 +35,7 @@ export async function createSubscriptionCheckoutSession(params: {
   planName: BillingPlanName;
 }): Promise<{ url: string }> {
   const stripe = requireStripe();
-  const baseUrl = env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const baseUrl = getPublicAppUrl();
   const priceId = priceIdForPlan(params.planName);
 
   const billing = createBillingRepository(params.supabase);
@@ -73,7 +73,7 @@ export async function createBillingPortalSession(params: {
   stripeCustomerId: string;
 }): Promise<{ url: string }> {
   const stripe = requireStripe();
-  const baseUrl = env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const baseUrl = getPublicAppUrl();
 
   const session = await stripe.billingPortal.sessions.create({
     customer: params.stripeCustomerId,

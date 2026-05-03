@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { SupabaseAuthHashHandler } from "@/components/auth/supabase-auth-hash-handler";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 
 import "./globals.css";
@@ -34,7 +35,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.className} min-h-full flex flex-col antialiased`}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <SupabaseAuthHashHandler />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

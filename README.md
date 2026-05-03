@@ -29,7 +29,7 @@ cp .env.example .env.local
 - `SUPABASE_SERVICE_KEY`
 - `RESEND_API_KEY`
 - `OPENAI_API_KEY`
-- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_APP_URL` (production URL on Vercel; also set the same URL as **Site URL** in Supabase → Authentication → URL Configuration so magic links and email confirmations are not sent to localhost)
 
 4. Run locally:
 ```bash
