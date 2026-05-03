@@ -3,7 +3,9 @@ import { forgotPasswordAction } from "@/services/auth/actions";
 
 export default function ForgotPasswordPage() {
   return (
-    <main className="container flex min-h-screen items-center justify-center py-12">
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-12">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,rgba(139,92,246,0.2),transparent)]" />
+      <div className="relative z-[1] w-full max-w-md">
       <AuthCard
         title="Reset your password"
         submitText="Send reset link"
@@ -13,6 +15,7 @@ export default function ForgotPasswordPage() {
         footerCta="Login"
         showPassword={false}
       />
+      </div>
     </main>
   );
 }

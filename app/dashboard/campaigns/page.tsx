@@ -1,6 +1,14 @@
+import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const campaigns = [
   {
@@ -29,16 +37,20 @@ const campaigns = [
 
 export default function CampaignManagerPage() {
   return (
-    <main className="container space-y-6 py-10">
-      <h1 className="text-3xl font-semibold">Campaign Manager</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Campaign Performance</CardTitle>
+    <div className="mx-auto max-w-6xl space-y-10">
+      <PageHeader
+        eyebrow="Acquisition"
+        title="Campaigns"
+        description="Spend, efficiency, and conversion in one command view — tuned for weekly optimization reviews."
+      />
+      <Card className="overflow-hidden border-white/[0.06]">
+        <CardHeader className="border-b border-border/60">
+          <CardTitle className="text-lg">Campaign performance</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="border-border/60 hover:bg-transparent">
                 <TableHead>Platform</TableHead>
                 <TableHead>Budget</TableHead>
                 <TableHead>Goal</TableHead>
@@ -52,13 +64,16 @@ export default function CampaignManagerPage() {
             </TableHeader>
             <TableBody>
               {campaigns.map((campaign) => (
-                <TableRow key={`${campaign.platform}-${campaign.location}`}>
-                  <TableCell>{campaign.platform}</TableCell>
+                <TableRow
+                  key={`${campaign.platform}-${campaign.location}`}
+                  className="border-border/60"
+                >
+                  <TableCell className="font-medium">{campaign.platform}</TableCell>
                   <TableCell>{campaign.budget}</TableCell>
                   <TableCell>{campaign.goal}</TableCell>
                   <TableCell>{campaign.location}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{campaign.status}</Badge>
+                    <Badge variant="success">{campaign.status}</Badge>
                   </TableCell>
                   <TableCell>{campaign.spend}</TableCell>
                   <TableCell>{campaign.leads}</TableCell>
@@ -70,6 +85,6 @@ export default function CampaignManagerPage() {
           </Table>
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

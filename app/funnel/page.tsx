@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 
+import { MarketingNavbar } from "@/components/layout/marketing-navbar";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,42 +16,54 @@ export default function FunnelBuilderPage() {
   const [location, setLocation] = useState("Tampa Bay");
 
   return (
-    <main className="container grid gap-6 py-10 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle>Lead Funnel Builder</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="headline">Headline</Label>
-            <Input id="headline" value={headline} onChange={(e) => setHeadline(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="offer">Offer</Label>
-            <Input id="offer" value={offer} onChange={(e) => setOffer(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} />
-          </div>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen bg-background">
+      <MarketingNavbar />
+      <main className="mx-auto max-w-6xl space-y-10 px-4 py-10 sm:px-6">
+        <PageHeader
+          eyebrow="Conversion"
+          title="Lead funnel builder"
+          description="Compose offers and preview capture UX before pushing live to campaigns."
+        />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="border-white/[0.06]">
+            <CardHeader>
+              <CardTitle className="text-lg">Editor</CardTitle>
+              <CardDescription>Headline, offer, and geo targeting.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="headline">Headline</Label>
+                <Input id="headline" value={headline} onChange={(e) => setHeadline(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="offer">Offer</Label>
+                <Input id="offer" value={offer} onChange={(e) => setOffer(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} />
+              </div>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Live Landing Preview + Capture Form</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-lg border bg-muted/30 p-4">
-            <p className="text-xs uppercase text-muted-foreground">Preview</p>
-            <h2 className="mt-2 text-2xl font-semibold">{headline}</h2>
-            <p className="mt-1 text-muted-foreground">{offer}</p>
-            <p className="mt-1 text-sm">Serving {location}</p>
-          </div>
-          <LeadCaptureForm />
-        </CardContent>
-      </Card>
-    </main>
+          <Card className="border-white/[0.06]">
+            <CardHeader>
+              <CardTitle className="text-lg">Live landing preview</CardTitle>
+              <CardDescription>Capture form posts to your leads API.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent p-5">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Preview</p>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight">{headline}</h2>
+                <p className="mt-2 text-muted-foreground">{offer}</p>
+                <p className="mt-2 text-sm text-muted-foreground">Serving {location}</p>
+              </div>
+              <LeadCaptureForm />
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
   );
 }
 
@@ -101,8 +115,8 @@ function LeadCaptureForm() {
       <Input name="roofing_need" placeholder="Roofing need" />
       <Input name="timeline" placeholder="Timeline" />
       <Textarea name="notes" placeholder="Notes" />
-      <Button disabled={loading} type="submit" className="w-full">
-        {loading ? "Submitting..." : "Submit lead"}
+      <Button disabled={loading} type="submit" variant="gradient" className="w-full rounded-xl">
+        {loading ? "Submitting…" : "Submit lead"}
       </Button>
       {done ? <p className="text-sm text-muted-foreground">{done}</p> : null}
     </form>

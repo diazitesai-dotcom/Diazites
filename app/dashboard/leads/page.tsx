@@ -1,4 +1,5 @@
 import { LeadsBoard } from "@/components/leads/leads-board";
+import { PageHeader } from "@/components/layout/page-header";
 
 const sampleLeads = [
   {
@@ -37,12 +38,13 @@ const sampleLeads = [
 
 export default function LeadsManagerPage() {
   return (
-    <main className="container space-y-6 py-10">
-      <h1 className="text-3xl font-semibold">Leads Manager</h1>
-      <p className="text-sm text-muted-foreground">
-        Track every lead from first touch to won job.
-      </p>
+    <div className="mx-auto max-w-6xl space-y-10">
+      <PageHeader
+        eyebrow="Pipeline"
+        title="Leads CRM"
+        description="Track every lead from first touch to won job. Switch between kanban and table without losing context."
+      />
       <LeadsBoard leads={sampleLeads} />
-    </main>
+    </div>
   );
 }

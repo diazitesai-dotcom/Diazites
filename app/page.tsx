@@ -1,60 +1,45 @@
 import Link from "next/link";
 
+import { MarketingNavbar } from "@/components/layout/marketing-navbar";
+import { HomeHero } from "@/components/marketing/home-hero";
+import {
+  MarketingModulesSection,
+  MarketingPlatformSection,
+} from "@/components/marketing/marketing-section";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-background">
-      <section className="container mx-auto px-4 py-24">
-        <div className="mx-auto max-w-4xl text-center">
-          <p className="mb-4 text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            Diazites AI Marketing Platform
-          </p>
-          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-            Get More Roofing Leads Automatically With AI
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Launch campaigns, automate follow-up, and book more roofing jobs
-            from one platform built for contractors.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/signup" className={buttonVariants({ size: "lg" })}>
-              Start Free
+    <div className="min-h-screen bg-background">
+      <MarketingNavbar />
+      <HomeHero />
+      <MarketingPlatformSection />
+      <MarketingModulesSection />
+
+      <footer className="border-t border-border/60 py-16">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 px-4 sm:flex-row sm:items-center sm:px-6">
+          <div>
+            <p className="text-sm font-semibold tracking-tight">Diazites</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              AI marketing OS for roofing contractors.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/login"
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
+            >
+              Log in
             </Link>
             <Link
-              href="/contact"
-              className={buttonVariants({ size: "lg", variant: "outline" })}
+              href="/signup"
+              className={buttonVariants({ variant: "gradient", size: "sm" })}
             >
-              Book Demo
+              Get started
             </Link>
           </div>
         </div>
-      </section>
-
-      <section className="container mx-auto grid gap-4 px-4 pb-12 md:grid-cols-3">
-        {[
-          "How It Works",
-          "Problems We Solve",
-          "AI Agents",
-          "Lead Funnel Demo",
-          "Pricing",
-          "FAQ",
-          "Contact",
-        ].map((section) => (
-          <Card key={section}>
-            <CardHeader>
-              <CardTitle>{section}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Production section scaffold ready for expansion with conversion
-                content and media assets.
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-    </main>
+      </footer>
+    </div>
   );
 }

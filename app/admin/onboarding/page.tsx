@@ -1,6 +1,14 @@
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const rows = [
   {
@@ -25,16 +33,22 @@ const rows = [
 
 export default function AdminOnboardingTrackerPage() {
   return (
-    <main className="container space-y-6 py-10">
-      <h1 className="text-3xl font-semibold">Onboarding Tracker</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Signup → Profile → Build → QA → Live → Optimize</CardTitle>
+    <div className="mx-auto max-w-6xl space-y-10">
+      <PageHeader
+        eyebrow="Lifecycle"
+        title="Onboarding tracker"
+        description="Signup → profile → build → QA → live → optimize. Stage clarity for internal operators."
+      />
+      <Card className="overflow-hidden border-white/[0.06]">
+        <CardHeader className="border-b border-border/60">
+          <CardTitle className="text-lg">
+            Signup → Profile → Build → QA → Live → Optimize
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="border-border/60 hover:bg-transparent">
                 <TableHead>Client</TableHead>
                 <TableHead>Stage</TableHead>
                 <TableHead>Profile Complete</TableHead>
@@ -46,8 +60,8 @@ export default function AdminOnboardingTrackerPage() {
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
-                <TableRow key={row.client}>
-                  <TableCell>{row.client}</TableCell>
+                <TableRow key={row.client} className="border-border/60">
+                  <TableCell className="font-medium">{row.client}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{row.stage}</Badge>
                   </TableCell>
@@ -62,6 +76,6 @@ export default function AdminOnboardingTrackerPage() {
           </Table>
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

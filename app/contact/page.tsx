@@ -1,27 +1,35 @@
 import Link from "next/link";
 
+import { MarketingNavbar } from "@/components/layout/marketing-navbar";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function ContactPage() {
   return (
-    <main className="container py-16">
-      <Card className="mx-auto max-w-xl">
-        <CardHeader>
-          <CardTitle>Book a Demo</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Email us at hello@diazites.com to schedule your onboarding call.
-          </p>
-          <Link
-            href="mailto:hello@diazites.com"
-            className={buttonVariants({ variant: "default" })}
-          >
-            Email Diazites
-          </Link>
-        </CardContent>
-      </Card>
-    </main>
+    <div className="min-h-screen bg-background">
+      <MarketingNavbar />
+      <main className="relative px-4 py-20 sm:px-6">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_0%,rgba(139,92,246,0.15),transparent)]" />
+        <Card className="relative mx-auto max-w-xl border-white/[0.08] shadow-[0_24px_80px_-48px_rgba(99,102,241,0.45)]">
+          <CardHeader>
+            <CardTitle className="text-2xl">Book a demo</CardTitle>
+            <CardDescription className="text-base">
+              Email us to schedule your onboarding call with the Diazites team.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              hello@diazites.com · Enterprise SLAs available.
+            </p>
+            <Link
+              href="mailto:hello@diazites.com"
+              className={buttonVariants({ variant: "gradient", size: "lg", className: "rounded-xl" })}
+            >
+              Email Diazites
+            </Link>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
   );
 }
