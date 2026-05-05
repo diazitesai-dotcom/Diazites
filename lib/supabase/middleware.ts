@@ -35,14 +35,21 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({
-            request,
+        /**
+         * Second arg carries Cache-Control / Pragma headers — required so CDNs
+         * (e.g. Vercel) don’t cache authenticated responses and strip sessions.
+         */
+        setAll(cookiesToSet, headersList) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
           });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
+          if (headersList && typeof headersList === "object") {
+            Object.entries(headersList).forEach(([key, value]) => {
+              if (typeof value === "string") {
+                response.headers.set(key, value);
+              }
+            });
+          }
         },
       },
     },
