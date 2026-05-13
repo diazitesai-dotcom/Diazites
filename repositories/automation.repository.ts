@@ -25,6 +25,58 @@ export function createAutomationRepository(client: SupabaseClient) {
         .eq("enabled", true);
     },
 
+    async listForBusiness(businessId: string) {
+      return client
+        .from("automation_rules")
+        .select("*")
+        .eq("business_id", businessId)
+        .order("name", { ascending: true });
+    },
+
+    async create(input: {
+      businessId: string;
+      name: string;
+      triggerEvent: string;
+      actionType: AutomationActionType;
+      actionConfig: Record<string, unknown>;
+      enabled?: boolean;
+    }) {
+      return client
+        .from("automation_rules")
+        .insert({
+          business_id: input.businessId,
+          name: input.name,
+          trigger_event: input.triggerEvent,
+          action_type: input.actionType,
+          action_config: input.actionConfig,
+          enabled: input.enabled ?? true,
+        })
+        .select("*")
+        .single();
+    },
+
+    async toggle(id: string, enabled: boolean) {
+      return client
+        .from("automation_rules")
+        .update({ enabled })
+        .eq("id", id)
+        .select("*")
+        .single();
+    },
+
+    async remove(id: string) {
+      return client.from("automation_rules").delete().eq("id", id);
+    },
+
+    async listRecentRuns(businessId: string, limit = 30) {
+      return client
+        .from("automation_runs")
+        .select("*")
+        .eq("business_id", businessId)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+    },
+
     async insertRun(input: {
       ruleId: string;
       businessId: string;

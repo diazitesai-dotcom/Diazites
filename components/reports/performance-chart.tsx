@@ -44,8 +44,7 @@ export function PerformanceChart({ data }: { data?: PerformanceSeriesRow[] }) {
     );
   }
 
-  const monthly =
-    data && data.length > 0 ? data : demoMonthly;
+  const monthly = data && data.length > 0 ? data : demoMonthly;
 
   const chartWrap =
     "h-72 w-full rounded-2xl border border-white/[0.06] bg-card/40 p-4 backdrop-blur-md shadow-inner";

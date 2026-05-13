@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { PipelineStatus } from "@/types/domain";
+import { bucketClasses, bucketLabel, type LeadScoreBucket } from "@/lib/lead-scoring";
 import { cn } from "@/lib/utils";
 
 type Lead = {
@@ -24,6 +25,8 @@ type Lead = {
   campaign: string;
   status: PipelineStatus;
   notes: string;
+  score: number;
+  scoreBucket: LeadScoreBucket;
 };
 
 const statuses: PipelineStatus[] = ["new", "contacted", "qualified", "booked", "won", "lost"];
@@ -123,8 +126,21 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
                       key={lead.id}
                       className="group rounded-xl border border-border/60 bg-gradient-to-b from-white/[0.04] to-transparent p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-500/25 hover:shadow-[0_12px_40px_-24px_rgba(99,102,241,0.35)]"
                     >
-                      <p className="font-medium text-foreground">{lead.name}</p>
-                      <p className="text-xs text-muted-foreground">{lead.campaign}</p>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground">{lead.name}</p>
+                          <p className="text-xs text-muted-foreground">{lead.campaign}</p>
+                        </div>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold tabular-nums",
+                            bucketClasses(lead.scoreBucket),
+                          )}
+                          title={`${bucketLabel(lead.scoreBucket)} · score ${lead.score}`}
+                        >
+                          {lead.score}
+                        </span>
+                      </div>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="text-[11px]">
                           {lead.source}
@@ -153,6 +169,7 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
               <TableHeader>
                 <TableRow className="border-border/60 hover:bg-transparent">
                   <TableHead>Name</TableHead>
+                  <TableHead className="w-[88px]">Score</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Campaign</TableHead>
                   <TableHead>Status</TableHead>
@@ -163,6 +180,20 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
                 {leads.map((lead) => (
                 <TableRow key={lead.id} className="border-border/60">
                   <TableCell className="font-medium">{lead.name}</TableCell>
+                  <TableCell>
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums",
+                        bucketClasses(lead.scoreBucket),
+                      )}
+                      title={`${bucketLabel(lead.scoreBucket)} · score ${lead.score}`}
+                    >
+                      {lead.score}
+                      <span className="text-[10px] font-normal opacity-70">
+                        {bucketLabel(lead.scoreBucket)}
+                      </span>
+                    </span>
+                  </TableCell>
                   <TableCell>{lead.source}</TableCell>
                   <TableCell>{lead.campaign}</TableCell>
                   <TableCell>

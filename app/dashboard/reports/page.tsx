@@ -32,6 +32,10 @@ export default async function ReportsPage() {
   }
 
   return (
-    <ReportsPageClient metrics={loaded.metrics} chartSeries={loaded.chartSeries} />
+    <ReportsPageClient
+      metrics={loaded.metrics}
+      extra={loaded.extra}
+      chartSeries={loaded.chartSeries}
+    />
   );
 }

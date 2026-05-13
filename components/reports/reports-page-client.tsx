@@ -1,12 +1,22 @@
 "use client";
 
-import { DollarSign, LineChart, Target, TrendingUp } from "lucide-react";
+import {
+  CalendarCheck,
+  Eye,
+  LineChart,
+  Percent,
+  Target,
+  TrendingUp,
+} from "lucide-react";
 
 import { StatCard } from "@/components/dashboard/stat-card";
 import { PageHeader } from "@/components/layout/page-header";
 import { PerformanceChart } from "@/components/reports/performance-chart";
 import type { DashboardMetrics } from "@/types/backend";
-import type { ReportChartPoint } from "@/lib/dashboard/load-reports-page";
+import type {
+  ReportChartPoint,
+  ReportsExtraMetrics,
+} from "@/lib/dashboard/load-reports-page";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -16,14 +26,36 @@ function formatMoney(n: number) {
   }).format(n);
 }
 
+function formatPct(n: number | null) {
+  if (n == null) return "—";
+  return `${n.toFixed(1)}%`;
+}
+
 export function ReportsPageClient({
   metrics,
+  extra,
   chartSeries,
 }: {
   metrics: DashboardMetrics | null;
+  extra: ReportsExtraMetrics;
   chartSeries: ReportChartPoint[];
 }) {
+  // Derive a true "Conversion Rate" preferring visitors / leads when we have
+  // visitor data; fall back to the reporting service's existing conversionRate
+  // (which is typically lead → won).
+  const conversionRate =
+    extra.visitors > 0 && metrics
+      ? (metrics.totalLeads / extra.visitors) * 100
+      : metrics?.conversionRate ?? null;
+
   const kpis = [
+    {
+      label: "Visitors",
+      value: extra.visitors > 0 ? extra.visitors.toLocaleString() : "—",
+      icon: Eye,
+      hint: "Page views from public landing pages",
+      trend: "neutral" as const,
+    },
     {
       label: "Leads",
       value: metrics ? String(metrics.totalLeads) : "—",
@@ -32,10 +64,10 @@ export function ReportsPageClient({
       trend: "neutral" as const,
     },
     {
-      label: "Spend",
-      value: metrics ? formatMoney(metrics.totalSpend) : "—",
-      icon: DollarSign,
-      hint: metrics ? `Rolling ${metrics.periodDays} days` : "—",
+      label: "Conversion Rate",
+      value: formatPct(conversionRate),
+      icon: Percent,
+      hint: extra.visitors > 0 ? "Leads / visitors" : "Lead → won",
       trend: "neutral" as const,
     },
     {
@@ -47,10 +79,17 @@ export function ReportsPageClient({
       trend: "neutral" as const,
     },
     {
-      label: "ROI",
+      label: "ROAS",
       value: metrics?.roi != null ? `${metrics.roi.toFixed(1)}×` : "—",
       icon: TrendingUp,
-      hint: "Model vs ad spend",
+      hint: "Return on ad spend",
+      trend: "neutral" as const,
+    },
+    {
+      label: "Booked Calls",
+      value: extra.bookedCalls > 0 ? extra.bookedCalls.toString() : "—",
+      icon: CalendarCheck,
+      hint: "Leads in booked/won stages",
       trend: "neutral" as const,
     },
   ];
@@ -60,10 +99,10 @@ export function ReportsPageClient({
       <PageHeader
         eyebrow="Analytics"
         title="Reports"
-        description="Executive-grade performance charts with the density operators expect — without exporting to spreadsheets."
+        description="The six headline KPIs from the Growth Engine map — visitors, leads, conversion, CPL, ROAS, and booked calls — in one command view."
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {kpis.map((k) => (
           <StatCard key={k.label} {...k} />
         ))}

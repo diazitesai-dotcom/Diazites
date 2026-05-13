@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { ok, fail, type ServiceResult } from "@/lib/result";
+import { scoreLead, type LeadScoreBucket } from "@/lib/lead-scoring";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { createLeadRepository } from "@/repositories/lead.repository";
 import type { LeadCreateInput, LeadUpdateInput } from "@/types/backend";
@@ -28,6 +29,31 @@ export async function createLead(
     payload: { source: input.source ?? "web", campaignId: input.campaignId },
   });
 
+  // Best-effort notification to the business owner. Telemetry failures must
+  // never block lead creation.
+  try {
+    const { createBusinessRepository } = await import("@/repositories/business.repository");
+    const { createNotificationRepository } = await import(
+      "@/repositories/cross-cutting.repository"
+    );
+    const businesses = createBusinessRepository(client);
+    const { data: biz } = await businesses.getById(input.businessId);
+    const ownerUserId = (biz as { user_id?: string | null } | null)?.user_id ?? null;
+    if (ownerUserId) {
+      const notifications = createNotificationRepository(client);
+      await notifications.create({
+        userId: ownerUserId,
+        businessId: input.businessId,
+        kind: "new_lead",
+        title: `New lead: ${input.name}`,
+        body: input.source ? `From ${input.source}` : undefined,
+        link: "/dashboard/leads",
+      });
+    }
+  } catch {
+    // swallow
+  }
+
   return ok({ id: data.id });
 }
 
@@ -48,6 +74,8 @@ export type LeadBoardRow = {
   campaign: string;
   status: PipelineStatus;
   notes: string;
+  score: number;
+  scoreBucket: LeadScoreBucket;
 };
 
 export async function getLeadsForBoard(
@@ -81,11 +109,26 @@ export async function getLeadsForBoard(
     const r = row as {
       id: string;
       name: string;
+      email: string | null;
+      phone: string | null;
       source: string | null;
       status: PipelineStatus;
       notes: string | null;
+      timeline: string | null;
+      roofing_need: string | null;
+      created_at: string | null;
       campaigns: unknown;
     };
+    const score = scoreLead({
+      email: r.email,
+      phone: r.phone,
+      source: r.source,
+      status: r.status,
+      notes: r.notes,
+      timeline: r.timeline,
+      roofingNeed: r.roofing_need,
+      createdAt: r.created_at,
+    });
     return {
       id: r.id,
       name: r.name,
@@ -93,6 +136,8 @@ export async function getLeadsForBoard(
       campaign: campaignLabel(r.campaigns),
       status: r.status,
       notes: r.notes ?? "",
+      score: score.value,
+      scoreBucket: score.bucket,
     };
   });
 

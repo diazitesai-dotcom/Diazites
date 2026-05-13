@@ -10,6 +10,7 @@ import {
   CreditCard,
   FileText,
   Funnel,
+  Gauge,
   LayoutDashboard,
   Megaphone,
   Menu,
@@ -17,14 +18,23 @@ import {
   PanelLeftOpen,
   Settings,
   Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  Target,
   UserCircle2,
+  UserCog,
   Users,
+  Webhook,
   X,
+  Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
+
+import { NotificationBell } from "./notification-bell";
 
 type NavItem = {
   href: string;
@@ -34,10 +44,16 @@ type NavItem = {
 
 const DASHBOARD_NAV: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/engine", label: "Growth Engine", icon: Sparkles },
+  { href: "/dashboard/ads", label: "Ads", icon: Target },
+  { href: "/dashboard/optimization", label: "Optimization", icon: Gauge },
   { href: "/dashboard/agents", label: "Agent Manager", icon: Bot },
   { href: "/dashboard/leads", label: "Leads CRM", icon: Users },
   { href: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone },
+  { href: "/dashboard/automations", label: "Automations", icon: Webhook },
+  { href: "/dashboard/approvals", label: "Approvals", icon: ShieldAlert },
   { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
+  { href: "/dashboard/team", label: "Team", icon: UserCog },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
   { href: "/funnel", label: "Funnel Builder", icon: Funnel },
@@ -45,6 +61,8 @@ const DASHBOARD_NAV: NavItem[] = [
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: Shield },
+  { href: "/admin/usage", label: "AI Usage", icon: Zap },
+  { href: "/admin/audit", label: "Audit Log", icon: ShieldCheck },
   { href: "/admin/templates", label: "Templates", icon: FileText },
   { href: "/admin/onboarding", label: "Onboarding", icon: UserCircle2 },
 ];
@@ -167,24 +185,29 @@ export function AppSidebarShell({
         ) : null}
       </aside>
 
-      {/* Mobile top bar */}
+      {/* Top bar: notification bell on the right for dashboard variant */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border/80 bg-background/80 px-4 backdrop-blur-xl md:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="flex size-10 items-center justify-center rounded-xl border border-border/60 text-foreground"
-            aria-label="Open navigation"
-          >
-            <Menu className="size-5" />
-          </button>
-          <Link
-            href={brandHref}
-            className="text-sm font-semibold tracking-tight"
-          >
-            {brandTitle}
-          </Link>
-          <span className="size-10" aria-hidden />
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border/80 bg-background/80 px-4 backdrop-blur-xl md:px-8">
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="flex size-10 items-center justify-center rounded-xl border border-border/60 text-foreground"
+              aria-label="Open navigation"
+            >
+              <Menu className="size-5" />
+            </button>
+            <Link
+              href={brandHref}
+              className="text-sm font-semibold tracking-tight"
+            >
+              {brandTitle}
+            </Link>
+          </div>
+          <span className="hidden md:block" aria-hidden />
+          <div className="flex items-center gap-2">
+            {variant === "dashboard" ? <NotificationBell /> : null}
+          </div>
         </header>
 
         <main className="flex-1 px-4 py-8 md:px-8 md:py-10">{children}</main>

@@ -39,9 +39,13 @@ export function createLeadRepository(client: SupabaseClient) {
           `
           id,
           name,
+          email,
+          phone,
           source,
           status,
           notes,
+          timeline,
+          roofing_need,
           created_at,
           campaign_id,
           campaigns ( platform )
