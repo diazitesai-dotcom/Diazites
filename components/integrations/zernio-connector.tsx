@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { syncZernioCampaignsAction } from "@/services/ads/actions";
 import {
   connectZernioAction,
   disconnectZernioAction,
@@ -55,6 +56,7 @@ export function ZernioConnector({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [refreshing, startRefresh] = useTransition();
+  const [syncing, startSync] = useTransition();
   const [feedback, setFeedback] = useState<
     | { kind: "ok"; message: string }
     | { kind: "err"; message: string }
@@ -109,6 +111,26 @@ export function ZernioConnector({
             : res.data.status === "error"
             ? `Zernio rejected the stored key: ${res.data.errorMessage ?? "unknown error"}`
             : "Zernio is disconnected.",
+      });
+      router.refresh();
+    });
+  }
+
+  function handleSync() {
+    setFeedback(null);
+    startSync(async () => {
+      const res = await syncZernioCampaignsAction();
+      if (!res.success) {
+        setFeedback({ kind: "err", message: res.error });
+        return;
+      }
+      setFeedback({
+        kind: "ok",
+        message:
+          `Synced ${res.data.campaignsFetched} campaign${res.data.campaignsFetched === 1 ? "" : "s"} (` +
+          `${res.data.campaignsCreated} new, ${res.data.campaignsUpdated} updated) · ` +
+          `$${res.data.totalSpendUsd.toFixed(2)} spend · ` +
+          `${res.data.totalLeads} lead${res.data.totalLeads === 1 ? "" : "s"}.`,
       });
       router.refresh();
     });
@@ -217,6 +239,19 @@ export function ZernioConnector({
                   aria-hidden
                 />
                 {refreshing ? "Refreshing…" : "Verify connection"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={syncing}
+                onClick={handleSync}
+                className="rounded-xl"
+              >
+                <RefreshCw
+                  className={cn("size-3.5", syncing && "animate-spin")}
+                  aria-hidden
+                />
+                {syncing ? "Syncing…" : "Sync ad metrics"}
               </Button>
               <Button
                 type="button"

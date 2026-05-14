@@ -17,6 +17,15 @@ import {
   type MetricsSyncSummary,
   type PushCreativeResult,
 } from "@/services/ads/meta.service";
+import {
+  pushZernioCreative,
+  type PushZernioCreativeResult,
+} from "@/services/ads/zernio-launch.service";
+import {
+  syncZernioCampaigns,
+  type SyncZernioSummary,
+} from "@/services/ads/zernio-sync.service";
+import type { ZernioPlatform } from "@/lib/zernio";
 
 async function resolveBusinessId(): Promise<{ businessId: string; userId: string } | null> {
   const user = await requireAuth();
@@ -106,6 +115,108 @@ export async function syncMetaMetricsAction(): Promise<ServiceResult<MetricsSync
     businessId: ctx.businessId,
     actorUserId: ctx.userId,
     action: "ads.meta.sync_metrics",
+    metadata: { summary: result.data },
+  });
+
+  revalidatePath("/dashboard/ads");
+  return ok(result.data);
+}
+
+export async function pushZernioCreativeAction(
+  formData: FormData,
+): Promise<ServiceResult<PushZernioCreativeResult>> {
+  const ctx = await resolveBusinessId();
+  if (!ctx) return fail("No business found");
+
+  const engineRunId = pickString(formData.get("engine_run_id"));
+  const winningAssetId = pickString(formData.get("winning_asset_id"));
+  const name = pickString(formData.get("name")) ?? "Engine campaign (Zernio)";
+  const budgetRaw = pickString(formData.get("daily_budget_usd"));
+  const dailyBudgetUsd = budgetRaw ? Number(budgetRaw) : 10;
+  const mode = (pickString(formData.get("mode")) ?? "now") as
+    | "now"
+    | "scheduled"
+    | "draft";
+  const scheduledFor = pickString(formData.get("scheduled_for"));
+  const rawTargets = pickString(formData.get("targets"));
+
+  if (!engineRunId || !winningAssetId) {
+    return fail("Missing engine run id or winning asset id");
+  }
+
+  let targets:
+    | Array<{ platform: ZernioPlatform; accountId: string }>
+    | undefined;
+  if (rawTargets) {
+    try {
+      const parsed = JSON.parse(rawTargets) as unknown;
+      if (Array.isArray(parsed)) {
+        targets = parsed
+          .filter(
+            (t): t is { platform: string; accountId: string } =>
+              !!t &&
+              typeof t === "object" &&
+              typeof (t as { platform?: unknown }).platform === "string" &&
+              typeof (t as { accountId?: unknown }).accountId === "string",
+          )
+          .map((t) => ({
+            platform: t.platform as ZernioPlatform,
+            accountId: t.accountId,
+          }));
+      }
+    } catch {
+      // Ignore bad JSON — falls back to "post to every connected account".
+    }
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const result = await pushZernioCreative(supabase, {
+    businessId: ctx.businessId,
+    engineRunId,
+    winningAssetId,
+    name,
+    dailyBudgetUsd: Number.isFinite(dailyBudgetUsd) ? dailyBudgetUsd : 10,
+    targets,
+    mode,
+    scheduledFor,
+  });
+  if (!result.success) return fail(result.error);
+
+  await logAudit(supabase, {
+    businessId: ctx.businessId,
+    actorUserId: ctx.userId,
+    action: "ads.zernio.push_creative",
+    targetKind: "ad_campaign",
+    targetId: result.data.adCampaignId,
+    metadata: {
+      engineRunId,
+      winningAssetId,
+      mode: result.data.mode,
+      targetCount: result.data.targets.length,
+      zernioPostId: result.data.zernioPostId,
+    },
+  });
+
+  revalidatePath("/dashboard/ads");
+  return ok(result.data);
+}
+
+export async function syncZernioCampaignsAction(): Promise<
+  ServiceResult<SyncZernioSummary>
+> {
+  const ctx = await resolveBusinessId();
+  if (!ctx) return fail("No business found");
+
+  const supabase = await createServerSupabaseClient();
+  const result = await syncZernioCampaigns(supabase, {
+    businessId: ctx.businessId,
+  });
+  if (!result.success) return fail(result.error);
+
+  await logAudit(supabase, {
+    businessId: ctx.businessId,
+    actorUserId: ctx.userId,
+    action: "ads.zernio.sync_campaigns",
     metadata: { summary: result.data },
   });
 

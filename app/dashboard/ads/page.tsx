@@ -3,11 +3,13 @@ import Link from "next/link";
 
 import { PlatformCard } from "@/components/ads/platform-card";
 import { PushWinnerForm } from "@/components/ads/push-winner-form";
+import { PushZernioWinner } from "@/components/ads/push-zernio-winner";
 import { ZapierConnector } from "@/components/integrations/zapier-connector";
 import {
   ZernioConnector,
   type ZernioConnectedAccountSummary,
 } from "@/components/integrations/zernio-connector";
+import { ZernioPostComposer } from "@/components/integrations/zernio-post-composer";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -186,7 +188,7 @@ export default async function AdsPage() {
       </section>
 
       {/* Zernio connector — broker for 14 social/ads platforms */}
-      <section>
+      <section className="space-y-4">
         <ZernioConnector
           status={zernioConn.status}
           accountCount={zernioConn.accountCount}
@@ -196,6 +198,9 @@ export default async function AdsPage() {
           }
           connectedAccounts={zernioAccounts}
         />
+        {zernioConn.status === "connected" && zernioAccounts.length > 0 ? (
+          <ZernioPostComposer availableAccounts={zernioAccounts} />
+        ) : null}
       </section>
 
       {/* Zapier connector */}
@@ -218,7 +223,15 @@ export default async function AdsPage() {
 
       {/* Push winning creative */}
       {winningAd && activeRun ? (
-        <section>
+        <section className="space-y-4">
+          {zernioConn.status === "connected" && zernioAccounts.length > 0 ? (
+            <PushZernioWinner
+              engineRunId={activeRun.id}
+              winningAssetId={winningAd.id}
+              defaultName={`Engine · ${business.name} · variant ${winningAd.variant_label}`}
+              availableAccounts={zernioAccounts}
+            />
+          ) : null}
           <Card className="border-white/[0.06]">
             <CardHeader>
               <CardTitle className="text-lg">Push the engine's winning ad to Meta</CardTitle>
