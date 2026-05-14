@@ -103,3 +103,17 @@ create policy "optimization_runs owner select" on optimization_runs
 for select using (
   exists (select 1 from businesses b where b.id = optimization_runs.business_id and b.user_id = auth.uid())
 );
+
+drop policy if exists "optimization_runs owner insert" on optimization_runs;
+create policy "optimization_runs owner insert" on optimization_runs
+for insert with check (
+  exists (select 1 from businesses b where b.id = optimization_runs.business_id and b.user_id = auth.uid())
+);
+
+drop policy if exists "optimization_runs owner update" on optimization_runs;
+create policy "optimization_runs owner update" on optimization_runs
+for update using (
+  exists (select 1 from businesses b where b.id = optimization_runs.business_id and b.user_id = auth.uid())
+) with check (
+  exists (select 1 from businesses b where b.id = optimization_runs.business_id and b.user_id = auth.uid())
+);
