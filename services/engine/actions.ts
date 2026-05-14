@@ -13,6 +13,7 @@ import {
   startEngineRun,
   type EngineInputPayload,
 } from "@/services/engine/orchestrator.service";
+import { seedReadyToLaunchRun } from "@/services/engine/dev-seed.service";
 
 export async function startEngineRunAction(
   formData: FormData,
@@ -76,6 +77,42 @@ export async function advanceEngineRunAction(
     step: result.data.current_step,
     status: result.data.status,
   });
+}
+
+/**
+ * Dev-only: seed an engine run that is ready to launch.
+ *
+ *  - Skips Research → Scoring (fills stub-marked but realistic-looking payloads).
+ *  - Inserts 4 landing-page variants that pass all 7 launch QA checks.
+ *  - Marks variant A as the winner and sets winner_asset_id on the run.
+ *  - Leaves current_step at "scoring" so the next "Advance" click runs the
+ *    real Launch System (writes a landing_pages row + emits side-effects).
+ *
+ * Hard-gated by NODE_ENV so production deploys cannot create seeded runs.
+ */
+export async function seedTestLaunchRunAction(): Promise<
+  ServiceResult<{ runId: string }>
+> {
+  if (process.env.NODE_ENV === "production") {
+    return fail("Seed test launch is disabled in production", "forbidden");
+  }
+
+  const user = await requireAuth();
+  const supabase = await createServerSupabaseClient();
+
+  const businesses = createBusinessRepository(supabase);
+  const { data: business } = await businesses.getByOwnerUserId(user.id);
+  if (!business) {
+    redirect("/onboarding?error=Complete+onboarding+first");
+  }
+
+  const result = await seedReadyToLaunchRun(supabase, business.id);
+  if (!result.success) {
+    return fail(result.error);
+  }
+
+  revalidatePath("/dashboard/engine");
+  return ok({ runId: result.data.id });
 }
 
 function pickString(value: FormDataEntryValue | null): string | undefined {

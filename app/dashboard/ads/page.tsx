@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { PlatformCard } from "@/components/ads/platform-card";
 import { PushWinnerForm } from "@/components/ads/push-winner-form";
+import { ZapierConnector } from "@/components/integrations/zapier-connector";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,10 @@ import {
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { createEngineRepository, type AssetRow } from "@/repositories/engine.repository";
 import { getActiveEngineRun } from "@/services/engine/orchestrator.service";
+import {
+  ZAPIER_SUBSCRIBABLE_EVENTS,
+  listZapierRulesForBusiness,
+} from "@/services/integrations/zapier.service";
 
 export const dynamic = "force-dynamic";
 
@@ -91,10 +96,11 @@ export default async function AdsPage() {
   const campaignsRepo = createAdCampaignRepository(supabase);
   const engineRepo = createEngineRepository(supabase);
 
-  const [accountsRes, campaignsRes, activeRunRes] = await Promise.all([
+  const [accountsRes, campaignsRes, activeRunRes, zapierRulesRes] = await Promise.all([
     accountsRepo.listByBusiness(business.id),
     campaignsRepo.listByBusiness(business.id, 50),
     getActiveEngineRun(supabase, business.id),
+    listZapierRulesForBusiness(supabase, business.id),
   ]);
 
   const accountsByPlatform = new Map<string, AdAccountRow>();
@@ -152,6 +158,24 @@ export default async function AdsPage() {
             />
           );
         })}
+      </section>
+
+      {/* Zapier connector */}
+      <section>
+        <ZapierConnector
+          events={ZAPIER_SUBSCRIBABLE_EVENTS.map((e) => ({
+            type: e.type as string,
+            label: e.label,
+            description: e.description,
+          }))}
+          rules={(zapierRulesRes.success ? zapierRulesRes.data : []).map((r) => ({
+            id: r.id,
+            name: r.name,
+            triggerEvent: r.trigger_event,
+            url: r.zapierUrl,
+            enabled: r.enabled,
+          }))}
+        />
       </section>
 
       {/* Push winning creative */}

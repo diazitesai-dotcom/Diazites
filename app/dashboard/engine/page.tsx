@@ -3,11 +3,10 @@ import Link from "next/link";
 import { Activity, Rocket, Sparkles } from "lucide-react";
 
 import { AdvanceRunButton } from "@/components/engine/advance-run-button";
+import { EngineRunCanvas } from "@/components/engine/engine-run-canvas";
 import { EngineStepper } from "@/components/engine/engine-stepper";
-import { LaunchSummary } from "@/components/engine/launch-summary";
-import { RunPayloadPreview } from "@/components/engine/run-payload-preview";
+import { SeedTestLaunchButton } from "@/components/engine/seed-test-launch-button";
 import { StartRunForm } from "@/components/engine/start-run-form";
-import { VariantGallery } from "@/components/engine/variant-gallery";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
@@ -80,6 +79,7 @@ export default async function EnginePage() {
 
   const activeRun = activeResult.success ? activeResult.data : null;
   const history = historyResult.success ? historyResult.data : [];
+  const isDev = process.env.NODE_ENV !== "production";
 
   let assets: AssetRow[] = [];
   if (activeRun) {
@@ -116,10 +116,13 @@ export default async function EnginePage() {
                   Status: {STATUS_LABEL[activeRun.status] ?? activeRun.status}
                 </p>
               </div>
-              <AdvanceRunButton
-                runId={activeRun.id}
-                isFinal={isFinalStep(activeRun.current_step)}
-              />
+              <div className="flex flex-col items-end gap-3">
+                <AdvanceRunButton
+                  runId={activeRun.id}
+                  isFinal={isFinalStep(activeRun.current_step)}
+                />
+                {isDev ? <SeedTestLaunchButton /> : null}
+              </div>
             </div>
             <EngineStepper
               currentStep={activeRun.current_step}
@@ -127,63 +130,11 @@ export default async function EnginePage() {
             />
           </section>
 
-          <LaunchSummary
-            launchPayload={activeRun.launch_payload as Parameters<typeof LaunchSummary>[0]["launchPayload"]}
+          <EngineRunCanvas
+            run={activeRun}
+            assets={assets}
+            businessName={business.name}
           />
-
-          {assets.length > 0 ? (
-            <section className="space-y-4">
-              <div>
-                <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Variant gallery
-                </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Four variants (A/B/C/D) per asset kind. After the Scoring step, the winner of each kind is highlighted.
-                </p>
-              </div>
-              <VariantGallery assets={assets} />
-            </section>
-          ) : null}
-
-          <section className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Step payloads
-            </h3>
-            <div className="grid gap-3 md:grid-cols-2">
-              <RunPayloadPreview
-                title="1. Input"
-                payload={activeRun.input_payload}
-              />
-              <RunPayloadPreview
-                title="2. Research"
-                payload={activeRun.research_payload}
-              />
-              <RunPayloadPreview
-                title="3. Strategy"
-                payload={activeRun.strategy_payload}
-              />
-              <RunPayloadPreview
-                title="4. Funnel Blueprint"
-                payload={activeRun.funnel_payload}
-              />
-              <RunPayloadPreview
-                title="5. Generation"
-                payload={activeRun.generation_payload}
-              />
-              <RunPayloadPreview
-                title="6. Variants"
-                payload={activeRun.variants_payload}
-              />
-              <RunPayloadPreview
-                title="7. Scoring"
-                payload={activeRun.scoring_payload}
-              />
-              <RunPayloadPreview
-                title="8. Launch"
-                payload={activeRun.launch_payload}
-              />
-            </div>
-          </section>
         </>
       ) : (
         <section className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
@@ -197,7 +148,7 @@ export default async function EnginePage() {
                 We&apos;ll walk through the 8 stages — Phase 1 ships the scaffold; Phase 2+ wires real AI generation into each step.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
               <StartRunForm
                 defaults={{
                   websiteUrl: business.website,
@@ -205,6 +156,20 @@ export default async function EnginePage() {
                   budget: business.monthly_budget ?? null,
                 }}
               />
+              {isDev ? (
+                <div className="rounded-xl border border-dashed border-white/[0.08] bg-white/[0.02] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Dev shortcut
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Skip to Stage 7 with a hand-crafted winner so you can test
+                    the Launch System without running the full AI pipeline.
+                  </p>
+                  <div className="mt-3">
+                    <SeedTestLaunchButton />
+                  </div>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 

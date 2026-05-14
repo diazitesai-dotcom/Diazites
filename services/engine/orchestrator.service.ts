@@ -11,6 +11,8 @@ import {
   type EngineRunRow,
   type EngineStep,
 } from "@/repositories/engine.repository";
+import { triggerEvent } from "@/services/events/event-dispatcher";
+import { EVENT_TYPES } from "@/types/backend";
 
 import {
   isOpenAiConfigured,
@@ -555,11 +557,12 @@ export async function advanceEngineRun(
       return fail(updateErr?.message ?? "Failed to finalize launch");
     }
 
-    // Side-effects: approval queue + owner notification. These are best-effort.
+    // Side-effects: approval queue + owner notification + zapier/webhooks.
+    // Best-effort: never let telemetry block the engine.
     try {
-      await emitLaunchSideEffects(client, current, qaFailed);
+      await emitLaunchSideEffects(client, current, qaFailed, launchPayload);
     } catch {
-      // never let telemetry block the engine
+      // swallow
     }
 
     return ok(updated as EngineRunRow);
@@ -628,6 +631,7 @@ async function emitLaunchSideEffects(
   client: SupabaseClient,
   run: EngineRunRow,
   qaFailed: boolean,
+  launchPayload: Record<string, unknown>,
 ): Promise<void> {
   const businesses = createBusinessRepository(client);
   const { data: business } = await businesses.getById(run.business_id);
@@ -655,6 +659,14 @@ async function emitLaunchSideEffects(
         link: "/dashboard/approvals",
       });
     }
+    await triggerEvent(client, {
+      type: EVENT_TYPES.ENGINE_QA_FAILED,
+      businessId: run.business_id,
+      payload: {
+        runId: run.id,
+        currentStep: run.current_step,
+      },
+    });
     return;
   }
 
@@ -668,4 +680,17 @@ async function emitLaunchSideEffects(
       link: "/dashboard/engine",
     });
   }
+
+  await triggerEvent(client, {
+    type: EVENT_TYPES.ENGINE_LAUNCHED,
+    businessId: run.business_id,
+    payload: {
+      runId: run.id,
+      slug: launchPayload.slug,
+      publicUrl: launchPayload.publicUrl,
+      utm: launchPayload.utm,
+      pixels: launchPayload.pixels,
+      qa: launchPayload.qa,
+    },
+  });
 }
