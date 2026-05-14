@@ -4,6 +4,10 @@ import Link from "next/link";
 import { PlatformCard } from "@/components/ads/platform-card";
 import { PushWinnerForm } from "@/components/ads/push-winner-form";
 import { ZapierConnector } from "@/components/integrations/zapier-connector";
+import {
+  ZernioConnector,
+  type ZernioConnectedAccountSummary,
+} from "@/components/integrations/zernio-connector";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +28,10 @@ import {
   ZAPIER_SUBSCRIBABLE_EVENTS,
   listZapierRulesForBusiness,
 } from "@/services/integrations/zapier.service";
+import {
+  getZernioConnection,
+  listZernioAccounts,
+} from "@/services/integrations/zernio.service";
 
 export const dynamic = "force-dynamic";
 
@@ -96,11 +104,12 @@ export default async function AdsPage() {
   const campaignsRepo = createAdCampaignRepository(supabase);
   const engineRepo = createEngineRepository(supabase);
 
-  const [accountsRes, campaignsRes, activeRunRes, zapierRulesRes] = await Promise.all([
+  const [accountsRes, campaignsRes, activeRunRes, zapierRulesRes, zernioConnRes] = await Promise.all([
     accountsRepo.listByBusiness(business.id),
     campaignsRepo.listByBusiness(business.id, 50),
     getActiveEngineRun(supabase, business.id),
     listZapierRulesForBusiness(supabase, business.id),
+    getZernioConnection(supabase, { businessId: business.id }),
   ]);
 
   const accountsByPlatform = new Map<string, AdAccountRow>();
@@ -110,6 +119,22 @@ export default async function AdsPage() {
 
   const campaigns: AdCampaignRow[] = (campaignsRes.data ?? []) as AdCampaignRow[];
   const activeRun = activeRunRes.success ? activeRunRes.data : null;
+
+  const zernioConn = zernioConnRes.success
+    ? zernioConnRes.data
+    : { status: "disconnected" as const, accountCount: 0, lastCheckedAt: null };
+
+  let zernioAccounts: ZernioConnectedAccountSummary[] = [];
+  if (zernioConn.status === "connected") {
+    const accountsList = await listZernioAccounts(supabase, { businessId: business.id });
+    if (accountsList.success) {
+      zernioAccounts = accountsList.data.slice(0, 24).map((a) => ({
+        id: a._id,
+        platform: a.platform,
+        label: a.displayName || a.username || a._id.slice(0, 8),
+      }));
+    }
+  }
 
   // Find a winning ad asset on the active run, if scoring has happened
   let winningAd: AssetRow | null = null;
@@ -158,6 +183,19 @@ export default async function AdsPage() {
             />
           );
         })}
+      </section>
+
+      {/* Zernio connector — broker for 14 social/ads platforms */}
+      <section>
+        <ZernioConnector
+          status={zernioConn.status}
+          accountCount={zernioConn.accountCount}
+          lastCheckedAt={zernioConn.lastCheckedAt}
+          errorMessage={
+            "errorMessage" in zernioConn ? zernioConn.errorMessage : undefined
+          }
+          connectedAccounts={zernioAccounts}
+        />
       </section>
 
       {/* Zapier connector */}

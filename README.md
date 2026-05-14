@@ -48,6 +48,7 @@ Optional (gated at runtime — feature stays in stub mode if blank):
 - **SMS**: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` (or `AGENTMAIL_*`)
 - **Billing**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRICE_*`
 - **Ads OAuth**: `META_*`, `GOOGLE_ADS_*`, `TIKTOK_*`, `MICROSOFT_ADS_*`
+- **Zernio** (multi-platform broker — recommended over per-platform OAuth): `ZERNIO_API_BASE_URL` (optional, defaults to `https://zernio.com/api/v1`), `ZERNIO_API_KEY` (Cursor MCP only — per-tenant keys come from the UI)
 
 If any of these end up in git history (incl. an old version of `.env.example`), rotate them at the provider immediately — that's the only way to truly invalidate the leak.
 
@@ -102,6 +103,24 @@ The sweep is heuristic (no AI cost) so hourly is safe. Each run records a row in
 3. Set `NEXT_PUBLIC_APP_URL` to your production domain.
 4. Verify `vercel.json` cron registered (Project → Settings → Cron Jobs).
 5. Deploy.
+
+## Integrations
+
+### Zernio (multi-platform social + ads broker)
+
+[Zernio](https://zernio.com) brokers 14 social/ads platforms (Meta, Instagram, LinkedIn, TikTok, YouTube, Google Business, X, etc.) behind a single API key. The platform connects via `/dashboard/ads` → **Zernio** card:
+
+1. Connect each social/ads account inside zernio.com.
+2. Create an API key at `zernio.com/dashboard/api-keys`.
+3. Paste the key into the Zernio connector. Diazites verifies it against `GET /accounts` before persisting.
+
+Per-business keys are stored in `ad_accounts.access_token` with `platform = 'zernio'` and isolated by RLS. The Growth Engine&apos;s Launch stage can route the winning ad/post variant through Zernio instead of per-platform stubs.
+
+For Cursor IDE agents, `.cursor/mcp.json` registers the hosted Zernio MCP server at `https://mcp.zernio.com/mcp` using `${ZERNIO_API_KEY}` from your local env.
+
+### Zapier
+
+Generic event-forwarding bridge to 8,000+ apps. Configure on `/dashboard/ads` → **Zapier** card. Subscriptions live in `automation_rules` and fire on lead/engine/campaign events.
 
 ## Notes
 

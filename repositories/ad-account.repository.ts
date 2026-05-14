@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type AdPlatform = "meta" | "google" | "tiktok" | "microsoft";
+export type AdPlatform = "meta" | "google" | "tiktok" | "microsoft" | "zernio";
 export type AdAccountStatus = "disconnected" | "pending" | "connected" | "error";
 
 export type AdAccountRow = {
