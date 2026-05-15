@@ -41,6 +41,7 @@ export function createLeadRepository(client: SupabaseClient) {
           name,
           email,
           phone,
+          address,
           source,
           status,
           notes,
@@ -77,9 +78,20 @@ export function createLeadRepository(client: SupabaseClient) {
 
     async updateFields(leadId: string, input: LeadUpdateInput) {
       const row: Record<string, unknown> = {};
-      if (input.status !== undefined) row.status = input.status;
+      if (input.name !== undefined) row.name = input.name;
+      if (input.phone !== undefined) row.phone = input.phone;
+      if (input.email !== undefined) row.email = input.email;
+      if (input.address !== undefined) row.address = input.address;
+      if (input.roofingNeed !== undefined) row.roofing_need = input.roofingNeed;
+      if (input.timeline !== undefined) row.timeline = input.timeline;
       if (input.notes !== undefined) row.notes = input.notes;
+      if (input.source !== undefined) row.source = input.source;
+      if (input.status !== undefined) row.status = input.status;
       return client.from("leads").update(row).eq("id", leadId).select("*").single();
+    },
+
+    async deleteById(leadId: string) {
+      return client.from("leads").delete().eq("id", leadId);
     },
 
     async countByBusiness(businessId: string, since?: Date) {

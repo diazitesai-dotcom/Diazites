@@ -70,12 +70,18 @@ export async function getLeadsByBusiness(
 export type LeadBoardRow = {
   id: string;
   name: string;
+  phone: string;
+  email: string;
+  address: string;
+  roofingNeed: string;
+  timeline: string;
   source: string;
   campaign: string;
   status: PipelineStatus;
   notes: string;
   score: number;
   scoreBucket: LeadScoreBucket;
+  createdAt: string | null;
 };
 
 export async function getLeadsForBoard(
@@ -132,16 +138,79 @@ export async function getLeadsForBoard(
     return {
       id: r.id,
       name: r.name,
+      phone: r.phone ?? "",
+      email: r.email ?? "",
+      address: (r as { address?: string | null }).address ?? "",
+      roofingNeed: r.roofing_need ?? "",
+      timeline: r.timeline ?? "",
       source: r.source ?? "—",
       campaign: campaignLabel(r.campaigns),
       status: r.status,
       notes: r.notes ?? "",
       score: score.value,
       scoreBucket: score.bucket,
+      createdAt: r.created_at,
     };
   });
 
   return ok(mapped);
+}
+
+export async function deleteLead(
+  client: SupabaseClient,
+  leadId: string,
+  businessId: string,
+  ownerUserId: string,
+): Promise<ServiceResult<void>> {
+  const businesses = createBusinessRepository(client);
+  const { data: business } = await businesses.getById(businessId);
+  if (!business || business.user_id !== ownerUserId) {
+    return fail("Forbidden", "FORBIDDEN");
+  }
+
+  const repo = createLeadRepository(client);
+  const { data: lead } = await repo.getById(leadId);
+  if (!lead || lead.business_id !== businessId) {
+    return fail("Lead not found", "NOT_FOUND");
+  }
+
+  const { error } = await repo.deleteById(leadId);
+  if (error) return fail(error.message);
+  return ok(undefined);
+}
+
+export async function saveLead(
+  client: SupabaseClient,
+  leadId: string,
+  businessId: string,
+  ownerUserId: string,
+  input: LeadUpdateInput,
+): Promise<ServiceResult<unknown>> {
+  const businesses = createBusinessRepository(client);
+  const { data: business } = await businesses.getById(businessId);
+  if (!business || business.user_id !== ownerUserId) {
+    return fail("Forbidden", "FORBIDDEN");
+  }
+
+  const repo = createLeadRepository(client);
+  const { data: lead } = await repo.getById(leadId);
+  if (!lead || lead.business_id !== businessId) {
+    return fail("Lead not found", "NOT_FOUND");
+  }
+
+  const { data, error } = await repo.updateFields(leadId, input);
+  if (error || !data) return fail(error?.message ?? "Save failed");
+
+  if (input.status && input.status !== lead.status) {
+    await triggerEvent(client, {
+      type: EVENT_TYPES.LEAD_STATUS_CHANGED,
+      businessId,
+      leadId,
+      payload: { status: input.status },
+    });
+  }
+
+  return ok(data);
 }
 
 export async function updateLeadStatus(

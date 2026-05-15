@@ -4,6 +4,7 @@ import { Activity, Rocket, Sparkles } from "lucide-react";
 
 import { AdvanceRunButton } from "@/components/engine/advance-run-button";
 import { EngineRunCanvas } from "@/components/engine/engine-run-canvas";
+import { EngineRunHistory } from "@/components/engine/engine-run-history";
 import { EngineStepper } from "@/components/engine/engine-stepper";
 import { SeedTestLaunchButton } from "@/components/engine/seed-test-launch-button";
 import { StartRunForm } from "@/components/engine/start-run-form";
@@ -208,46 +209,8 @@ export default async function EnginePage() {
             <span className="text-xs text-muted-foreground">{history.length} total</span>
           ) : null}
         </div>
-        {history.length === 0 ? (
-          <Card className="border-dashed border-white/[0.08]">
-            <CardContent className="flex items-center gap-3 py-8 text-sm text-muted-foreground">
-              <Activity className="size-4" aria-hidden />
-              No runs yet — start one above to see it here.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-2">
-            {history.map((run) => (
-              <div
-                key={run.id}
-                className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 px-4 py-3 text-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex size-7 items-center justify-center rounded-lg bg-violet-500/15 text-violet-200">
-                    <Rocket className="size-3.5" aria-hidden />
-                  </span>
-                  <div>
-                    <p className="font-medium">
-                      {labelForStep(run.current_step)}
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {STATUS_LABEL[run.status] ?? run.status}
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Started {formatDistanceToNow(new Date(run.created_at), { addSuffix: true })}
-                      {run.launched_at
-                        ? ` · launched ${formatDistanceToNow(new Date(run.launched_at), { addSuffix: true })}`
-                        : ""}
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  Stage {stepIndex(run.current_step) + 1}/{ENGINE_STEPS.length}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+                <EngineRunHistory runs={history} />
+
       </section>
     </div>
   );

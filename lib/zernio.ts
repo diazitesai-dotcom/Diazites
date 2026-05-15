@@ -1,11 +1,11 @@
-/**
+﻿/**
  * Typed REST client for Zernio (https://docs.zernio.com/).
  *
  * Zernio is a broker over 14 social/ads platforms. Each Diazites business
  * stores one Zernio API key (in `ad_accounts.access_token` with
  * `platform = 'zernio'`); we never share keys between businesses.
  *
- * The client is intentionally minimal and stateless — it takes the key
+ * The client is intentionally minimal and stateless ΓÇö it takes the key
  * per-call so the same module works across tenants.
  *
  * Base URL is configurable via `ZERNIO_API_BASE_URL` (default
@@ -212,4 +212,12 @@ export async function listAdCampaigns(
     "/ads/campaigns",
   );
   return data.campaigns ?? [];
+}
+
+export function isZernioConfigured(): boolean {
+  return Boolean(process.env.ZERNIO_API_KEY?.trim());
+}
+
+export function getZernioApiKeyFromEnv(): string {
+  return process.env.ZERNIO_API_KEY?.trim() ?? "";
 }

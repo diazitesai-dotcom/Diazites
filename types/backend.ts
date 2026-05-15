@@ -42,8 +42,15 @@ export interface LeadCreateInput {
 }
 
 export interface LeadUpdateInput {
-  status?: PipelineStatus;
+  name?: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  roofingNeed?: string | null;
+  timeline?: string | null;
   notes?: string | null;
+  source?: string | null;
+  status?: PipelineStatus;
 }
 
 export interface BusinessUpsertInput {

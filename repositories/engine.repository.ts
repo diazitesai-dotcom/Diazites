@@ -272,5 +272,27 @@ export function createEngineRepository(client: SupabaseClient) {
         .eq("run_id", runId)
         .eq("kind", kind);
     },
+
+    async archiveRun(runId: string) {
+      return client
+        .from("growth_engine_runs")
+        .update({ status: "archived" })
+        .eq("id", runId)
+        .select("*")
+        .single();
+    },
+
+    async deleteRun(runId: string) {
+      return client.from("growth_engine_runs").delete().eq("id", runId);
+    },
+
+    async updateInputPayload(runId: string, inputPayload: Record<string, unknown>) {
+      return client
+        .from("growth_engine_runs")
+        .update({ input_payload: inputPayload })
+        .eq("id", runId)
+        .select("*")
+        .single();
+    },
   };
 }

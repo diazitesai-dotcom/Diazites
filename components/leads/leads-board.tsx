@@ -1,8 +1,11 @@
-"use client";
+﻿"use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { Plus } from "lucide-react";
 
 import { updateLeadStatusAction } from "@/actions/leads.actions";
+import { LeadDetailPanel } from "@/components/leads/lead-detail-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,20 +17,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { LeadBoardRow } from "@/services/leads/lead.service";
 import type { PipelineStatus } from "@/types/domain";
-import { bucketClasses, bucketLabel, type LeadScoreBucket } from "@/lib/lead-scoring";
+import { bucketClasses, bucketLabel } from "@/lib/lead-scoring";
 import { cn } from "@/lib/utils";
 
-type Lead = {
-  id: string;
-  name: string;
-  source: string;
-  campaign: string;
-  status: PipelineStatus;
-  notes: string;
-  score: number;
-  scoreBucket: LeadScoreBucket;
-};
+type Lead = LeadBoardRow;
 
 const statuses: PipelineStatus[] = ["new", "contacted", "qualified", "booked", "won", "lost"];
 
@@ -52,12 +47,36 @@ function statusBadgeVariant(
 }
 
 export function LeadsBoard({ leads }: { leads: Lead[] }) {
+  const router = useRouter();
   const [view, setView] = useState<"kanban" | "table">("kanban");
   const [pending, startTransition] = useTransition();
+  const [selected, setSelected] = useState<Lead | null>(null);
+  const [panelMode, setPanelMode] = useState<"view" | "create">("view");
+  const panelOpen = panelMode === "create" || selected !== null;
+
+  function refresh() {
+    router.refresh();
+  }
+
+  function openLead(lead: Lead) {
+    setPanelMode("view");
+    setSelected(lead);
+  }
+
+  function openCreate() {
+    setPanelMode("create");
+    setSelected(null);
+  }
+
+  function closePanel() {
+    setSelected(null);
+    setPanelMode("view");
+  }
 
   function onStatusChange(leadId: string, status: PipelineStatus) {
     startTransition(async () => {
       await updateLeadStatusAction(leadId, status);
+      refresh();
     });
   }
 
@@ -72,9 +91,15 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
 
   return (
     <div className="space-y-6">
-      <p className="text-xs text-muted-foreground">
-        {pending ? "Saving…" : "Table view supports quick stage updates."}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          {pending ? "Savingâ€¦" : "Click a lead to open, edit, or delete."}
+        </p>
+        <Button type="button" variant="gradient" size="sm" className="rounded-xl" onClick={openCreate}>
+          <Plus className="mr-2 size-4" />
+          Add lead
+        </Button>
+      </div>
 
       <div className="flex flex-wrap gap-2 rounded-xl border border-border/60 bg-muted/20 p-1">
         <Button
@@ -122,9 +147,11 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
                   <p className="text-sm text-muted-foreground">No leads in this stage.</p>
                 ) : (
                   column.items.map((lead) => (
-                    <div
+                    <button
                       key={lead.id}
-                      className="group rounded-xl border border-border/60 bg-gradient-to-b from-white/[0.04] to-transparent p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-500/25 hover:shadow-[0_12px_40px_-24px_rgba(99,102,241,0.35)]"
+                      type="button"
+                      onClick={() => openLead(lead)}
+                      className="group w-full rounded-xl border border-border/60 bg-gradient-to-b from-white/[0.04] to-transparent p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-500/25 hover:shadow-[0_12px_40px_-24px_rgba(99,102,241,0.35)]"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -136,7 +163,7 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
                             "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold tabular-nums",
                             bucketClasses(lead.scoreBucket),
                           )}
-                          title={`${bucketLabel(lead.scoreBucket)} · score ${lead.score}`}
+                          title={`${bucketLabel(lead.scoreBucket)} Â· score ${lead.score}`}
                         >
                           {lead.score}
                         </span>
@@ -145,17 +172,12 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
                         <Badge variant="outline" className="text-[11px]">
                           {lead.source}
                         </Badge>
-                        <Badge
-                          variant={statusBadgeVariant(lead.status)}
-                          className="text-[11px] capitalize"
-                        >
+                        <Badge variant={statusBadgeVariant(lead.status)} className="text-[11px] capitalize">
                           {lead.status}
                         </Badge>
                       </div>
-                      <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
-                        {lead.notes}
-                      </p>
-                    </div>
+                      <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{lead.notes}</p>
+                    </button>
                   ))
                 )}
               </CardContent>
@@ -163,7 +185,7 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
           ))}
         </div>
       ) : (
-        <Card className="border-white/[0.06] overflow-hidden">
+        <Card className="overflow-hidden border-white/[0.06]">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -178,41 +200,39 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
               </TableHeader>
               <TableBody>
                 {leads.map((lead) => (
-                <TableRow key={lead.id} className="border-border/60">
-                  <TableCell className="font-medium">{lead.name}</TableCell>
-                  <TableCell>
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums",
-                        bucketClasses(lead.scoreBucket),
-                      )}
-                      title={`${bucketLabel(lead.scoreBucket)} · score ${lead.score}`}
-                    >
-                      {lead.score}
-                      <span className="text-[10px] font-normal opacity-70">
-                        {bucketLabel(lead.scoreBucket)}
+                  <TableRow
+                    key={lead.id}
+                    className="cursor-pointer border-border/60 hover:bg-white/[0.03]"
+                    onClick={() => openLead(lead)}
+                  >
+                    <TableCell className="font-medium">{lead.name}</TableCell>
+                    <TableCell>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums",
+                          bucketClasses(lead.scoreBucket),
+                        )}
+                      >
+                        {lead.score}
                       </span>
-                    </span>
-                  </TableCell>
-                  <TableCell>{lead.source}</TableCell>
-                  <TableCell>{lead.campaign}</TableCell>
-                  <TableCell>
-                    <select
-                      className="rounded-md border border-border/60 bg-background/80 px-2 py-1.5 text-xs capitalize outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
-                      value={lead.status}
-                      disabled={pending}
-                      onChange={(e) =>
-                        onStatusChange(lead.id, e.target.value as PipelineStatus)
-                      }
-                      aria-label={`Status for ${lead.name}`}
-                    >
-                      {statuses.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </TableCell>
+                    </TableCell>
+                    <TableCell>{lead.source}</TableCell>
+                    <TableCell>{lead.campaign}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <select
+                        className="rounded-md border border-border/60 bg-background/80 px-2 py-1.5 text-xs capitalize outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+                        value={lead.status}
+                        disabled={pending}
+                        onChange={(e) => onStatusChange(lead.id, e.target.value as PipelineStatus)}
+                        aria-label={`Status for ${lead.name}`}
+                      >
+                        {statuses.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </TableCell>
                     <TableCell className="max-w-xs whitespace-normal text-muted-foreground">
                       {lead.notes}
                     </TableCell>
@@ -223,6 +243,18 @@ export function LeadsBoard({ leads }: { leads: Lead[] }) {
           </CardContent>
         </Card>
       )}
+
+      {panelOpen ? (
+        <LeadDetailPanel
+          lead={selected}
+          mode={panelMode}
+          onClose={closePanel}
+          onSaved={refresh}
+        />
+      ) : null}
     </div>
   );
 }
+
+
+

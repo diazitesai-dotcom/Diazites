@@ -1,45 +1,29 @@
-import { Bot } from "lucide-react";
-
 import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { activateAgentAction } from "@/services/agents/actions";
-import { AGENTS } from "@/utils/constants";
+import { AgentManagerGrid } from "@/components/agents/agent-manager-grid";
+import { requireAuth } from "@/lib/auth/session";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getUserAgents } from "@/services/agents/agent.service";
 
-export default function AgentManagerPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AgentManagerPage() {
+  const user = await requireAuth();
+  const supabase = await createServerSupabaseClient();
+  const result = await getUserAgents(supabase, user.id);
+  const agents = (result.success ? result.data : []) as Array<{
+    agent_type: string;
+    status: string;
+    activated_at: string | null;
+  }>;
+
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <PageHeader
         eyebrow="Automation"
         title="Agent Manager"
-        description="Activate specialized AI agents for your roofing growth engine. Each agent coordinates with campaigns and CRM stages."
+        description="Activate specialized AI agents for your roofing growth engine. Each agent provisions automation rules you can wire to Zernio, Zapier, or webhooks."
       />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {AGENTS.map((agent) => (
-          <Card key={agent.key} className="border-white/[0.06]">
-            <CardHeader className="space-y-2">
-              <div className="flex items-start justify-between gap-3">
-                <CardTitle className="text-lg">{agent.name}</CardTitle>
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-violet-300">
-                  <Bot className="size-5" aria-hidden />
-                </span>
-              </div>
-              <CardDescription>
-                Status after activation: pending. Setup in progress (24–72 hours).
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form action={activateAgentAction}>
-                <input type="hidden" name="agent_type" value={agent.key} />
-                <Button type="submit" variant="gradient" className="w-full rounded-xl">
-                  Activate agent
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
+      <AgentManagerGrid agents={agents} />
     </div>
   );
 }

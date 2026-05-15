@@ -33,6 +33,15 @@ export function createAutomationRepository(client: SupabaseClient) {
         .order("name", { ascending: true });
     },
 
+    async listForBusinessRaw(businessId: string) {
+      const res = await client
+        .from("automation_rules")
+        .select("*")
+        .eq("business_id", businessId)
+        .order("name", { ascending: true });
+      return (res.data ?? []) as AutomationRuleRow[];
+    },
+
     async create(input: {
       businessId: string;
       name: string;
