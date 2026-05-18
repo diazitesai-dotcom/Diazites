@@ -1,0 +1,22 @@
+# Hourly optimization sweep (Hobby Vercel only allows daily crons in vercel.json).
+# Set GitHub secrets: CRON_SECRET, PRODUCTION_URL (e.g. https://diazitesai.vercel.app)
+
+name: Cron optimize
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call optimize endpoint
+        run: |
+          if [ -z "${{ secrets.CRON_SECRET }}" ] || [ -z "${{ secrets.PRODUCTION_URL }}" ]; then
+            echo "::warning::Set CRON_SECRET and PRODUCTION_URL secrets to enable hourly optimize."
+            exit 0
+          fi
+          curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.PRODUCTION_URL }}/api/cron/optimize"
