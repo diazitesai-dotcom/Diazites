@@ -1,3 +1,4 @@
+import { AgentMcpDocs } from "@/components/agents/agent-mcp-docs";
 import { AgentMcpAccessPanel } from "@/components/agents/agent-mcp-access-panel";
 import { AgentManagerGrid } from "@/components/agents/agent-manager-grid";
 import { PageHeader } from "@/components/layout/page-header";
@@ -42,6 +43,7 @@ export default async function AgentManagerPage() {
         title="Agent Manager"
         description="Activate specialized AI agents for your roofing growth engine. Connect OpenClaw, Hermes, Cursor, and other MCP clients via Zernio or Diazites tokens."
       />
+      <AgentMcpDocs mcpEndpoint={mcpEndpoint} />
       <AgentMcpAccessPanel
         mcpEndpoint={mcpEndpoint}
         connections={mcpConnections}

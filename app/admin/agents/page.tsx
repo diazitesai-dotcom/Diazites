@@ -62,11 +62,11 @@ export default async function AdminAgentsPage() {
             MCP endpoints
           </CardTitle>
           <CardDescription>
-            Tenants generate tokens on{" "}
+            Tenants generate tokens and read setup docs on{" "}
             <Link href="/dashboard/agents" className="text-violet-300 underline">
               Dashboard → Agent Manager
-            </Link>
-            . Admins can revoke connections below.
+            </Link>{" "}
+            (Hermes, OpenClaw, Cursor + Zernio MCP). Admins can revoke connections below.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
