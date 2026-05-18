@@ -1,12 +1,12 @@
-# Triggers a Vercel production deploy via Deploy Hook (no CLI, no ORG_ID).
+# Deploy production on Vercel from GitHub (explicit branch + commit).
 #
-# Setup:
-#   1. Vercel → diazitesai project → Settings → Git → Deploy Hooks
-#   2. Create hook for branch **master** (or main — must match your default branch)
-#   3. GitHub → Settings → Secrets → VERCEL_DEPLOY_HOOK = full hook URL
+# Secrets required:
+#   VERCEL_TOKEN        — https://vercel.com/account/tokens
+#   VERCEL_PROJECT_ID   — Vercel → diazitesai → Settings → General → Project ID
 #
-# IMPORTANT: Do NOT "Re-run" old failed jobs — they use old workflow files.
-#            Use Actions → Deploy to Vercel → Run workflow (pick branch master).
+# Vercel must have GitHub connected: Settings → Git → diazitesai-dotcom/Diazites
+#
+# Do NOT re-run old workflow runs — use Run workflow on latest commit.
 
 name: Deploy to Vercel
 
@@ -25,27 +25,44 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Vercel production deploy
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate secrets
         run: |
-          HOOK="${{ secrets.VERCEL_DEPLOY_HOOK }}"
-          if [ -z "$HOOK" ]; then
-            echo "::error::Missing VERCEL_DEPLOY_HOOK."
-            echo "::error::Vercel → Settings → Git → Deploy Hooks → Copy URL → GitHub secret VERCEL_DEPLOY_HOOK"
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "::error::Missing VERCEL_TOKEN"
             exit 1
           fi
-          echo "POST $HOOK"
-          HTTP=$(curl -sS -o /tmp/vercel-hook.json -w "%{http_code}" -X POST "$HOOK")
-          echo "HTTP $HTTP"
-          cat /tmp/vercel-hook.json || true
-          if [ "$HTTP" -lt 200 ] || [ "$HTTP" -ge 300 ]; then
-            echo "::error::Deploy hook failed (HTTP $HTTP). Re-copy the full URL from Vercel."
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "::error::Missing VERCEL_PROJECT_ID"
             exit 1
           fi
-          echo "Deploy started. Open Vercel → Deployments and wait ~2–3 min."
+
+      - name: Resolve Vercel account/team
+        id: scope
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: node scripts/resolve-vercel-scope.mjs
+
+      - name: Deploy production from GitHub
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ steps.scope.outputs.org_id }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: node scripts/trigger-vercel-git-deploy.mjs
 
       - name: Summary
         run: |
-          echo "### Vercel deploy triggered" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Method:** Deploy hook" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Check [Vercel Deployments](https://vercel.com) for build status." >> "$GITHUB_STEP_SUMMARY"
+          echo "### Vercel production deploy started" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Git ref:** \`${{ github.ref_name }}\` @ \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Deployment:** ${{ steps.deploy.outputs.deployment_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Open Vercel → **Deployments** — new build should appear in ~30s." >> "$GITHUB_STEP_SUMMARY"
