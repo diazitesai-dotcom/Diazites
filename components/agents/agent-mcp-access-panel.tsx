@@ -31,9 +31,14 @@ import {
 type AgentMcpAccessPanelProps = {
   mcpEndpoint: string;
   connections: AgentMcpConnectionPublic[];
+  setupError?: string | null;
 };
 
-export function AgentMcpAccessPanel({ mcpEndpoint, connections }: AgentMcpAccessPanelProps) {
+export function AgentMcpAccessPanel({
+  mcpEndpoint,
+  connections,
+  setupError = null,
+}: AgentMcpAccessPanelProps) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [newToken, setNewToken] = useState<string | null>(null);
@@ -109,8 +114,35 @@ export function AgentMcpAccessPanel({ mcpEndpoint, connections }: AgentMcpAccess
     });
   }
 
+  const needsMigration =
+    setupError &&
+    (/agent_mcp_connections|does not exist|relation/i.test(setupError) ||
+      setupError.includes("schema cache"));
+
   return (
     <section className="space-y-6">
+      {setupError ? (
+        <div
+          className={`rounded-xl border px-4 py-3 text-sm ${
+            needsMigration
+              ? "border-amber-500/40 bg-amber-500/10 text-amber-100"
+              : "border-red-500/40 bg-red-500/10 text-red-100"
+          }`}
+        >
+          {needsMigration ? (
+            <>
+              <p className="font-medium">Database migration required</p>
+              <p className="mt-1 text-xs opacity-90">
+                Run <code className="text-[11px]">014_agent_mcp_connections.sql</code> in
+                Supabase, then refresh. Token generation will work after that.
+              </p>
+            </>
+          ) : (
+            <p>{setupError}</p>
+          )}
+        </div>
+      ) : null}
+
       <Card className="border-white/[0.06]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
