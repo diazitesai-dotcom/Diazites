@@ -35,7 +35,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies
@@ -55,7 +55,8 @@ jobs:
             exit 1
           fi
           if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
-            echo "::error::Missing VERCEL_PROJECT_ID secret"
+            echo "::error::Missing VERCEL_PROJECT_ID — add it in GitHub → Settings → Secrets → Actions."
+            echo "::error::Find it in Vercel → your Diazites project → Settings → General → Project ID (starts with prj_)"
             exit 1
           fi
 
