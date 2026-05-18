@@ -6,6 +6,37 @@ import type { McpClientType, McpScope } from "@/utils/mcp-constants";
 
 export function createMcpConnectionRepository(client: SupabaseClient) {
   return {
+    async listAllActive(limit = 500) {
+      return client
+        .from("agent_mcp_connections")
+        .select(
+          `
+          id,
+          business_id,
+          label,
+          client_type,
+          token_prefix,
+          allowed_agent_types,
+          scopes,
+          zernio_bridge_enabled,
+          last_used_at,
+          created_at,
+          businesses ( id, name )
+        `,
+        )
+        .is("revoked_at", null)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+    },
+
+    async revokeById(connectionId: string) {
+      return client
+        .from("agent_mcp_connections")
+        .update({ revoked_at: new Date().toISOString() })
+        .eq("id", connectionId)
+        .is("revoked_at", null);
+    },
+
     async listByBusiness(businessId: string) {
       return client
         .from("agent_mcp_connections")

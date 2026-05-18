@@ -61,6 +61,7 @@ const DASHBOARD_NAV: NavItem[] = [
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: Shield },
+  { href: "/admin/agents", label: "Agents & MCP", icon: Bot },
   { href: "/admin/usage", label: "AI Usage", icon: Zap },
   { href: "/admin/audit", label: "Audit Log", icon: ShieldCheck },
   { href: "/admin/templates", label: "Templates", icon: FileText },

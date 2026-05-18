@@ -60,7 +60,7 @@ export default async function AdminPage() {
 
   const modules: [string, string][] = [
     ["Client Management", "#"],
-    ["Agent Management", "#"],
+    ["Agents & MCP", "/admin/agents"],
     ["Campaigns", "#"],
     ["Leads", "#"],
     ["AI Automation", "#"],
