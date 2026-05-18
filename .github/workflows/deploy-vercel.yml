@@ -1,0 +1,80 @@
+# Deploy to Vercel on every push to master/main (bypasses broken Git auto-deploy).
+#
+# Required GitHub repo secrets (Settings → Secrets and variables → Actions):
+#   VERCEL_TOKEN       — https://vercel.com/account/tokens (create token, full access)
+#   VERCEL_ORG_ID      — Vercel → Team Settings → General → Team ID
+#                        (personal account: Account Settings → General → User ID)
+#   VERCEL_PROJECT_ID  — Project → Settings → General → Project ID
+#
+# After adding secrets, push to master or run this workflow manually (Actions tab).
+
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: true
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "::error::Missing VERCEL_TOKEN secret"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
+            echo "::error::Missing VERCEL_ORG_ID secret"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "::error::Missing VERCEL_PROJECT_ID secret"
+            exit 1
+          fi
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to production
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed to $url"
+
+      - name: Summary
+        run: |
+          echo "### Production deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **URL:** ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
