@@ -1,0 +1,426 @@
+"use client";
+
+import { useMemo, useState, useTransition } from "react";
+import { Copy, KeyRound, Link2, Plug, Shield } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  createMcpConnectionAction,
+  revokeMcpConnectionAction,
+  updateMcpConnectionAccessAction,
+} from "@/services/mcp/actions";
+import type { AgentMcpConnectionPublic } from "@/types/mcp";
+import type { AgentType } from "@/types/domain";
+import {
+  AGENT_TYPE_OPTIONS,
+  MCP_CLIENT_TYPES,
+  MCP_SCOPES,
+  ZERNIO_MCP_URL,
+  type McpScope,
+} from "@/utils/mcp-constants";
+
+type AgentMcpAccessPanelProps = {
+  mcpEndpoint: string;
+  connections: AgentMcpConnectionPublic[];
+};
+
+export function AgentMcpAccessPanel({ mcpEndpoint, connections }: AgentMcpAccessPanelProps) {
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  const [newToken, setNewToken] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const zernioCursorConfig = useMemo(
+    () =>
+      JSON.stringify(
+        {
+          zernio: {
+            type: "http",
+            url: ZERNIO_MCP_URL,
+            headers: { Authorization: "Bearer YOUR_ZERNIO_API_KEY" },
+          },
+        },
+        null,
+        2,
+      ),
+    [],
+  );
+
+  const diazitesClientConfig = useMemo(
+    () =>
+      JSON.stringify(
+        {
+          diazites: {
+            type: "http",
+            url: mcpEndpoint,
+            headers: { Authorization: "Bearer YOUR_DIAZ_MCP_TOKEN" },
+          },
+        },
+        null,
+        2,
+      ),
+    [mcpEndpoint],
+  );
+
+  function copyText(text: string) {
+    void navigator.clipboard.writeText(text);
+    setMessage("Copied to clipboard.");
+  }
+
+  function createConnection(formData: FormData) {
+    setMessage(null);
+    setNewToken(null);
+    startTransition(async () => {
+      const res = await createMcpConnectionAction(formData);
+      if (!res.success) {
+        setMessage(res.error);
+        return;
+      }
+      setNewToken(res.data.token);
+      setMessage(
+        `Connection "${res.data.connection.label}" created. Copy the token now — it won't be shown again.`,
+      );
+    });
+  }
+
+  function revoke(id: string) {
+    setMessage(null);
+    startTransition(async () => {
+      const res = await revokeMcpConnectionAction(id);
+      setMessage(res.success ? "Connection revoked." : res.error);
+    });
+  }
+
+  function saveAccess(formData: FormData) {
+    setMessage(null);
+    startTransition(async () => {
+      const res = await updateMcpConnectionAccessAction(formData);
+      setMessage(res.success ? "Access settings updated." : res.error);
+      if (res.success) setEditingId(null);
+    });
+  }
+
+  return (
+    <section className="space-y-6">
+      <Card className="border-white/[0.06]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Plug className="size-4 text-cyan-300" aria-hidden />
+            Zernio MCP (hosted)
+          </CardTitle>
+          <CardDescription>
+            Connect OpenClaw, Hermes, Cursor, Claude, or Windsurf directly to Zernio for
+            cross-posting, ads, inbox, and sequences across 14 platforms. Get an API key at{" "}
+            <a
+              href="https://zernio.com/dashboard/api-keys"
+              className="text-violet-300 underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              zernio.com/dashboard/api-keys
+            </a>
+            .
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <pre className="overflow-x-auto rounded-xl border border-white/10 bg-black/40 p-4 text-xs text-muted-foreground">
+            {zernioCursorConfig}
+          </pre>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-xl"
+            onClick={() => copyText(zernioCursorConfig)}
+          >
+            <Copy className="mr-2 size-3.5" aria-hidden />
+            Copy Zernio MCP config
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-white/[0.06]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Link2 className="size-4 text-violet-300" aria-hidden />
+            Diazites MCP (this workspace)
+          </CardTitle>
+          <CardDescription>
+            Let external agents read your Diazites agents and leads and optionally bridge to
+            your per-business Zernio key. Endpoint:{" "}
+            <code className="text-xs">{mcpEndpoint}</code>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <pre className="overflow-x-auto rounded-xl border border-white/10 bg-black/40 p-4 text-xs text-muted-foreground">
+            {diazitesClientConfig}
+          </pre>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-xl"
+            onClick={() => copyText(diazitesClientConfig)}
+          >
+            <Copy className="mr-2 size-3.5" aria-hidden />
+            Copy Diazites MCP config
+          </Button>
+
+          {newToken ? (
+            <TokenAlert body={newToken} onCopy={() => copyText(newToken)} />
+          ) : null}
+
+          <form
+            action={createConnection}
+            className="space-y-4 rounded-xl border border-border/60 bg-muted/10 p-4"
+          >
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <KeyRound className="size-4 text-amber-300" aria-hidden />
+              Generate agent connection token
+            </p>
+            <Field label="Label" name="label" placeholder="OpenClaw production" required />
+            <ClientTypeSelect />
+            <AgentAccessCheckboxes />
+            <ScopeCheckboxes />
+            <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border/50 px-3 py-2 text-sm">
+              <span>Enable Zernio bridge (uses Zernio key from Ads)</span>
+              <input type="checkbox" name="zernio_bridge" className="rounded border-border" />
+            </label>
+            <Button type="submit" variant="gradient" className="rounded-xl" disabled={pending}>
+              {pending ? "Creating…" : "Generate token"}
+            </Button>
+          </form>
+
+          {connections.length > 0 ? (
+            <ul className="space-y-3">
+              {connections.map((conn) => (
+                <li
+                  key={conn.id}
+                  className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
+                >
+                  <ConnectionRow
+                    conn={conn}
+                    editing={editingId === conn.id}
+                    pending={pending}
+                    onEdit={() => setEditingId(conn.id)}
+                    onCancel={() => setEditingId(null)}
+                    onRevoke={() => revoke(conn.id)}
+                    onSave={saveAccess}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No active MCP connections yet.</p>
+          )}
+
+          {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+function AgentAccessCheckboxes({
+  defaultChecked,
+}: {
+  defaultChecked?: AgentType[];
+}) {
+  const defaults = new Set(defaultChecked ?? AGENT_TYPE_OPTIONS.map((a) => a.key));
+  return (
+    <fieldset className="space-y-2">
+      <legend className="flex items-center gap-2 text-sm font-medium">
+        <Shield className="size-3.5 text-violet-300" aria-hidden />
+        Agent access
+      </legend>
+      <CheckboxGrid
+        name="allowed_agent_types"
+        options={AGENT_TYPE_OPTIONS.map((a) => ({ value: a.key, label: a.label }))}
+        defaultChecked={defaults}
+      />
+    </fieldset>
+  );
+}
+
+function ScopeCheckboxes({ defaultChecked }: { defaultChecked?: McpScope[] }) {
+  const defaults = new Set(
+    defaultChecked ?? (["agents:read", "leads:read"] as McpScope[]),
+  );
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-medium">API scopes</legend>
+      <CheckboxGrid
+        name="scopes"
+        options={MCP_SCOPES.map((s) => ({ value: s.key, label: s.label }))}
+        defaultChecked={defaults}
+      />
+    </fieldset>
+  );
+}
+
+function ConnectionRow(props: {
+  conn: AgentMcpConnectionPublic;
+  editing: boolean;
+  pending: boolean;
+  onEdit: () => void;
+  onCancel: () => void;
+  onRevoke: () => void;
+  onSave: (fd: FormData) => void;
+}) {
+  const { conn, editing, pending, onEdit, onCancel, onRevoke, onSave } = props;
+  const clientLabel =
+    MCP_CLIENT_TYPES.find((c) => c.key === conn.client_type)?.name ?? conn.client_type;
+
+  if (editing) {
+    return (
+      <form action={onSave} className="space-y-3">
+        <input type="hidden" name="connection_id" value={conn.id} />
+        <p className="font-medium">{conn.label}</p>
+        <AgentAccessCheckboxes defaultChecked={conn.allowed_agent_types} />
+        <ScopeCheckboxes defaultChecked={conn.scopes} />
+        <ZernioBridgeSwitch id={conn.id} defaultChecked={conn.zernio_bridge_enabled} />
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={pending}>
+            Save access
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-2">
+      <div>
+        <p className="font-medium">{conn.label}</p>
+        <p className="text-xs text-muted-foreground">
+          {clientLabel} · {conn.token_prefix} · {conn.allowed_agent_types.length} agent(s) ·{" "}
+          {conn.zernio_bridge_enabled ? "Zernio bridge on" : "Zernio bridge off"}
+          {conn.last_used_at
+            ? ` · last used ${new Date(conn.last_used_at).toLocaleDateString()}`
+            : ""}
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={onEdit}>
+          Access
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={onRevoke} disabled={pending}>
+          Revoke
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ZernioBridgeSwitch({
+  id,
+  defaultChecked,
+}: {
+  id: string;
+  defaultChecked: boolean;
+}) {
+  return (
+    <label
+      htmlFor={`zernio_bridge_${id}`}
+      className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border/50 px-3 py-2 text-sm"
+    >
+      <span>Zernio bridge</span>
+      <input
+        id={`zernio_bridge_${id}`}
+        type="checkbox"
+        name="zernio_bridge"
+        defaultChecked={defaultChecked}
+        className="rounded border-border"
+      />
+    </label>
+  );
+}
+
+function CheckboxGrid(props: {
+  name: string;
+  options: Array<{ value: string; label: string }>;
+  defaultChecked: Set<string>;
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {props.options.map((opt) => (
+        <label
+          key={opt.value}
+          className="flex cursor-pointer items-center gap-2 rounded-lg border border-border/40 px-3 py-2 text-sm"
+        >
+          <input
+            type="checkbox"
+            name={props.name}
+            value={opt.value}
+            defaultChecked={props.defaultChecked.has(opt.value)}
+            className="rounded border-border"
+          />
+          {opt.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function Field(props: {
+  label: string;
+  name: string;
+  placeholder?: string;
+  required?: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={props.name}>{props.label}</Label>
+      <Input
+        id={props.name}
+        name={props.name}
+        placeholder={props.placeholder}
+        required={props.required}
+        className="rounded-xl"
+      />
+    </div>
+  );
+}
+
+function ClientTypeSelect() {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="client_type">Client type</Label>
+      <select
+        id="client_type"
+        name="client_type"
+        className="flex h-10 w-full rounded-xl border border-input bg-background px-3 text-sm"
+      >
+        {MCP_CLIENT_TYPES.map((c) => (
+          <option key={c.key} value={c.key}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function TokenAlert({ body, onCopy }: { body: string; onCopy: () => void }) {
+  return (
+    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+      <p className="text-sm font-medium text-amber-200">New MCP token (shown once)</p>
+      <code className="mt-2 block break-all text-xs">{body}</code>
+      <Button type="button" size="sm" variant="outline" className="mt-3 rounded-xl" onClick={onCopy}>
+        Copy token
+      </Button>
+    </div>
+  );
+}
