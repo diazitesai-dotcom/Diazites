@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getPublicAppUrl } from "@/lib/env";
 import { extractBearerToken } from "@/lib/mcp/token";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { authenticateMcpRequest } from "@/services/mcp/mcp-connection.service";
@@ -43,11 +44,14 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
+  const baseUrl = getPublicAppUrl();
   return NextResponse.json({
     name: "diazites-mcp",
     version: "1.0.0",
     transport: "http",
+    endpoint: `${baseUrl}/api/mcp`,
     auth: "Authorization: Bearer diaz_mcp_<token>",
-    docs: "Create tokens at /dashboard/agents → Agent MCP access",
+    docsUrl: `${baseUrl}/docs/agents`,
+    tokens: `${baseUrl}/dashboard/agents`,
   });
 }

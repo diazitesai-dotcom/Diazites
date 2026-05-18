@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 const links = [
   { href: "#platform", label: "Platform" },
   { href: "#modules", label: "Modules" },
+  { href: "/docs/agents", label: "Agent API" },
   { href: "/contact", label: "Contact" },
 ];
 

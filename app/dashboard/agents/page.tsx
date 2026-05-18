@@ -1,7 +1,10 @@
+import Link from "next/link";
+
 import { AgentMcpDocs } from "@/components/agents/agent-mcp-docs";
 import { AgentMcpAccessPanel } from "@/components/agents/agent-mcp-access-panel";
 import { AgentManagerGrid } from "@/components/agents/agent-manager-grid";
 import { PageHeader } from "@/components/layout/page-header";
+import { buttonVariants } from "@/components/ui/button";
 import { getPublicAppUrl } from "@/lib/env";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -43,6 +46,18 @@ export default async function AgentManagerPage() {
         title="Agent Manager"
         description="Activate specialized AI agents for your roofing growth engine. Connect OpenClaw, Hermes, Cursor, and other MCP clients via Zernio or Diazites tokens."
       />
+      <p className="-mt-6 text-sm text-muted-foreground">
+        Full setup guide for connecting agents to this site:{" "}
+        <Link href="/docs/agents" className="text-violet-300 underline">
+          /docs/agents
+        </Link>
+        <Link
+          href="/docs/agents"
+          className={buttonVariants({ variant: "outline", size: "sm", className: "ml-3 rounded-xl" })}
+        >
+          Open agent connection docs
+        </Link>
+      </p>
       <AgentMcpDocs mcpEndpoint={mcpEndpoint} />
       <AgentMcpAccessPanel
         mcpEndpoint={mcpEndpoint}

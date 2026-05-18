@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { Copy, KeyRound, Link2, Plug, Shield } from "lucide-react";
 
@@ -150,7 +151,11 @@ export function AgentMcpAccessPanel({
             Zernio MCP (hosted)
           </CardTitle>
           <CardDescription>
-            Connect OpenClaw, Hermes, Cursor, Claude, or Windsurf directly to Zernio for
+            Site connection docs:{" "}
+            <Link href="/docs/agents" className="text-violet-300 underline">
+              /docs/agents
+            </Link>
+            . Connect OpenClaw, Hermes, Cursor, Claude, or Windsurf directly to Zernio for
             cross-posting, ads, inbox, and sequences across 14 platforms. Get an API key at{" "}
             <a
               href="https://zernio.com/dashboard/api-keys"
@@ -188,8 +193,11 @@ export function AgentMcpAccessPanel({
           </CardTitle>
           <CardDescription>
             Let external agents read your Diazites agents and leads and optionally bridge to
-            your per-business Zernio key. Endpoint:{" "}
-            <code className="text-xs">{mcpEndpoint}</code>
+            your per-business Zernio key.{" "}
+            <Link href="/docs/agents" className="text-violet-300 underline">
+              Full connection docs
+            </Link>
+            . Endpoint: <code className="text-xs">{mcpEndpoint}</code>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

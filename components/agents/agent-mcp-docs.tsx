@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BookOpen, Copy, ExternalLink } from "lucide-react";
 
@@ -47,10 +48,11 @@ export function AgentMcpDocs({ mcpEndpoint }: AgentMcpDocsProps) {
           Connect external agents (docs)
         </CardTitle>
         <CardDescription>
-          Wire Hermes, OpenClaw, Cursor, or Claude to{" "}
-          <strong className="font-medium text-foreground">Zernio MCP</strong> for cross-posting
-          and ads, and optionally to <strong className="font-medium text-foreground">Diazites MCP</strong>{" "}
-          for leads and agent status.
+          For connecting agents <strong className="font-medium text-foreground">to this Diazites site</strong>, see{" "}
+          <Link href="/docs/agents" className="text-violet-300 underline">
+            Connect your agent to Diazites
+          </Link>
+          . Below: quick snippets for Zernio MCP and optional Diazites MCP (leads, agent status).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

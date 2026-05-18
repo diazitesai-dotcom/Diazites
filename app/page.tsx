@@ -26,6 +26,12 @@ export default function Home() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
+              href="/docs/agents"
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
+            >
+              Agent API docs
+            </Link>
+            <Link
               href="/login"
               className={buttonVariants({ variant: "ghost", size: "sm" })}
             >
