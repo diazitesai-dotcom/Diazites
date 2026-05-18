@@ -1,14 +1,13 @@
-# Deploy to Vercel on every push to master/main.
+# Deploy to Vercel on push to master/main.
 #
-# Required GitHub secrets (Settings → Secrets and variables → Actions):
-#   VERCEL_TOKEN        — https://vercel.com/account/tokens
-#   VERCEL_PROJECT_ID   — Vercel → Diazites project → Settings → General → Project ID (prj_…)
-#   VERCEL_ORG_ID       — MUST match the account/team that OWNS the project:
-#                         • Team project  → Team Settings → General → Team ID (team_…)
-#                         • Personal/hobby → Account Settings → General → User ID
-#                         If deploy fails with "Project not found", your ORG_ID is usually wrong.
+# OPTION A — Deploy Hook (simplest, add one secret):
+#   Vercel → Project → Settings → Git → Deploy Hooks → Create (branch: master)
+#   GitHub secret: VERCEL_DEPLOY_HOOK = hook URL
 #
-# Optional: set VERCEL_TEAM_SLUG to your team slug (e.g. diazitesai-dotcom) if you use a team.
+# OPTION B — CLI (if no hook or hook fails):
+#   VERCEL_TOKEN  — https://vercel.com/account/tokens
+#   VERCEL_PROJECT_ID — project Settings → General (prj_…)
+#   ORG_ID is auto-discovered (VERCEL_ORG_ID secret is optional/ignored)
 
 name: Deploy to Vercel
 
@@ -27,104 +26,99 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Deploy via Vercel hook (if configured)
+        id: hook
+        continue-on-error: true
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "No VERCEL_DEPLOY_HOOK — will use CLI."
+            exit 1
+          fi
+          echo "Triggering deploy hook…"
+          curl -fsS -X POST "$HOOK"
+          echo "Hook accepted. See Vercel → Deployments."
+
       - name: Checkout
+        if: steps.hook.outcome != 'success'
         uses: actions/checkout@v4
 
       - name: Setup Node.js
+        if: steps.hook.outcome != 'success'
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
 
       - name: Install dependencies
+        if: steps.hook.outcome != 'success'
         run: npm ci
 
       - name: Install Vercel CLI
+        if: steps.hook.outcome != 'success'
         run: npm install -g vercel@latest
 
-      - name: Validate secrets
+      - name: Validate CLI secrets
+        if: steps.hook.outcome != 'success'
         run: |
-          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then echo "::error::Missing VERCEL_TOKEN"; exit 1; fi
-          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then echo "::error::Missing VERCEL_PROJECT_ID"; exit 1; fi
-          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then echo "::error::Missing VERCEL_ORG_ID"; exit 1; fi
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "::error::Set VERCEL_TOKEN or VERCEL_DEPLOY_HOOK"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "::error::Set VERCEL_PROJECT_ID (prj_… from Vercel project settings)"
+            exit 1
+          fi
 
-      - name: Resolve Vercel scope (team vs personal)
-        id: vercel_scope
+      - name: Resolve Vercel scope (auto)
+        id: scope
+        if: steps.hook.outcome != 'success'
         env:
-          TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-        run: |
-          set -euo pipefail
-          PROJECT_ID=$(echo -n "$PROJECT_ID" | tr -d '[:space:]')
-          ORG_ID=$(echo -n "$ORG_ID" | tr -d '[:space:]')
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: node scripts/resolve-vercel-scope.mjs
 
-          echo "Checking project with teamId=${ORG_ID}..."
-          CODE=$(curl -sS -o /tmp/proj.json -w "%{http_code}" \
-            -H "Authorization: Bearer $TOKEN" \
-            "https://api.vercel.com/v9/projects/${PROJECT_ID}?teamId=${ORG_ID}")
-
-          if [ "$CODE" = "200" ]; then
-            echo "team_id=${ORG_ID}" >> "$GITHUB_OUTPUT"
-            echo "scope_mode=team" >> "$GITHUB_OUTPUT"
-            echo "Project found under team scope."
-            exit 0
-          fi
-
-          echo "Team scope failed (HTTP ${CODE}). Trying personal account..."
-          CODE=$(curl -sS -o /tmp/proj.json -w "%{http_code}" \
-            -H "Authorization: Bearer $TOKEN" \
-            "https://api.vercel.com/v9/projects/${PROJECT_ID}")
-
-          if [ "$CODE" = "200" ]; then
-            ACCOUNT_ID=$(node -e "const j=require('/tmp/proj.json'); process.stdout.write(j.accountId||'')")
-            echo "team_id=${ACCOUNT_ID}" >> "$GITHUB_OUTPUT"
-            echo "scope_mode=personal" >> "$GITHUB_OUTPUT"
-            echo "::warning::Project is on your personal account, not team ${ORG_ID}. Set VERCEL_ORG_ID to User ID: ${ACCOUNT_ID}"
-            exit 0
-          fi
-
-          echo "::error::Project not found with token. Response:"
-          cat /tmp/proj.json || true
-          echo ""
-          echo "::error::Fix VERCEL_PROJECT_ID (prj_…) and VERCEL_ORG_ID (team_… or User ID for hobby)."
-          exit 1
-
-      - name: List projects (debug)
-        if: failure()
-        continue-on-error: true
-        run: |
-          vercel whoami --token="${{ secrets.VERCEL_TOKEN }}"
-          vercel project ls --token="${{ secrets.VERCEL_TOKEN }}" || true
-
-      - name: Link Vercel project
+      - name: Link project
+        if: steps.hook.outcome != 'success'
         run: |
           mkdir -p .vercel
-          TEAM_ID="${{ steps.vercel_scope.outputs.team_id }}"
-          echo "{\"orgId\":\"${TEAM_ID}\",\"projectId\":\"${{ secrets.VERCEL_PROJECT_ID }}\"}" > .vercel/project.json
-          cat .vercel/project.json
-
-      - name: Deploy to production (remote build)
-        id: deploy
+          node -e "
+            const fs = require('fs');
+            fs.writeFileSync('.vercel/project.json', JSON.stringify({
+              orgId: process.env.ORG_ID,
+              projectId: process.env.PROJECT_ID
+            }));
+          "
         env:
-          VERCEL_ORG_ID: ${{ steps.vercel_scope.outputs.team_id }}
+          ORG_ID: ${{ steps.scope.outputs.org_id }}
+          PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy via CLI
+        id: cli
+        if: steps.hook.outcome != 'success'
+        env:
+          VERCEL_ORG_ID: ${{ steps.scope.outputs.org_id }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           set -euo pipefail
           ARGS=(deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}")
-          if [ -n "${{ secrets.VERCEL_TEAM_SLUG }}" ]; then
-            ARGS+=(--scope "${{ secrets.VERCEL_TEAM_SLUG }}")
-          elif [ "${{ steps.vercel_scope.outputs.scope_mode }}" = "team" ]; then
-            ARGS+=(--scope "${{ secrets.VERCEL_ORG_ID }}")
+          SLUG="${{ steps.scope.outputs.team_slug }}"
+          if [ -n "$SLUG" ]; then
+            ARGS+=(--scope "$SLUG")
           fi
           url=$(vercel "${ARGS[@]}")
           echo "url=$url" >> "$GITHUB_OUTPUT"
-          echo "Deployed to $url"
+          echo "Deployed: $url"
 
       - name: Summary
+        if: always()
         run: |
-          echo "### Production deployment" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **URL:** ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Scope:** ${{ steps.vercel_scope.outputs.scope_mode }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Vercel deploy" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.hook.outcome }}" = "success" ]; then
+            echo "- **Method:** Deploy hook" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- **Method:** CLI (${{ steps.scope.outputs.scope_mode }})" >> "$GITHUB_STEP_SUMMARY"
+            echo "- **URL:** ${{ steps.cli.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
