@@ -256,6 +256,14 @@ export function createEngineRepository(client: SupabaseClient) {
         .order("variant_label", { ascending: true });
     },
 
+    async deleteAssetsForRunByKind(runId: string, kind: AssetKind) {
+      return client.from("assets").delete().eq("run_id", runId).eq("kind", kind);
+    },
+
+    async deleteAllAssetsForRun(runId: string) {
+      return client.from("assets").delete().eq("run_id", runId);
+    },
+
     async markWinner(assetId: string) {
       return client
         .from("assets")

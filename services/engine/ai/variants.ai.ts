@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-import type { ServiceResult } from "@/lib/result";
+import { ok, type ServiceResult } from "@/lib/result";
 import type { EngineInputPayload } from "@/services/engine/orchestrator.service";
 
 import { callJsonResponses } from "./openai-client";
@@ -161,4 +161,70 @@ Rules:
     system:
       "You produce four genuinely distinct, ready-to-test ad / landing-page / email / headline variants per kind.",
   });
+}
+
+const KIND_SCHEMAS: Record<
+  Phase3AssetKind,
+  z.ZodObject<Record<VariantLabel, z.ZodTypeAny>>
+> = {
+  landing_page: VariantQuadSchema(LandingPageVariantSchema),
+  ad: VariantQuadSchema(AdVariantSchema),
+  email: VariantQuadSchema(EmailVariantSchema),
+  headline: VariantQuadSchema(HeadlineVariantSchema),
+};
+
+/** Regenerate A/B/C/D for a single asset kind (landing, ad, email, headline). */
+export async function runVariantsStepForKind(
+  args: {
+    supabase: SupabaseClient;
+    businessId: string;
+    runId: string;
+    kind: Phase3AssetKind;
+    input: EngineInputPayload;
+    research: EngineResearch;
+    strategy: EngineStrategy;
+    funnel: EngineFunnel;
+    plan: EngineGenerationPlan;
+  },
+): Promise<ServiceResult<Record<VariantLabel, Record<string, unknown>>>> {
+  const { kind, input, research, strategy, funnel, plan } = args;
+  const quadSchema = KIND_SCHEMAS[kind];
+  const kindLabel =
+    kind === "landing_page"
+      ? "landing page"
+      : kind === "ad"
+        ? "paid ad"
+        : kind;
+
+  const prompt = `Act as a senior conversion copywriter.
+Regenerate ONLY the "${kind}" asset kind (variants A, B, C, D) for an existing campaign.
+Each variant must follow its assigned theme distinctly.
+
+Campaign context:
+- Goal / offer: ${input.goal ?? "(not provided)"}
+- Location: ${input.location ?? "(not provided)"}
+- Audience: ${research.audienceProfile}
+- Offer headline: ${strategy.offer.headline}
+- Primary CTA: ${strategy.cta.primary}
+- Funnel summary: ${funnel.summary}
+
+Creative direction: ${plan.creativeDirection}
+Variant themes — A: ${plan.variantThemes.A}, B: ${plan.variantThemes.B}, C: ${plan.variantThemes.C}, D: ${plan.variantThemes.D}
+Must include: ${plan.mustInclude.join("; ") || "(none)"}
+Do not say: ${plan.doNotSay.join("; ") || "(none)"}
+
+Return JSON with EXACTLY keys A, B, C, D (each variant object for ${kindLabel}).`;
+
+  const result = await callJsonResponses({
+    supabase: args.supabase,
+    businessId: args.businessId,
+    runId: args.runId,
+    purpose: `engine.variants.${kind}`,
+    schema: quadSchema,
+    prompt,
+    system: `You regenerate four distinct ${kindLabel} variants only.`,
+  });
+
+  if (!result.success) return result;
+  return ok(result.data as Record<VariantLabel, Record<string, unknown>>);
 }

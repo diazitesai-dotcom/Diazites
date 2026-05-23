@@ -50,6 +50,11 @@ export function isFinalStep(step: EngineStep): boolean {
   return step === "launch";
 }
 
+/** Stage 8 — user can launch from scoring (one click) or finalize when already on launch. */
+export function isLaunchReadyStep(step: EngineStep): boolean {
+  return step === "scoring" || step === "launch";
+}
+
 export type EngineInputPayload = {
   websiteUrl?: string;
   niche?: string;
@@ -467,32 +472,20 @@ export async function advanceEngineRun(
   const target = nextStep(current.current_step);
 
   if (!target) {
+    if (current.current_step !== "launch") {
+      return fail("Run is already complete", "invalid_state");
+    }
+    const existing = current.launch_payload;
+    if (existing && typeof existing === "object") {
+      return finalizeEngineLaunch(client, current, existing as Record<string, unknown>);
+    }
     const launchPayload = await STEP_HANDLERS.launch({ supabase: client, run: current });
     await engine.updateStepPayload(runId, "launch", launchPayload);
-
-    const launchStatus = (launchPayload as { status?: string }).status;
-    const qaFailed = launchStatus === "qa_failed";
-
-    const { data: updated, error: updateErr } = await engine.updateStatus(
-      runId,
-      qaFailed ? "needs_approval" : "launched",
-      qaFailed
-        ? { failedReason: "Launch QA checks did not pass" }
-        : { launchedAt: new Date().toISOString() },
-    );
-    if (updateErr || !updated) {
-      return fail(updateErr?.message ?? "Failed to finalize launch");
+    const { data: refreshed, error: refreshErr } = await engine.getRunById(runId);
+    if (refreshErr || !refreshed) {
+      return fail(refreshErr?.message ?? "Failed to refresh run after launch");
     }
-
-    // Side-effects: approval queue + owner notification + zapier/webhooks.
-    // Best-effort: never let telemetry block the engine.
-    try {
-      await emitLaunchSideEffects(client, current, qaFailed, launchPayload);
-    } catch {
-      // swallow
-    }
-
-    return ok(updated as EngineRunRow);
+    return finalizeEngineLaunch(client, refreshed as EngineRunRow, launchPayload);
   }
 
   const handler = STEP_HANDLERS[target];
@@ -513,7 +506,79 @@ export async function advanceEngineRun(
     return fail(stepErr?.message ?? "Failed to advance step");
   }
 
+  if (target === "launch") {
+    return finalizeEngineLaunch(client, advanced as EngineRunRow, payload);
+  }
+
   return ok(advanced as EngineRunRow);
+}
+
+/**
+ * Run every remaining stage until launch completes (max 9 advances).
+ */
+export async function runFullEnginePipeline(
+  client: SupabaseClient,
+  runId: string,
+): Promise<ServiceResult<EngineRunRow>> {
+  const maxPasses = 9;
+  let last: EngineRunRow | null = null;
+
+  for (let i = 0; i < maxPasses; i++) {
+    const engine = createEngineRepository(client);
+    const { data: runData, error } = await engine.getRunById(runId);
+    if (error || !runData) return fail(error?.message ?? "Run not found", "not_found");
+
+    const run = runData as EngineRunRow;
+    if (run.status === "launched" || run.status === "needs_approval" || run.status === "failed") {
+      return ok(run);
+    }
+    if (run.status !== "running") {
+      return fail(`Run is ${run.status}; cannot continue`, "invalid_state");
+    }
+
+    const result = await advanceEngineRun(client, runId);
+    if (!result.success) return result;
+    last = result.data;
+
+    if (
+      last.status === "launched" ||
+      last.status === "needs_approval" ||
+      last.status === "failed"
+    ) {
+      return ok(last);
+    }
+  }
+
+  return fail("Engine did not finish within step limit", "step_failed");
+}
+
+async function finalizeEngineLaunch(
+  client: SupabaseClient,
+  run: EngineRunRow,
+  launchPayload: Record<string, unknown>,
+): Promise<ServiceResult<EngineRunRow>> {
+  const engine = createEngineRepository(client);
+  const launchStatus = (launchPayload as { status?: string }).status;
+  const qaFailed = launchStatus === "qa_failed";
+
+  const { data: updated, error: updateErr } = await engine.updateStatus(
+    run.id,
+    qaFailed ? "needs_approval" : "launched",
+    qaFailed
+      ? { failedReason: "Launch QA checks did not pass" }
+      : { launchedAt: new Date().toISOString() },
+  );
+  if (updateErr || !updated) {
+    return fail(updateErr?.message ?? "Failed to finalize launch");
+  }
+
+  try {
+    await emitLaunchSideEffects(client, run, qaFailed, launchPayload);
+  } catch {
+    // swallow
+  }
+
+  return ok(updated as EngineRunRow);
 }
 
 export async function getEngineRun(

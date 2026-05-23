@@ -4,6 +4,7 @@ import { Activity, Rocket, Sparkles } from "lucide-react";
 
 import { AdvanceRunButton } from "@/components/engine/advance-run-button";
 import { EngineRunCanvas } from "@/components/engine/engine-run-canvas";
+import { RunFullEngineButton } from "@/components/engine/run-full-engine-button";
 import { EngineRunHistory } from "@/components/engine/engine-run-history";
 import { EngineStepper } from "@/components/engine/engine-stepper";
 import { SeedTestLaunchButton } from "@/components/engine/seed-test-launch-button";
@@ -20,10 +21,9 @@ import {
   type AssetRow,
   type EngineStep,
 } from "@/repositories/engine.repository";
+import { ENGINE_STEPS, isLaunchReadyStep } from "@/lib/engine-steps";
 import {
-  ENGINE_STEPS,
   getActiveEngineRun,
-  isFinalStep,
   listEngineRuns,
   stepIndex,
 } from "@/services/engine/orchestrator.service";
@@ -118,9 +118,12 @@ export default async function EnginePage() {
                 </p>
               </div>
               <div className="flex flex-col items-end gap-3">
+                {activeRun.status === "running" ? (
+                  <RunFullEngineButton runId={activeRun.id} />
+                ) : null}
                 <AdvanceRunButton
                   runId={activeRun.id}
-                  isFinal={isFinalStep(activeRun.current_step)}
+                  launchReady={isLaunchReadyStep(activeRun.current_step)}
                 />
                 {isDev ? <SeedTestLaunchButton /> : null}
               </div>

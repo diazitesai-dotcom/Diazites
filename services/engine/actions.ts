@@ -10,10 +10,16 @@ import { createBusinessRepository } from "@/repositories/business.repository";
 
 import {
   advanceEngineRun,
+  runFullEnginePipeline,
   startEngineRun,
   type EngineInputPayload,
 } from "@/services/engine/orchestrator.service";
 import { seedReadyToLaunchRun } from "@/services/engine/dev-seed.service";
+import {
+  recreateEngineWithAi,
+  type EngineRecreateTarget,
+} from "@/services/engine/recreate.service";
+import { getEngineRunForOwner } from "@/services/engine/run-management.service";
 
 export async function startEngineRunAction(
   formData: FormData,
@@ -113,6 +119,46 @@ export async function seedTestLaunchRunAction(): Promise<
 
   revalidatePath("/dashboard/engine");
   return ok({ runId: result.data.id });
+}
+
+export async function runFullEnginePipelineAction(
+  formData: FormData,
+): Promise<ServiceResult<{ runId: string; status: string }>> {
+  await requireAuth();
+  const supabase = await createServerSupabaseClient();
+  const runId = pickString(formData.get("run_id"));
+  if (!runId) return fail("Missing run id");
+
+  const result = await runFullEnginePipeline(supabase, runId);
+  if (!result.success) return fail(result.error);
+
+  revalidatePath("/dashboard/engine");
+  return ok({ runId: result.data.id, status: result.data.status });
+}
+
+export async function recreateEngineAssetAction(
+  formData: FormData,
+): Promise<ServiceResult<{ message: string }>> {
+  const user = await requireAuth();
+  const supabase = await createServerSupabaseClient();
+  const runId = pickString(formData.get("run_id"));
+  const target = pickString(formData.get("target")) as EngineRecreateTarget | undefined;
+  if (!runId || !target) return fail("Missing run id or target");
+
+  const access = await getEngineRunForOwner(supabase, runId, user.id);
+  if (!access.success) return fail(access.error);
+
+  const run = access.data;
+  if (run.status !== "running" && run.status !== "needs_approval") {
+    return fail("Cannot recreate on a finished run", "invalid_state");
+  }
+
+  const result = await recreateEngineWithAi(supabase, run, target);
+  if (!result.success) return fail(result.error);
+
+  revalidatePath("/dashboard/engine");
+  revalidatePath(`/dashboard/engine/${runId}`);
+  return ok({ message: result.data.message });
 }
 
 function pickString(value: FormDataEntryValue | null): string | undefined {

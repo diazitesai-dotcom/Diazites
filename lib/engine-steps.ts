@@ -66,11 +66,15 @@ export const ENGINE_STEPS: ReadonlyArray<{
     key: "launch",
     index: 8,
     title: "Launch System",
-    subtitle: "AI prepares everything for launch",
+    subtitle: "One click — publish landing page + tracking",
     description:
-      "Domain & link setup, tracking, analytics, conversion events, pixel installation, UTM builder, QA check.",
+      "Publishes the winning landing page, runs QA, sets UTM + conversion pixels, and goes live in a single step.",
   },
 ];
+
+export function isLaunchReadyStep(step: EngineStep): boolean {
+  return step === "scoring" || step === "launch";
+}
 
 export const ENGINE_STEP_KEYS = ENGINE_STEPS.map((s) => s.key);
 

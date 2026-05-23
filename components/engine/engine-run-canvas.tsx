@@ -12,6 +12,8 @@ import {
   XCircle,
 } from "lucide-react";
 
+import { EngineAiRecreatePanel } from "@/components/engine/engine-ai-recreate-panel";
+import { LaunchStagePanel } from "@/components/engine/launch-stage-panel";
 import { LaunchSummary } from "@/components/engine/launch-summary";
 import { VariantGallery } from "@/components/engine/variant-gallery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,9 +47,18 @@ export function EngineRunCanvas({ run, assets, businessName }: EngineRunCanvasPr
   const winnerLanding = assets.find(
     (a) => a.kind === "landing_page" && a.is_winner,
   );
+  const hasWinner = Boolean(run.winner_asset_id ?? winnerLanding);
+  const showRecreate =
+    run.status === "running" || run.status === "needs_approval";
+  const showLaunchPanel =
+    (run.current_step === "scoring" || run.current_step === "launch") &&
+    run.status !== "launched";
 
   return (
     <div className="space-y-6">
+      {showRecreate ? (
+        <EngineAiRecreatePanel runId={run.id} disabled={run.status === "needs_approval"} />
+      ) : null}
       {isLaunched && winnerLanding ? (
         <LandingPreviewSection
           asset={winnerLanding}
@@ -135,12 +146,19 @@ export function EngineRunCanvas({ run, assets, businessName }: EngineRunCanvasPr
         step="launch"
         state={isQaFailed ? "failed" : stateFor("launch")}
         title="Launch System"
-        subtitle="AI prepares everything for launch"
+        subtitle="One click — publish landing page + tracking"
       >
+        {showLaunchPanel ? (
+          <LaunchStagePanel
+            runId={run.id}
+            hasWinner={hasWinner}
+            qaFailed={isQaFailed}
+          />
+        ) : null}
         <LaunchSummary
           launchPayload={run.launch_payload as Parameters<typeof LaunchSummary>[0]["launchPayload"]}
         />
-        {!run.launch_payload ? (
+        {!run.launch_payload && !showLaunchPanel ? (
           <EmptyHint message="Launch payload will appear once Stage 8 runs." />
         ) : null}
       </StageSection>

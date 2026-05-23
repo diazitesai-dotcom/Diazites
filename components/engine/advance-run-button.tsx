@@ -9,10 +9,14 @@ import { advanceEngineRunAction } from "@/services/engine/actions";
 
 type AdvanceRunButtonProps = {
   runId: string;
-  isFinal: boolean;
+  /** @deprecated use launchReady */
+  isFinal?: boolean;
+  /** Stage 8 — scoring or launch: one click publishes */
+  launchReady?: boolean;
 };
 
-export function AdvanceRunButton({ runId, isFinal }: AdvanceRunButtonProps) {
+export function AdvanceRunButton({ runId, isFinal, launchReady }: AdvanceRunButtonProps) {
+  const oneClickLaunch = launchReady ?? isFinal ?? false;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -32,11 +36,17 @@ export function AdvanceRunButton({ runId, isFinal }: AdvanceRunButtonProps) {
   return (
     <form action={handleSubmit} className="flex flex-col items-start gap-2">
       <input type="hidden" name="run_id" value={runId} />
-      <Button type="submit" variant="gradient" disabled={pending}>
-        {isFinal ? (
+      <Button
+        type="submit"
+        variant={oneClickLaunch ? "gradient" : "default"}
+        size={oneClickLaunch ? "default" : "default"}
+        disabled={pending}
+        className={oneClickLaunch ? "rounded-xl" : undefined}
+      >
+        {oneClickLaunch ? (
           <>
             <Rocket className="size-4" />
-            {pending ? "Launching…" : "Launch run"}
+            {pending ? "Launching…" : "Launch in 1 click"}
           </>
         ) : (
           <>
