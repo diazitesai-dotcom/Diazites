@@ -290,11 +290,14 @@ export function buildMissionControlPayload(input: {
       reasoning:
         "Multiple repeat visitors detected without active follow-up automation.",
       deployPreview: {
-        title: "Deploy Retargeting Agent",
+        title: "Retargeting Agent Preview",
         audience: "Recent visitors",
         budget: "$5/day",
         followUp: "3-touch sequence",
         expected: "+12–18% recovered leads",
+        channels: "Meta + CRM follow-up",
+        rollbackAvailable: true,
+        estimatedLaunchSeconds: 43,
       },
     },
     {
@@ -504,12 +507,12 @@ export function buildMissionControlPayload(input: {
   });
 
   const orchestrationTimeline: OrchestrationTimelineEvent[] = [
-    { id: "o1", time: "09:02", label: "Landing page generated", kind: "asset" },
-    { id: "o2", time: "09:04", label: "Meta campaign launched", kind: "campaign" },
-    { id: "o3", time: "09:07", label: "Lead Qualification activated", kind: "deployment" },
-    { id: "o4", time: "09:09", label: "Lead captured", kind: "lead" },
-    { id: "o5", time: "09:12", label: "Follow-Up triggered", kind: "execution" },
-    { id: "o6", time: "09:15", label: "Optimization applied", kind: "execution" },
+    { id: "o1", time: "09:02", label: "Landing page generated", kind: "asset", status: "completed" },
+    { id: "o2", time: "09:04", label: "Meta deployment", kind: "campaign", status: "running" },
+    { id: "o3", time: "09:06", label: "Pixel validation", kind: "deployment", status: "failed" },
+    { id: "o4", time: "09:09", label: "Follow-up triggered", kind: "execution", status: "completed" },
+    { id: "o5", time: "09:11", label: "Lead captured", kind: "lead", status: "completed" },
+    { id: "o6", time: "09:15", label: "Optimization applied", kind: "execution", status: "processing" },
   ];
 
   const kpiInsights: KpiInsight[] = [

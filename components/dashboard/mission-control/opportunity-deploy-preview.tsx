@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Rocket, X } from "lucide-react";
+import { Clock, Rocket, ShieldCheck, X } from "lucide-react";
 
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
 import { Button } from "@/components/ui/button";
@@ -72,6 +72,14 @@ export function OpportunityDeployPreview({ opportunity, onClose }: Props) {
 
             <div className="flex-1 space-y-4 overflow-y-auto p-4">
               <dl className="space-y-3 text-sm">
+                {preview.expected ? (
+                  <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2">
+                    <dt className="text-[10px] uppercase tracking-wider text-emerald-300/80">
+                      Expected lift
+                    </dt>
+                    <dd className="mt-0.5 font-semibold text-emerald-200">{preview.expected}</dd>
+                  </div>
+                ) : null}
                 {preview.audience ? (
                   <div>
                     <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">Audience</dt>
@@ -84,16 +92,30 @@ export function OpportunityDeployPreview({ opportunity, onClose }: Props) {
                     <dd className="mt-0.5 font-medium">{preview.budget}</dd>
                   </div>
                 ) : null}
+                {preview.channels ? (
+                  <div>
+                    <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">Channels</dt>
+                    <dd className="mt-0.5 font-medium">{preview.channels}</dd>
+                  </div>
+                ) : null}
                 {preview.followUp ? (
                   <div>
                     <dt className="text-[10px] uppercase tracking-wider text-muted-foreground">Follow-up</dt>
                     <dd className="mt-0.5 font-medium">{preview.followUp}</dd>
                   </div>
                 ) : null}
-                {preview.expected ? (
-                  <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2">
-                    <dt className="text-[10px] uppercase tracking-wider text-emerald-300/80">Expected</dt>
-                    <dd className="mt-0.5 font-semibold text-emerald-200">{preview.expected}</dd>
+                {preview.rollbackAvailable ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs">
+                    <ShieldCheck className="size-3.5 text-emerald-400" />
+                    <span>
+                      Rollback available: <strong className="text-emerald-200">YES</strong>
+                    </span>
+                  </div>
+                ) : null}
+                {preview.estimatedLaunchSeconds != null ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-3 py-2 text-xs text-cyan-100/90">
+                    <Clock className="size-3.5 shrink-0" />
+                    Estimated launch: ~{preview.estimatedLaunchSeconds} sec
                   </div>
                 ) : null}
               </dl>
@@ -118,7 +140,7 @@ export function OpportunityDeployPreview({ opportunity, onClose }: Props) {
                 onClick={confirmDeploy}
               >
                 <Rocket className="mr-2 size-4" />
-                Deploy
+                Deploy Now
               </Button>
             </div>
           </motion.aside>

@@ -1,3 +1,5 @@
+import type { OrchestrationRunStatus } from "@/lib/dashboard/orchestration-status";
+
 export type ConnectionStatus = "connected" | "pending" | "missing" | "error";
 
 export type ActivitySeverity = "success" | "warning" | "critical" | "info";
@@ -101,6 +103,9 @@ export type OpportunityDeployPreview = {
   budget?: string;
   followUp?: string;
   expected?: string;
+  channels?: string;
+  rollbackAvailable?: boolean;
+  estimatedLaunchSeconds?: number;
 };
 
 export type OpportunityItem = {
@@ -138,6 +143,7 @@ export type OrchestrationTimelineEvent = {
   time: string;
   label: string;
   kind: "asset" | "campaign" | "lead" | "execution" | "deployment";
+  status: OrchestrationRunStatus;
 };
 
 export type MarketSignal = {

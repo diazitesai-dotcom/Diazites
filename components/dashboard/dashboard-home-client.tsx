@@ -12,6 +12,8 @@ import {
 
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { RetargetingAgentDeploymentPanel } from "@/components/agents/retargeting-agent-deployment-panel";
+import { DeployableStacksPanel } from "@/components/dashboard/mission-control/deployable-stacks-panel";
+import { OrchestrationMap } from "@/components/dashboard/mission-control/orchestration-map";
 import { AiCopilotFab } from "@/components/dashboard/mission-control/ai-copilot-fab";
 import { CommandCenterBell } from "@/components/dashboard/mission-control/command-center-bell";
 import {
@@ -145,6 +147,8 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
 
         <QuickActionsRow />
 
+        <DeployableStacksPanel />
+
         {zeroCampaigns && zeroSpend ? (
           <CombinedAcquisitionEmpty />
         ) : (
@@ -196,7 +200,10 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
           <OpportunityFeed data={data} />
         </section>
 
-        <GrowthOrchestrationTimeline events={data.orchestrationTimeline} />
+        <section className="grid gap-6 lg:grid-cols-2">
+          <GrowthOrchestrationTimeline events={data.orchestrationTimeline} />
+          <OrchestrationMap />
+        </section>
 
         <section className="grid gap-6 lg:grid-cols-5">
           <motion.div variants={fadeItem} initial="hidden" animate="show" className="lg:col-span-3">

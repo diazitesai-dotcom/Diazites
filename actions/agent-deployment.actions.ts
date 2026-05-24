@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { agentDisplayName } from "@/lib/agents/deployment-catalog";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { activateAgent } from "@/services/agents/agent.service";
+import { activateAgent, deactivateAgent } from "@/services/agents/agent.service";
 import type {
   AutonomousMode,
   DeployStackResult,
@@ -113,4 +113,34 @@ export async function deployAgentStackAction(input: {
   revalidatePath("/dashboard/automations");
 
   return { ok: true, activated, timeline };
+}
+
+export async function rollbackDeploymentAction(agentTypes: AgentType[]): Promise<{
+  ok: boolean;
+  error?: string;
+  rolledBack: AgentType[];
+}> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { ok: false, error: "Not authenticated", rolledBack: [] };
+
+  const rolledBack: AgentType[] = [];
+
+  for (const agentType of agentTypes) {
+    const result = await deactivateAgent(supabase, user.id, agentType);
+    if (result.success) {
+      rolledBack.push(agentType);
+    } else {
+      return { ok: false, error: result.error, rolledBack };
+    }
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/agents");
+  revalidatePath("/dashboard/automations");
+
+  return { ok: true, rolledBack };
 }

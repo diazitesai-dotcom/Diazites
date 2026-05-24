@@ -3,9 +3,13 @@
 import { motion } from "framer-motion";
 import { Activity, Cpu, FileText, Megaphone, Rocket, Users } from "lucide-react";
 
+import { DeploymentRollbackButton } from "@/components/agents/deployment-rollback-button";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
+import { OrchestrationStatusBadge } from "@/components/dashboard/mission-control/orchestration-status-badge";
 import type { OrchestrationTimelineEvent } from "@/lib/dashboard/mission-control-types";
+import { ORCHESTRATION_STATUS_META } from "@/lib/dashboard/orchestration-status";
 import { fadeItem } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 
 const ICONS = {
   asset: FileText,
@@ -35,6 +39,7 @@ export function GrowthOrchestrationTimeline({
         <ol className="relative border-l border-white/10 pl-4">
           {events.map((ev, i) => {
             const Icon = ICONS[ev.kind];
+            const statusMeta = ORCHESTRATION_STATUS_META[ev.status];
             return (
               <motion.li
                 key={ev.id}
@@ -44,13 +49,21 @@ export function GrowthOrchestrationTimeline({
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
               >
-                <span className="absolute -left-[21px] top-1 flex size-3.5 items-center justify-center rounded-full border border-violet-500/40 bg-card">
-                  <span className="size-1.5 rounded-full bg-violet-400" />
+                <span
+                  className={cn(
+                    "absolute -left-[21px] top-1 flex size-3.5 items-center justify-center rounded-full border bg-card",
+                    statusMeta.badgeClass.split(" ")[0],
+                  )}
+                >
+                  <span className={cn("size-1.5 rounded-full", statusMeta.dotClass)} />
                 </span>
                 <div className="flex gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 transition-colors hover:border-violet-500/20">
                   <Icon className="mt-0.5 size-3.5 shrink-0 text-violet-300" />
-                  <div>
-                    <span className="text-[10px] tabular-nums text-cyan-300/80">{ev.time}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[10px] tabular-nums text-cyan-300/80">{ev.time}</span>
+                      <OrchestrationStatusBadge status={ev.status} />
+                    </div>
                     <p className="text-sm font-medium">{ev.label}</p>
                   </div>
                 </div>
@@ -58,6 +71,7 @@ export function GrowthOrchestrationTimeline({
             );
           })}
         </ol>
+        <DeploymentRollbackButton />
       </GlassCard>
     </motion.div>
   );

@@ -1,3 +1,4 @@
+import type { OrchestrationRunStatus } from "@/lib/dashboard/orchestration-status";
 import type { AutonomousMode, DeploymentConfig, TimelineEvent } from "@/types/agent-deployment";
 import type { AgentType } from "@/types/domain";
 
@@ -15,7 +16,12 @@ export type AgentDeploymentPreset = {
   whyItMatters: string[];
   config: Partial<DeploymentConfig>;
   defaultMode: AutonomousMode;
-  growthTimeline: { time: string; label: string; kind: TimelineEvent["kind"] }[];
+  growthTimeline: {
+    time: string;
+    label: string;
+    kind: TimelineEvent["kind"];
+    status: OrchestrationRunStatus;
+  }[];
   aiActionsToday: {
     automationsExecuted: number;
     optimizationsApplied: number;
@@ -47,11 +53,11 @@ export const RETARGETING_DEPLOYMENT_PRESET: AgentDeploymentPreset = {
   },
   defaultMode: "autonomous",
   growthTimeline: [
-    { time: "09:02", label: "Landing page generated", kind: "asset" },
-    { time: "09:04", label: "Meta campaign deployed", kind: "campaign" },
-    { time: "09:08", label: "Lead captured", kind: "lead" },
-    { time: "09:10", label: "Follow-Up Agent triggered", kind: "execution" },
-    { time: "09:14", label: "AI optimization applied", kind: "execution" },
+    { time: "09:02", label: "Landing page generated", kind: "asset", status: "completed" },
+    { time: "09:04", label: "Meta deployment", kind: "campaign", status: "running" },
+    { time: "09:06", label: "Pixel validation", kind: "deployment", status: "failed" },
+    { time: "09:10", label: "Follow-up triggered", kind: "execution", status: "completed" },
+    { time: "09:14", label: "AI optimization applied", kind: "execution", status: "processing" },
   ],
   aiActionsToday: {
     automationsExecuted: 12,

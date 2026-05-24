@@ -2,22 +2,76 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { MessageCircle, Sparkles, X } from "lucide-react";
+import { MessageCircle, Rocket, Sparkles, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const SUGGESTED_PROMPTS = [
-  "Diagnose account",
-  "Build growth strategy",
-  "Generate campaign",
-  "Optimize CPL",
-  "Analyze funnel",
+type CopilotAction =
+  | {
+      label: string;
+      description: string;
+      kind: "deploy";
+      launch: Parameters<ReturnType<typeof useAgentDeployment>["openDeployment"]>[0];
+    }
+  | { label: string; description: string; kind: "link"; href: string };
+
+const COPILOT_ACTIONS: CopilotAction[] = [
+  {
+    label: "Deploy lead stack",
+    description: "Landing → qualification → follow-up → CRM",
+    kind: "deploy",
+    launch: { stack: "lead_engine", goal: "generate_leads", source: "quick_action" },
+  },
+  {
+    label: "Launch paid ads stack",
+    description: "Meta, search, retargeting, analytics",
+    kind: "deploy",
+    launch: { stack: "paid_ads", goal: "launch_ads", source: "quick_action" },
+  },
+  {
+    label: "Deploy retargeting agent",
+    description: "High-intent visitor recovery",
+    kind: "deploy",
+    launch: {
+      preset: "retargeting",
+      agent: "retargeting",
+      goal: "improve_conversion",
+      mode: "autonomous",
+      step: "readiness",
+      source: "opportunity",
+    },
+  },
+  {
+    label: "Deploy full growth engine",
+    description: "One-click full stack onboarding",
+    kind: "deploy",
+    launch: {
+      goal: "deploy_full_growth_engine",
+      stack: "growth_engine",
+      mode: "guided",
+      source: "growth_engine",
+    },
+  },
+  {
+    label: "Optimize CPL",
+    description: "Open optimization workspace",
+    kind: "link",
+    href: "/dashboard/optimization",
+  },
+  {
+    label: "Diagnose performance",
+    description: "Mission control diagnostics view",
+    kind: "link",
+    href: "/dashboard",
+  },
 ];
 
 export function AiCopilotFab() {
   const [open, setOpen] = useState(false);
+  const { openDeployment } = useAgentDeployment();
 
   useEffect(() => {
     if (!open) return;
@@ -65,7 +119,7 @@ export function AiCopilotFab() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold">Ask Diazites AI</p>
-                  <p className="text-[11px] text-muted-foreground">Executive assistant</p>
+                  <p className="text-[11px] text-muted-foreground">Control plane</p>
                 </div>
               </div>
               <Button
@@ -82,27 +136,41 @@ export function AiCopilotFab() {
 
             <div className="flex-1 overflow-y-auto p-5">
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Choose a prompt to open Agent Manager with context, or describe your goal in full
-                chat.
+                Run orchestration commands — deploy stacks, launch campaigns, or open diagnostics.
               </p>
               <ul className="mt-5 space-y-2">
-                {SUGGESTED_PROMPTS.map((prompt, i) => (
+                {COPILOT_ACTIONS.map((action, i) => (
                   <motion.li
-                    key={prompt}
+                    key={action.label}
                     initial={{ opacity: 0, x: 12 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.05 * i }}
                   >
-                    <Link
-                      href={`/dashboard/agents?q=${encodeURIComponent(prompt)}`}
-                      onClick={() => setOpen(false)}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpen(false);
+                        if (action.kind === "deploy") {
+                          openDeployment(action.launch);
+                        } else {
+                          window.location.href = action.href;
+                        }
+                      }}
                       className={cn(
                         buttonVariants({ variant: "outline" }),
-                        "mission-shimmer-btn h-auto w-full justify-start rounded-xl border-white/10 bg-white/[0.03] py-3 text-left text-sm transition-all hover:border-violet-500/40 hover:bg-violet-500/10 hover:shadow-[0_4px_24px_-8px_rgba(139,92,246,0.35)]",
+                        "mission-shimmer-btn h-auto w-full justify-start rounded-xl border-white/10 bg-white/[0.03] py-3 text-left transition-all hover:border-violet-500/40 hover:bg-violet-500/10",
                       )}
                     >
-                      {prompt}
-                    </Link>
+                      <span className="flex w-full items-start gap-2">
+                        <Rocket className="mt-0.5 size-3.5 shrink-0 text-violet-300" />
+                        <span>
+                          <span className="block text-sm font-medium">{action.label}</span>
+                          <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                            {action.description}
+                          </span>
+                        </span>
+                      </span>
+                    </button>
                   </motion.li>
                 ))}
               </ul>

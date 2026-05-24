@@ -16,8 +16,11 @@ import {
   Zap,
 } from "lucide-react";
 
+import { AiModeCallout } from "@/components/agents/ai-mode-callout";
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
+import { OrchestrationStatusBadge } from "@/components/dashboard/mission-control/orchestration-status-badge";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
+import { AI_MODE_BEHAVIOR } from "@/lib/agents/ai-mode-behavior";
 import { Button } from "@/components/ui/button";
 import { RETARGETING_DEPLOYMENT_PRESET } from "@/lib/agents/deployment-presets";
 import { fadeItem } from "@/lib/motion";
@@ -111,7 +114,7 @@ export function RetargetingAgentDeploymentPanel() {
             onClick={deployRetargeting}
           >
             <Rocket className="mr-2 size-4" />
-            Deploy Now
+            {AI_MODE_BEHAVIOR[mode].deployLabel}
           </Button>
         </motion.div>
 
@@ -179,7 +182,10 @@ export function RetargetingAgentDeploymentPanel() {
                   <div className="flex items-start gap-2 rounded-lg border border-white/[0.05] bg-white/[0.02] px-2.5 py-2">
                     <Icon className="mt-0.5 size-3 text-violet-300" />
                     <div className="min-w-0 flex-1">
-                      <span className="text-[10px] tabular-nums text-cyan-300/80">{row.time}</span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] tabular-nums text-cyan-300/80">{row.time}</span>
+                        <OrchestrationStatusBadge status={row.status} />
+                      </div>
                       <p className="text-xs font-medium">{row.label}</p>
                     </div>
                   </div>
@@ -216,6 +222,7 @@ export function RetargetingAgentDeploymentPanel() {
               </button>
             ))}
           </div>
+          <AiModeCallout mode={mode} className="mt-3" />
         </div>
 
         <Button

@@ -35,6 +35,14 @@ import {
   mapDbStatusToLifecycle,
   recommendAgentsForGoal,
 } from "@/lib/agents/deployment-catalog";
+import { AiModeCallout } from "@/components/agents/ai-mode-callout";
+import { DeploymentRollbackButton } from "@/components/agents/deployment-rollback-button";
+import { AI_MODE_BEHAVIOR } from "@/lib/agents/ai-mode-behavior";
+import {
+  buildDeployProgressSteps,
+  estimateDeploySeconds,
+} from "@/lib/agents/build-deploy-progress";
+import { saveLastDeployment } from "@/lib/agents/deployment-session";
 import { getDeploymentPreset } from "@/lib/agents/deployment-presets";
 import type { AgentDeploymentPresetId } from "@/lib/agents/deployment-presets";
 import { cn } from "@/lib/utils";
@@ -65,14 +73,7 @@ const STEPS: { id: StepId; label: string }[] = [
   { id: "monitor", label: "Live" },
 ];
 
-const DEPLOY_PHASES = [
-  "Initializing orchestration…",
-  "Provisioning agent infrastructure…",
-  "Initializing agents…",
-  "Connecting CRM & ads…",
-  "Generating assets…",
-  "Launching campaigns…",
-] as const;
+const DEPLOY_STEP_MS = 650;
 
 type Props = {
   open: boolean;
@@ -210,6 +211,7 @@ export function AgentDeploymentDrawer({
   }
 
   function runDeploySequence() {
+    const steps = buildDeployProgressSteps(selectedAgents);
     setStep("deploy");
     setDeployPhase(0);
     setError(null);
@@ -219,11 +221,11 @@ export function AgentDeploymentDrawer({
     const phaseTimer = setInterval(() => {
       phase += 1;
       setDeployPhase(phase);
-      if (phase >= DEPLOY_PHASES.length) clearInterval(phaseTimer);
-    }, 750);
+      if (phase >= steps.length) clearInterval(phaseTimer);
+    }, DEPLOY_STEP_MS);
 
     startTransition(async () => {
-      await new Promise((r) => setTimeout(r, DEPLOY_PHASES.length * 750 + 300));
+      await new Promise((r) => setTimeout(r, steps.length * DEPLOY_STEP_MS + 300));
       clearInterval(phaseTimer);
 
       const result = await deployAgentStackAction({
@@ -241,6 +243,15 @@ export function AgentDeploymentDrawer({
         return;
       }
 
+      const goalLabel =
+        DEPLOYMENT_GOALS.find((g) => g.id === goalId)?.label ?? "Deployment";
+      saveLastDeployment({
+        goalId,
+        agents: selectedAgents,
+        deployedAt: new Date().toISOString(),
+        label: goalLabel,
+      });
+
       setTimeline(result.timeline);
       setStep("monitor");
     });
@@ -253,6 +264,15 @@ export function AgentDeploymentDrawer({
     setSkippedReadiness(new Set());
     onOpenChange(false);
   }
+
+  const deploySteps = useMemo(
+    () => buildDeployProgressSteps(selectedAgents),
+    [selectedAgents],
+  );
+  const deployEtaSeconds = useMemo(
+    () => estimateDeploySeconds(selectedAgents.length),
+    [selectedAgents.length],
+  );
 
   const stepIndex = STEPS.findIndex((s) => s.id === step);
 
@@ -554,11 +574,7 @@ export function AgentDeploymentDrawer({
                           </button>
                         ))}
                       </div>
-                      <p className="mt-2 text-[11px] text-muted-foreground">
-                        {mode === "manual" && "You approve every campaign and asset change."}
-                        {mode === "guided" && "AI proposes; you approve high-impact actions."}
-                        {mode === "autonomous" && "Agents optimize within guardrails you set below."}
-                      </p>
+                      <AiModeCallout mode={mode} className="mt-2" />
                     </div>
 
                     <div className="grid gap-4">
@@ -697,7 +713,9 @@ export function AgentDeploymentDrawer({
                         onClick={runDeploySequence}
                         disabled={pending}
                       >
-                        {readinessOk < readinessTotal ? "Deploy anyway" : "Begin deployment"}
+                        {readinessOk < readinessTotal
+                          ? "Deploy anyway"
+                          : AI_MODE_BEHAVIOR[mode].deployLabel}
                         <ArrowRight className="ml-2 size-4" />
                       </Button>
                     </div>
@@ -726,13 +744,14 @@ export function AgentDeploymentDrawer({
                         <Loader2 className="size-10 animate-spin text-violet-300" />
                       </span>
                     </div>
-                    <p className="mt-8 text-lg font-semibold">
-                      {DEPLOY_PHASES[Math.min(deployPhase, DEPLOY_PHASES.length - 1)]}
+                    <p className="mt-8 text-lg font-semibold">Launching Growth Engine…</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      ETA: ~{deployEtaSeconds} sec · {mode} mode
                     </p>
-                    <ul className="mt-6 w-full max-w-xs space-y-2 text-left text-sm text-muted-foreground">
-                      {DEPLOY_PHASES.map((label, i) => (
+                    <ul className="mt-6 w-full max-w-sm space-y-2 text-left text-sm text-muted-foreground">
+                      {deploySteps.map((label, i) => (
                         <li
-                          key={label}
+                          key={`${label}-${i}`}
                           className={cn(
                             "flex items-center gap-2 transition-colors",
                             i <= deployPhase ? "text-violet-200" : "opacity-40",
@@ -741,7 +760,7 @@ export function AgentDeploymentDrawer({
                           {i < deployPhase ? (
                             <Check className="size-3.5 text-emerald-400" />
                           ) : i === deployPhase ? (
-                            <Loader2 className="size-3.5 animate-spin" />
+                            <Loader2 className="size-3.5 animate-spin text-amber-300" />
                           ) : (
                             <span className="size-3.5 rounded-full border border-white/20" />
                           )}
@@ -790,6 +809,8 @@ export function AgentDeploymentDrawer({
                     ) : null}
 
                     <AgentOrchestrationTimeline events={timeline} />
+
+                    <DeploymentRollbackButton />
 
                     <Link
                       href="/dashboard"
