@@ -5,8 +5,10 @@ import type {
   BusinessGoal,
   FunnelStage,
   HealthCheck,
+  MarketSignal,
   MissionControlBriefing,
   OpportunityItem,
+  RecommendedNextAction,
   RevenueForecast,
 } from "@/lib/dashboard/mission-control-types";
 import { AGENTS } from "@/utils/constants";
@@ -124,13 +126,53 @@ export function buildMissionControlPayload(input: {
     pipelineValue,
   };
 
-  const funnel: FunnelStage[] = [
+  const rawFunnel = [
     { key: "visitors", label: "Visitors", count: funnelCounts.visitors },
     { key: "leads", label: "Leads", count: funnelCounts.leads },
     { key: "qualified", label: "Qualified", count: funnelCounts.qualified },
     { key: "booked", label: "Booked", count: funnelCounts.booked },
     { key: "won", label: "Won", count: funnelCounts.won },
   ];
+
+  const stepRates = rawFunnel.slice(1).map((stage, i) => {
+    const prev = rawFunnel[i]!.count;
+    return prev > 0 ? (stage.count / prev) * 100 : 0;
+  });
+  const minRate = stepRates.length ? Math.min(...stepRates.filter((r) => r > 0), 100) : 100;
+
+  const funnel: FunnelStage[] = rawFunnel.map((stage, i) => {
+    const prev = i === 0 ? stage.count : rawFunnel[i - 1]!.count;
+    const conversionRate =
+      i === 0 ? null : prev > 0 ? Math.round((stage.count / prev) * 1000) / 10 : 0;
+    const isBottleneck =
+      i > 0 && conversionRate != null && conversionRate > 0 && conversionRate <= minRate + 0.01;
+    return { ...stage, conversionRate, isBottleneck };
+  });
+
+  const nextAction: RecommendedNextAction = {
+    title: !hasMeta
+      ? "Connect Meta Ads & launch retargeting"
+      : activeCampaigns === 0
+        ? "Run Growth Engine for first campaign launch"
+        : qualAgent?.status !== "active"
+          ? "Activate Lead Qualification Agent"
+          : "Apply top optimization recommendation",
+    impact: !hasMeta
+      ? "Estimated +18–32% lead volume once paid channels are live"
+      : activeCampaigns === 0
+        ? "Go from zero to live campaigns in under 15 minutes"
+        : qualAgent?.status !== "active"
+          ? "Reduce response time by 40% on inbound leads"
+          : "Projected +8–14% ROAS from approved budget shift",
+    href: !hasMeta
+      ? "/dashboard/ads"
+      : activeCampaigns === 0
+        ? "/dashboard/engine"
+        : qualAgent?.status !== "active"
+          ? "/dashboard/agents"
+          : "/dashboard/optimization",
+    cta: !hasMeta ? "Connect Now" : activeCampaigns === 0 ? "Launch Engine" : "Deploy",
+  };
 
   const recommendations: AiRecommendation[] = [
     {
@@ -161,31 +203,81 @@ export function buildMissionControlPayload(input: {
       id: "1",
       title: "High-intent visitor pattern",
       detail: "Lead opened landing page 3× in 24h — prioritize follow-up",
+      impact: "+22% close probability with same-day outreach",
       priority: "high",
+      cta: "Deploy",
+      href: "/dashboard/leads",
     },
     {
       id: "2",
       title: "Best-performing landing page",
       detail: "Variant B converting 22% higher — shift 60% traffic",
+      impact: "+8–15% funnel conversion lift",
       priority: "medium",
+      cta: "Deploy",
+      href: "/dashboard/funnel",
     },
     {
       id: "3",
       title: "Keyword opportunity",
       detail: "“Emergency roof repair” CPC down 14% in your geo",
+      impact: "Lower CPL by ~$18 per lead",
       priority: "medium",
+      cta: "Fix Now",
+      href: "/dashboard/ads",
     },
     {
       id: "4",
       title: "Budget reallocation",
       detail: "Shift $120/day from paused set to top CPL campaign",
+      impact: "+11% ROAS without increasing spend",
       priority: "low",
+      cta: "Deploy",
+      href: "/dashboard/optimization",
     },
     {
       id: "5",
       title: "Follow-up reminder",
       detail: "4 qualified leads untouched > 48h — AI sequence ready",
+      impact: "Recover 2–3 stalled opportunities",
       priority: "high",
+      cta: "Deploy",
+      href: "/dashboard/automations",
+    },
+  ];
+
+  const marketSignals: MarketSignal[] = [
+    {
+      id: "cpc",
+      label: "Avg. CPC (geo)",
+      value: hasMeta || hasGoogle ? "$4.82" : "—",
+      change: "-6.2%",
+      direction: "down",
+      detail: "Search costs easing in your service area",
+    },
+    {
+      id: "demand",
+      label: "Category demand",
+      value: "↑ Elevated",
+      change: "+12%",
+      direction: "up",
+      detail: "Seasonal lift in home-services intent",
+    },
+    {
+      id: "competition",
+      label: "Competitor ad density",
+      value: "Moderate",
+      change: "Stable",
+      direction: "neutral",
+      detail: "Window to capture share before Q3 push",
+    },
+    {
+      id: "conv",
+      label: "Landing benchmark",
+      value: funnelCounts.leads > 0 ? "3.8%" : "—",
+      change: funnelCounts.leads > 0 ? "+0.4pp" : "—",
+      direction: "up",
+      detail: "Industry median for local services",
     },
   ];
 
@@ -286,12 +378,14 @@ export function buildMissionControlPayload(input: {
 
   return {
     briefing,
+    nextAction,
     healthScore,
     healthChecks,
     revenue,
     funnel,
     recommendations,
     opportunities,
+    marketSignals,
     agentPerformance,
     connections,
     goals,

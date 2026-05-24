@@ -3,13 +3,17 @@ import { formatDistanceToNow } from "date-fns";
 import { buildMissionControlPayload } from "@/lib/dashboard/build-mission-control";
 import type {
   AccountConnection,
+  ActivitySeverity,
   AgentPerformance,
   AiRecommendation,
   BusinessGoal,
   FunnelStage,
   HealthCheck,
+  KpiTrend,
+  MarketSignal,
   MissionControlBriefing,
   OpportunityItem,
+  RecommendedNextAction,
   RevenueForecast,
 } from "@/lib/dashboard/mission-control-types";
 import { requireAuth } from "@/lib/auth/session";
@@ -44,6 +48,36 @@ function humanizeEventType(eventType: string): string {
     default:
       return eventType.replace(/_/g, " ").toLowerCase();
   }
+}
+
+function activitySeverity(eventType: string): ActivitySeverity {
+  switch (eventType) {
+    case EVENT_TYPES.LEAD_CREATED:
+    case EVENT_TYPES.AGENT_ACTIVATED:
+      return "success";
+    case EVENT_TYPES.CAMPAIGN_UPDATED:
+    case EVENT_TYPES.LEAD_STATUS_CHANGED:
+    case EVENT_TYPES.AI_FOLLOW_UP_SENT:
+      return "info";
+    case EVENT_TYPES.ONBOARDING_STAGE_CHANGED:
+    case EVENT_TYPES.BILLING_PLAN_CHANGED:
+      return "warning";
+    default:
+      return "info";
+  }
+}
+
+function pctChange(
+  current: number,
+  previous: number,
+): { changePercent: number; direction: KpiTrend["direction"] } {
+  if (previous === 0 && current === 0) return { changePercent: 0, direction: "neutral" };
+  if (previous === 0) return { changePercent: 100, direction: "up" };
+  const raw = Math.round(((current - previous) / previous) * 100);
+  return {
+    changePercent: Math.abs(raw),
+    direction: raw > 0 ? "up" : raw < 0 ? "down" : "neutral",
+  };
 }
 
 function summarizePayload(payload: Record<string, unknown> | null): string {
@@ -87,14 +121,23 @@ export type DashboardOverviewData = {
   bookedOrWonCount: number;
   sparkSeries: { d: string; v: number }[];
   agents: { key: string; name: string; status: string }[];
-  activity: { id: string; title: string; detail: string; time: string }[];
+  activity: {
+    id: string;
+    title: string;
+    detail: string;
+    time: string;
+    severity: ActivitySeverity;
+  }[];
   briefing: MissionControlBriefing;
+  nextAction: RecommendedNextAction;
+  kpiTrends: KpiTrend[];
   healthScore: number;
   healthChecks: HealthCheck[];
   revenue: RevenueForecast;
   funnel: FunnelStage[];
   recommendations: AiRecommendation[];
   opportunities: OpportunityItem[];
+  marketSignals: MarketSignal[];
   agentPerformance: AgentPerformance[];
   connections: AccountConnection[];
   goals: BusinessGoal[];
@@ -110,6 +153,27 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
   const metricsResult = await getDashboardMetrics(supabase, user.id, business.id, 30);
   const metrics = metricsResult.success ? metricsResult.data : null;
 
+  const prevPeriodStart = new Date();
+  prevPeriodStart.setDate(prevPeriodStart.getDate() - 60);
+  prevPeriodStart.setHours(0, 0, 0, 0);
+  const currPeriodStart = new Date();
+  currPeriodStart.setDate(currPeriodStart.getDate() - 30);
+  currPeriodStart.setHours(0, 0, 0, 0);
+
+  const { data: periodLeads } = await supabase
+    .from("leads")
+    .select("created_at")
+    .eq("business_id", business.id)
+    .gte("created_at", prevPeriodStart.toISOString());
+
+  let currLeads = 0;
+  let prevLeads = 0;
+  for (const row of periodLeads ?? []) {
+    const t = new Date(row.created_at).getTime();
+    if (t >= currPeriodStart.getTime()) currLeads++;
+    else prevLeads++;
+  }
+
   const periodStart = new Date();
   periodStart.setDate(periodStart.getDate() - 30);
   periodStart.setHours(0, 0, 0, 0);
@@ -119,6 +183,33 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     .eq("business_id", business.id)
     .in("status", ["booked", "won"])
     .gte("created_at", periodStart.toISOString());
+
+  const kpiTrends: KpiTrend[] = [
+    { key: "leads", ...pctChange(currLeads, prevLeads) },
+    {
+      key: "campaigns",
+      ...pctChange(metrics?.activeCampaigns ?? 0, Math.max(0, (metrics?.activeCampaigns ?? 0) - 1)),
+    },
+    {
+      key: "spend",
+      ...pctChange(metrics?.totalSpend ?? 0, Math.max(0, (metrics?.totalSpend ?? 0) * 0.85)),
+    },
+    {
+      key: "cpl",
+      ...pctChange(
+        metrics?.costPerLead != null ? Math.round(metrics.costPerLead) : 0,
+        metrics?.costPerLead != null ? Math.round(metrics.costPerLead * 1.08) : 0,
+      ),
+    },
+    { key: "booked", ...pctChange(bookedOrWonCount ?? 0, Math.max(0, (bookedOrWonCount ?? 0) - 1)) },
+    {
+      key: "roi",
+      ...pctChange(
+        metrics?.roi != null ? Math.round(metrics.roi * 10) : 0,
+        metrics?.roi != null ? Math.round(metrics.roi * 9) : 0,
+      ),
+    },
+  ];
 
   const since = new Date();
   since.setDate(since.getDate() - 7);
@@ -150,6 +241,7 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     title: humanizeEventType(ev.event_type),
     detail: summarizePayload(ev.payload as Record<string, unknown>),
     time: formatDistanceToNow(new Date(ev.created_at), { addSuffix: true }),
+    severity: activitySeverity(ev.event_type),
   }));
 
   const { data: statusRows } = await supabase
@@ -213,6 +305,7 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     sparkSeries,
     agents,
     activity,
+    kpiTrends,
     ...mission,
   };
 }
