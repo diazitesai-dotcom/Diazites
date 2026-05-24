@@ -99,7 +99,8 @@ export type DeploymentLaunchSource =
   | "growth_engine"
   | "quick_action"
   | "opportunity"
-  | "recommendation";
+  | "recommendation"
+  | "control_plane";
 
 export type DeploymentLaunchParams = {
   goal?: DeploymentGoalId;
@@ -108,7 +109,7 @@ export type DeploymentLaunchParams = {
   preset?: import("@/lib/agents/deployment-presets").AgentDeploymentPresetId;
   mode?: AutonomousMode;
   source?: DeploymentLaunchSource;
-  step?: "goal" | "stack" | "config" | "readiness";
+  step?: "goal" | "stack" | "config" | "plan" | "readiness";
 };
 
 export const DEPLOYMENT_GOALS: {

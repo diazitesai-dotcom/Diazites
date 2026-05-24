@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { deployAgentStackAction } from "@/actions/agent-deployment.actions";
+import { GrowthPlanApproval } from "@/components/agents/growth-plan-approval";
 import { AgentLifecycleBadge } from "@/components/agents/agent-lifecycle-badge";
 import { AgentOrchestrationTimeline } from "@/components/agents/agent-orchestration-timeline";
 import { AgentStackFlow } from "@/components/agents/agent-stack-flow";
@@ -42,6 +43,7 @@ import {
   buildDeployProgressSteps,
   estimateDeploySeconds,
 } from "@/lib/agents/build-deploy-progress";
+import { buildGrowthPlan } from "@/lib/agents/build-growth-plan";
 import { saveLastDeployment } from "@/lib/agents/deployment-session";
 import { getDeploymentPreset } from "@/lib/agents/deployment-presets";
 import type { AgentDeploymentPresetId } from "@/lib/agents/deployment-presets";
@@ -62,12 +64,13 @@ import type { AgentType } from "@/types/domain";
 
 type AgentRow = { agent_type: string; status: string };
 
-type StepId = "goal" | "stack" | "config" | "readiness" | "deploy" | "monitor";
+type StepId = "goal" | "stack" | "config" | "plan" | "readiness" | "deploy" | "monitor";
 
 const STEPS: { id: StepId; label: string }[] = [
   { id: "goal", label: "Goal" },
   { id: "stack", label: "Stack" },
   { id: "config", label: "Configure" },
+  { id: "plan", label: "Plan" },
   { id: "readiness", label: "Readiness" },
   { id: "deploy", label: "Deploy" },
   { id: "monitor", label: "Live" },
@@ -272,6 +275,17 @@ export function AgentDeploymentDrawer({
   const deployEtaSeconds = useMemo(
     () => estimateDeploySeconds(selectedAgents.length),
     [selectedAgents.length],
+  );
+  const growthPlan = useMemo(
+    () =>
+      buildGrowthPlan({
+        goalId,
+        agents: selectedAgents,
+        config,
+        mode,
+        contextUplift: context?.expectedUplift,
+      }),
+    [goalId, selectedAgents, config, mode, context?.expectedUplift],
   );
 
   const stepIndex = STEPS.findIndex((s) => s.id === step);
@@ -583,6 +597,23 @@ export function AgentDeploymentDrawer({
                   </motion.div>
                 ) : null}
 
+                {step === "plan" ? (
+                  <motion.div
+                    key="plan"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                  >
+                    <GrowthPlanApproval
+                      plan={growthPlan}
+                      pending={pending}
+                      onApprove={() => setStep("readiness")}
+                      onModify={() => setStep("config")}
+                      onReject={resetAndClose}
+                    />
+                  </motion.div>
+                ) : null}
+
                 {step === "readiness" ? (
                   <motion.div
                     key="readiness"
@@ -802,7 +833,7 @@ export function AgentDeploymentDrawer({
               </AnimatePresence>
             </div>
 
-            {step !== "deploy" && step !== "monitor" ? (
+            {step !== "deploy" && step !== "monitor" && step !== "plan" ? (
               <footer className="shrink-0 border-t border-white/10 p-5">
                 <div className="flex gap-2">
                   {step !== "goal" ? (
@@ -815,7 +846,8 @@ export function AgentDeploymentDrawer({
                           goal: "goal",
                           stack: "goal",
                           config: "stack",
-                          readiness: "config",
+                          plan: "config",
+                          readiness: "plan",
                           deploy: "readiness",
                           monitor: "monitor",
                         };
@@ -842,9 +874,9 @@ export function AgentDeploymentDrawer({
                       type="button"
                       variant="gradient"
                       className="mission-shimmer-btn ml-auto flex-1 rounded-xl"
-                      onClick={() => setStep("readiness")}
+                      onClick={() => setStep("plan")}
                     >
-                      Check readiness
+                      Review growth plan
                       <ArrowRight className="ml-2 size-4" />
                     </Button>
                   ) : null}

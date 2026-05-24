@@ -124,33 +124,68 @@ export function buildGoalCoaching(input: {
   };
 }
 
-export function annotateSparkSeries(series: SparkPoint[]): SparkPoint[] {
+function dayIndex(series: SparkPoint[], prefix: string) {
+  return series.findIndex((p) => p.d.toLowerCase().startsWith(prefix));
+}
+
+function predictInboundChange(from: number, to: number): string {
+  if (from <= 0) return "-18% inbound tomorrow";
+  const pct = Math.round(((to - from) / from) * 100);
+  const sign = pct > 0 ? "+" : "";
+  return `${sign}${pct}% inbound tomorrow`;
+}
+
+export function annotateSparkSeries(
+  series: SparkPoint[],
+  options?: { hasPaidAds?: boolean },
+): SparkPoint[] {
   if (series.length === 0) return series;
+
+  const hasPaidAds = options?.hasPaidAds ?? false;
   const max = Math.max(...series.map((p) => p.v));
   const maxIdx = series.findIndex((p) => p.v === max && p.v > 0);
-  const sundayIdx = series.findIndex((p) => p.d.toLowerCase().startsWith("sun"));
+  const satIdx = dayIndex(series, "sat");
+  const sunIdx = dayIndex(series, "sun");
+
+  const spikeIdx =
+    satIdx >= 0 && series[satIdx]!.v > 0 && series[satIdx]!.v >= max * 0.85
+      ? satIdx
+      : maxIdx;
+
+  const spikeSource = hasPaidAds
+    ? "Paid + organic landing traffic."
+    : "Direct + organic landing traffic.";
 
   return series.map((point, i) => {
-    if (i === maxIdx && max >= 2) {
+    if (i === spikeIdx && (max >= 1 || (satIdx === i && point.v > 0))) {
       return {
         ...point,
         annotation: {
           kind: "spike",
-          title: `${point.d} spike detected`,
-          detail: "Source: Direct + landing traffic",
+          label: `${point.d} peak`,
+          title: "Traffic spike detected.",
+          source: spikeSource,
         },
       };
     }
-    if (i === sundayIdx && point.v <= Math.max(0, max - 1)) {
-      return {
-        ...point,
-        annotation: {
-          kind: "warning",
-          title: "Velocity warning",
-          detail: "Sunday drop expected — schedule retargeting",
-        },
-      };
+
+    if (i === sunIdx) {
+      const satVal = spikeIdx >= 0 ? series[spikeIdx]!.v : max;
+      const declining = point.v < satVal || (max > 0 && point.v <= max * 0.75);
+      if (declining || max === 0) {
+        return {
+          ...point,
+          annotation: {
+            kind: "warning",
+            label: point.d,
+            title: "Lead velocity declining.",
+            detail: "AI predicts:",
+            predictions: [predictInboundChange(satVal, point.v)],
+          },
+        };
+      }
     }
+
     return point;
   });
 }

@@ -12,6 +12,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AgentDeploymentDrawer } from "@/components/agents/agent-deployment-drawer";
+import { AiCopilotFab } from "@/components/dashboard/mission-control/ai-copilot-fab";
 import { AGENT_STACKS, normalizeDeploymentGoalId } from "@/types/agent-deployment";
 import type {
   AgentDeploymentContext,
@@ -94,7 +95,7 @@ export function AgentDeploymentProvider({
         agent: "retargeting",
         goal: "improve_conversion",
         mode: "autonomous",
-        step: "readiness",
+        step: "plan",
         source: "opportunity",
       });
     } else if (deploy === "1" || deploy === "true") {
@@ -157,6 +158,7 @@ export function AgentDeploymentProvider({
         launchSource={launch.source}
         key={`${open}-${launch.goal ?? ""}-${launch.stack ?? ""}-${launch.agent ?? ""}-${launch.preset ?? ""}`}
       />
+      <AiCopilotFab />
     </DeploymentContext.Provider>
   );
 }

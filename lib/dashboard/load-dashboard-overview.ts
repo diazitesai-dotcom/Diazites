@@ -1,5 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 
+import { activityCategory } from "@/lib/dashboard/activity-feed";
+import type { ActivityFeedCategory } from "@/lib/dashboard/activity-feed";
 import { annotateSparkSeries } from "@/lib/dashboard/build-goal-diagnostics";
 import { buildMissionControlPayload } from "@/lib/dashboard/build-mission-control";
 import type {
@@ -53,6 +55,20 @@ function humanizeEventType(eventType: string): string {
       return "Onboarding progress";
     case EVENT_TYPES.AI_FOLLOW_UP_SENT:
       return "AI message sent";
+    case EVENT_TYPES.ENGINE_LAUNCHED:
+      return "Growth engine launched";
+    case EVENT_TYPES.ENGINE_QA_FAILED:
+      return "Engine QA failed";
+    case EVENT_TYPES.AD_CAMPAIGN_PUSHED:
+      return "Ad campaign deployed";
+    case EVENT_TYPES.LANDING_PAGE_PUBLISHED:
+      return "Landing page published";
+    case EVENT_TYPES.OPTIMIZATION_APPLIED:
+      return "AI optimization applied";
+    case EVENT_TYPES.OPTIMIZATION_RECOMMENDED:
+      return "AI optimization recommended";
+    case EVENT_TYPES.AGENT_STATUS_CHANGED:
+      return "Agent status updated";
     default:
       return eventType.replace(/_/g, " ").toLowerCase();
   }
@@ -62,14 +78,21 @@ function activitySeverity(eventType: string): ActivitySeverity {
   switch (eventType) {
     case EVENT_TYPES.LEAD_CREATED:
     case EVENT_TYPES.AGENT_ACTIVATED:
+    case EVENT_TYPES.ENGINE_LAUNCHED:
+    case EVENT_TYPES.LANDING_PAGE_PUBLISHED:
+    case EVENT_TYPES.AD_CAMPAIGN_PUSHED:
+    case EVENT_TYPES.OPTIMIZATION_APPLIED:
       return "success";
     case EVENT_TYPES.CAMPAIGN_UPDATED:
     case EVENT_TYPES.LEAD_STATUS_CHANGED:
     case EVENT_TYPES.AI_FOLLOW_UP_SENT:
+    case EVENT_TYPES.OPTIMIZATION_RECOMMENDED:
       return "info";
     case EVENT_TYPES.ONBOARDING_STAGE_CHANGED:
     case EVENT_TYPES.BILLING_PLAN_CHANGED:
       return "warning";
+    case EVENT_TYPES.ENGINE_QA_FAILED:
+      return "critical";
     default:
       return "info";
   }
@@ -135,6 +158,7 @@ export type DashboardOverviewData = {
     detail: string;
     time: string;
     severity: ActivitySeverity;
+    category?: ActivityFeedCategory;
   }[];
   briefing: MissionControlBriefing;
   nextAction: RecommendedNextAction;
@@ -234,7 +258,7 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     .eq("business_id", business.id)
     .gte("created_at", since.toISOString());
 
-  const sparkSeries = annotateSparkSeries(buildLeadVelocitySeries(weekLeads ?? []));
+  const rawSparkSeries = buildLeadVelocitySeries(weekLeads ?? []);
 
   const agentsRepo = createAgentRepository(supabase);
   const { data: agentRows } = await agentsRepo.listByBusiness(business.id);
@@ -251,13 +275,17 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
   const eventsRepo = createSystemEventRepository(supabase);
   const { data: events } = await eventsRepo.listByBusiness(business.id, 12);
 
-  const activity = (events ?? []).map((ev) => ({
-    id: ev.id,
-    title: humanizeEventType(ev.event_type),
-    detail: summarizePayload(ev.payload as Record<string, unknown>),
-    time: formatDistanceToNow(new Date(ev.created_at), { addSuffix: true }),
-    severity: activitySeverity(ev.event_type),
-  }));
+  const activity = (events ?? []).map((ev) => {
+    const severity = activitySeverity(ev.event_type);
+    return {
+      id: ev.id,
+      title: humanizeEventType(ev.event_type),
+      detail: summarizePayload(ev.payload as Record<string, unknown>),
+      time: formatDistanceToNow(new Date(ev.created_at), { addSuffix: true }),
+      severity,
+      category: activityCategory(ev.event_type, severity),
+    };
+  });
 
   const { data: statusRows } = await supabase
     .from("leads")
@@ -312,6 +340,12 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     billingActive,
     crmConnected: true,
   });
+
+  const hasPaidAds =
+    connectedPlatforms.has("meta") ||
+    connectedPlatforms.has("facebook") ||
+    connectedPlatforms.has("google");
+  const sparkSeries = annotateSparkSeries(rawSparkSeries, { hasPaidAds });
 
   return {
     businessId: business.id,

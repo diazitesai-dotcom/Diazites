@@ -26,7 +26,7 @@ export function OpportunityDeployPreview({ opportunity, onClose }: Props) {
         agent: "retargeting",
         goal: "improve_conversion",
         mode: "autonomous",
-        step: "readiness",
+        step: "plan",
         source: "opportunity",
       });
       return;

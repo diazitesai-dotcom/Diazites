@@ -24,6 +24,7 @@ import { useState } from "react";
 
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
 import { OpportunityDeployPreview } from "@/components/dashboard/mission-control/opportunity-deploy-preview";
+import { PlanIntelligenceMeta, resolvePlanIntelligence } from "@/components/dashboard/mission-control/plan-intelligence-meta";
 import { AnimatedCounter, AnimatedMoney } from "@/components/dashboard/mission-control/animated-counter";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
 import { inferGoalFromHref } from "@/lib/agents/deployment-catalog";
@@ -178,7 +179,16 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
           </div>
         }
       >
-        <div className="mb-5 rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-transparent to-cyan-500/5 p-4">
+        <motion.div className="mb-5 rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-transparent to-cyan-500/5 p-4">
+          {b.trafficSignal ? (
+            <div className="mb-4 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2.5">
+              <p className="text-sm font-semibold text-cyan-100">{b.trafficSignal.headline}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                <span className="font-medium text-cyan-200/90">Source: </span>
+                {b.trafficSignal.source}
+              </p>
+            </div>
+          ) : null}
           <p className="text-sm leading-relaxed text-foreground/95">{b.aiInsight}</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
@@ -204,7 +214,7 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
               onClick={() =>
                 openDeployment({
                   goal: inferGoalFromHref(data.nextAction.href),
-                  step: "readiness",
+                  step: "plan",
                   source: "command_briefing",
                 })
               }
@@ -212,7 +222,7 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
               Review AI Plan
             </Button>
           </div>
-        </div>
+        </motion.div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
@@ -270,6 +280,11 @@ export function RecommendedNextActionCard({ data }: { data: DashboardOverviewDat
           <div className="space-y-2">
             <p className="text-lg font-semibold tracking-tight text-foreground">{action.title}</p>
             <p className="text-sm text-cyan-200/90">{action.impact}</p>
+            <PlanIntelligenceMeta
+              confidence={action.confidence}
+              risk={action.risk}
+              deployEtaSeconds={action.deployEtaSeconds}
+            />
           </div>
           <Button
             type="button"
@@ -279,7 +294,7 @@ export function RecommendedNextActionCard({ data }: { data: DashboardOverviewDat
             onClick={() =>
               openDeployment({
                 goal: inferGoalFromHref(action.href),
-                step: "readiness",
+                step: "plan",
                 source: "recommended_action",
               })
             }
@@ -546,6 +561,11 @@ export function AiRecommendationsPanel({ data }: { data: DashboardOverviewData }
             <div className="min-w-0 space-y-1">
               <p className="font-medium text-foreground">{rec.title}</p>
               <p className="text-xs text-cyan-200/80">{rec.impact}</p>
+              <PlanIntelligenceMeta
+                confidence={rec.confidence}
+                risk={rec.risk}
+                deployEtaSeconds={rec.deployEtaSeconds}
+              />
             </div>
             <Button
               type="button"
@@ -555,7 +575,7 @@ export function AiRecommendationsPanel({ data }: { data: DashboardOverviewData }
               onClick={() =>
                 openDeployment({
                   goal: inferGoalFromHref(rec.href),
-                  step: "readiness",
+                  step: "plan",
                   source: "recommendation",
                 })
               }
@@ -608,6 +628,7 @@ export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
                 </div>
                 <p className="text-xs text-muted-foreground">{item.detail}</p>
                 <p className="text-xs font-medium text-cyan-200/80">{item.impact}</p>
+                <PlanIntelligenceMeta {...resolvePlanIntelligence(item)} className="pt-0.5" />
                 {item.reasoning ? (
                   <p className="text-[11px] leading-relaxed text-muted-foreground/90">
                     <span className="font-medium text-violet-300/90">Why this surfaced: </span>
@@ -632,12 +653,12 @@ export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
                           agent: "retargeting",
                           goal: "improve_conversion",
                           mode: "autonomous",
-                          step: "readiness",
+                          step: "plan",
                           source: "opportunity",
                         }
                       : {
                           goal: inferGoalFromHref(item.href),
-                          step: "readiness",
+                          step: "plan",
                           source: "opportunity",
                         },
                   );

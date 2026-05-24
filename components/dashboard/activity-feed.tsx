@@ -1,9 +1,16 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ACTIVITY_FEED_FILTERS,
+  inferActivityCategory,
+  type ActivityFeedCategory,
+  type ActivityFeedFilter,
+} from "@/lib/dashboard/activity-feed";
 import type { ActivitySeverity } from "@/lib/dashboard/mission-control-types";
 import { fadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -14,6 +21,7 @@ export type ActivityFeedItem = {
   detail: string;
   time: string;
   severity?: ActivitySeverity;
+  category?: ActivityFeedCategory;
 };
 
 const severityStyles: Record<
@@ -47,7 +55,35 @@ const severityStyles: Record<
 };
 
 export function ActivityFeed({ items }: { items: ActivityFeedItem[] }) {
-  const empty = items.length === 0;
+  const [filter, setFilter] = useState<ActivityFeedFilter>("all");
+
+  const enriched = useMemo(
+    () =>
+      items.map((item) => ({
+        ...item,
+        resolvedCategory: item.category ?? inferActivityCategory(item),
+      })),
+    [items],
+  );
+
+  const filtered = useMemo(() => {
+    if (filter === "all") return enriched;
+    return enriched.filter((item) => item.resolvedCategory === filter);
+  }, [enriched, filter]);
+
+  const counts = useMemo(() => {
+    const tally: Record<ActivityFeedFilter, number> = {
+      all: enriched.length,
+      deployments: 0,
+      agents: 0,
+      errors: 0,
+      ai_actions: 0,
+    };
+    for (const item of enriched) {
+      if (item.resolvedCategory) tally[item.resolvedCategory] += 1;
+    }
+    return tally;
+  }, [enriched]);
 
   return (
     <motion.div
@@ -57,52 +93,75 @@ export function ActivityFeed({ items }: { items: ActivityFeedItem[] }) {
       viewport={{ once: true, margin: "-20px" }}
     >
       <Card className="border-white/[0.08] bg-gradient-to-br from-card/90 to-card/60 shadow-lg backdrop-blur-sm transition-shadow hover:shadow-[0_8px_32px_-12px_rgba(139,92,246,0.2)]">
-        <CardHeader className="flex flex-row items-center justify-between gap-2 border-b border-border/50 pb-4">
-          <CardTitle className="text-base font-semibold">Live activity</CardTitle>
-          <span className="inline-flex animate-pulse items-center gap-1.5 rounded-full border border-violet-500/25 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-violet-200">
-            <Sparkles className="size-3.5" aria-hidden />
-            Live
-          </span>
+        <CardHeader className="space-y-3 border-b border-border/50 pb-4">
+          <motion.div className="flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-base font-semibold">Live activity</CardTitle>
+            <span className="inline-flex animate-pulse items-center gap-1.5 rounded-full border border-violet-500/25 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-violet-200">
+              <Sparkles className="size-3.5" aria-hidden />
+              Live
+            </span>
+          </motion.div>
+          <div className="flex flex-wrap gap-1.5">
+            {ACTIVITY_FEED_FILTERS.map((pill) => (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => setFilter(pill.id)}
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all",
+                  filter === pill.id
+                    ? "border-violet-500/45 bg-violet-500/15 text-violet-100 shadow-[0_0_16px_-6px_rgba(139,92,246,0.45)]"
+                    : "border-white/10 bg-white/[0.03] text-muted-foreground hover:border-white/20 hover:text-foreground",
+                )}
+              >
+                {pill.label}
+                {pill.id !== "all" && counts[pill.id] > 0 ? (
+                  <span className="ml-1 tabular-nums opacity-70">{counts[pill.id]}</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
         </CardHeader>
         <CardContent className="space-y-0 divide-y divide-border/60 px-0 pt-0">
-          {empty ? (
+          {filtered.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-muted-foreground">
-              No recent events yet. Capture a lead or run a campaign to populate this feed.
+              {items.length === 0
+                ? "No recent events yet. Capture a lead or run a campaign to populate this feed."
+                : `No ${ACTIVITY_FEED_FILTERS.find((p) => p.id === filter)?.label.toLowerCase()} events in this window.`}
             </div>
           ) : null}
-          {!empty &&
-            items.map((item) => {
-              const sev = item.severity ?? "info";
-              const style = severityStyles[sev];
-              return (
-                <div
-                  key={item.id}
-                  className={cn(
-                    "flex gap-4 border-l-2 px-5 py-4 transition-colors hover:bg-white/[0.03]",
-                    style.border,
-                  )}
-                >
-                  <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", style.dot)} />
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-medium text-foreground">{item.title}</p>
-                      <span
-                        className={cn(
-                          "rounded-full border px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide",
-                          style.badge,
-                        )}
-                      >
-                        {style.label}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{item.detail}</p>
+          {filtered.map((item) => {
+            const sev = item.severity ?? "info";
+            const style = severityStyles[sev];
+            return (
+              <div
+                key={item.id}
+                className={cn(
+                  "flex gap-4 border-l-2 px-5 py-4 transition-colors hover:bg-white/[0.03]",
+                  style.border,
+                )}
+              >
+                <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", style.dot)} />
+                <motion.div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-foreground">{item.title}</p>
+                    <span
+                      className={cn(
+                        "rounded-full border px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide",
+                        style.badge,
+                      )}
+                    >
+                      {style.label}
+                    </span>
                   </div>
-                  <time className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {item.time}
-                  </time>
-                </div>
-              );
-            })}
+                  <p className="text-xs text-muted-foreground">{item.detail}</p>
+                </motion.div>
+                <time className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {item.time}
+                </time>
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
     </motion.div>

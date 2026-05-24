@@ -58,6 +58,19 @@ export function buildMissionControlPayload(input: {
   const hasGoogle = connectedPlatforms.has("google");
   const qualAgent = agents.find((a) => a.key === "lead_qualification");
   const retargetAgent = agents.find((a) => a.key === "retargeting");
+  const hasPaidAds = hasMeta || hasGoogle;
+
+  const trafficSpikeDetected =
+    funnelCounts.visitors > 0 &&
+    !hasPaidAds &&
+    funnelCounts.visitors >= Math.max(40, funnelCounts.leads * 4);
+
+  const trafficSignal = trafficSpikeDetected
+    ? {
+        headline: "Traffic spike detected.",
+        source: "Direct + organic landing traffic.",
+      }
+    : undefined;
 
   const pipelineValue = Math.max(
     funnelCounts.won * 4200 + funnelCounts.booked * 1800 + funnelCounts.qualified * 650,
@@ -132,6 +145,7 @@ export function buildMissionControlPayload(input: {
         : totalLeads === 0 || !billingActive
           ? ("medium" as const)
           : ("low" as const),
+    trafficSignal,
   };
 
   const healthChecks: HealthCheck[] = [
@@ -229,30 +243,45 @@ export function buildMissionControlPayload(input: {
         recommendation: "Scale traffic to the top of funnel to increase absolute conversions.",
       };
 
-  const nextAction: RecommendedNextAction = {
-    title: !hasMeta
-      ? "Connect Meta Ads & launch retargeting"
-      : activeCampaigns === 0
-        ? "Run Growth Engine for first campaign launch"
-        : qualAgent?.status !== "active"
-          ? "Activate Lead Qualification Agent"
-          : "Apply top optimization recommendation",
-    impact: !hasMeta
-      ? "Estimated +18–32% lead volume once paid channels are live"
-      : activeCampaigns === 0
-        ? "Go from zero to live campaigns in under 15 minutes"
-        : qualAgent?.status !== "active"
-          ? "Reduce response time by 40% on inbound leads"
-          : "Projected +8–14% ROAS from approved budget shift",
-    href: !hasMeta
-      ? "/dashboard/ads"
-      : activeCampaigns === 0
-        ? "/dashboard/engine"
-        : qualAgent?.status !== "active"
-          ? "/dashboard/agents"
-          : "/dashboard/optimization",
-    cta: !hasMeta ? "Connect Now" : activeCampaigns === 0 ? "Launch Engine" : "Deploy",
-  };
+  const nextAction: RecommendedNextAction = !hasMeta
+    ? {
+        title: "Connect Meta Ads & launch retargeting",
+        impact: "Estimated +18–32% lead volume once paid channels are live",
+        href: "/dashboard/ads",
+        cta: "Connect Now",
+        confidence: 88,
+        risk: "low",
+        deployEtaSeconds: 300,
+      }
+    : activeCampaigns === 0
+      ? {
+          title: "Run Growth Engine for first campaign launch",
+          impact: "Go from zero to live campaigns in under 15 minutes",
+          href: "/dashboard/engine",
+          cta: "Launch Engine",
+          confidence: 91,
+          risk: "low",
+          deployEtaSeconds: 180,
+        }
+      : qualAgent?.status !== "active"
+        ? {
+            title: "Activate Lead Qualification Agent",
+            impact: "Reduce response time by 40% on inbound leads",
+            href: "/dashboard/agents",
+            cta: "Deploy",
+            confidence: 86,
+            risk: "low",
+            deployEtaSeconds: 120,
+          }
+        : {
+            title: "Apply top optimization recommendation",
+            impact: "Projected +8–14% ROAS from approved budget shift",
+            href: "/dashboard/optimization",
+            cta: "Deploy",
+            confidence: 82,
+            risk: "low",
+            deployEtaSeconds: 120,
+          };
 
   const recommendations: AiRecommendation[] = [
     {
@@ -261,6 +290,9 @@ export function buildMissionControlPayload(input: {
       impact: "+12–18% recovered leads from site visitors",
       cta: "Deploy",
       href: "/dashboard/agents",
+      confidence: 82,
+      risk: "low",
+      deployEtaSeconds: 120,
     },
     {
       id: "ads",
@@ -268,6 +300,9 @@ export function buildMissionControlPayload(input: {
       impact: "Unlock paid acquisition + budget optimization",
       cta: "Fix Now",
       href: "/dashboard/ads",
+      confidence: 91,
+      risk: "low",
+      deployEtaSeconds: 300,
     },
     {
       id: "lp",
@@ -275,6 +310,9 @@ export function buildMissionControlPayload(input: {
       impact: "+8–15% conversion lift on top funnel",
       cta: "Deploy",
       href: "/dashboard/funnel",
+      confidence: 76,
+      risk: "medium",
+      deployEtaSeconds: 180,
     },
   ];
 
@@ -290,6 +328,9 @@ export function buildMissionControlPayload(input: {
       deployPreset: "retargeting",
       reasoning:
         "Multiple repeat visitors detected without active follow-up automation.",
+      confidence: 85,
+      risk: "low",
+      deployEtaSeconds: 120,
       deployPreview: {
         title: "Retargeting Agent Preview",
         audience: "Recent visitors",
@@ -310,6 +351,9 @@ export function buildMissionControlPayload(input: {
       cta: "Deploy",
       href: "/dashboard/leads",
       reasoning: "Same lead viewed key pages repeatedly within 24 hours — high intent signal.",
+      confidence: 88,
+      risk: "low",
+      deployEtaSeconds: 120,
       deployPreview: {
         title: "Deploy Follow-Up Agent",
         audience: "High-intent leads (3+ page views)",
@@ -326,6 +370,9 @@ export function buildMissionControlPayload(input: {
       cta: "Deploy",
       href: "/dashboard/funnel",
       reasoning: "A/B data shows variant B outperforming control on conversion rate.",
+      confidence: 79,
+      risk: "medium",
+      deployEtaSeconds: 180,
       deployPreview: {
         title: "Deploy Landing Page Agent",
         audience: "All inbound traffic",
@@ -341,6 +388,9 @@ export function buildMissionControlPayload(input: {
       cta: "Fix Now",
       href: "/dashboard/ads",
       reasoning: "Search auction pressure eased in your service area for high-intent terms.",
+      confidence: 72,
+      risk: "low",
+      deployEtaSeconds: 240,
     },
     {
       id: "4",
@@ -351,6 +401,9 @@ export function buildMissionControlPayload(input: {
       cta: "Deploy",
       href: "/dashboard/optimization",
       reasoning: "Paused ad sets are holding budget that top performers could absorb.",
+      confidence: 84,
+      risk: "medium",
+      deployEtaSeconds: 90,
     },
     {
       id: "5",
@@ -361,6 +414,9 @@ export function buildMissionControlPayload(input: {
       cta: "Deploy",
       href: "/dashboard/automations",
       reasoning: "Qualified pipeline stalled beyond SLA — automation can re-engage.",
+      confidence: 91,
+      risk: "low",
+      deployEtaSeconds: 60,
       deployPreview: {
         title: "Deploy AI Follow-Up",
         audience: "Qualified leads · 48h+ idle",
@@ -695,6 +751,9 @@ export function buildMissionControlPayload(input: {
       booked: funnelCounts.booked,
     },
     agents: agents.map((a) => ({ agent_type: a.key, status: a.status })),
+    crmConnected,
+    activeAgentCount: activeAgentCount,
+    hasPaidAds,
   });
 
   return {

@@ -13,7 +13,6 @@ import {
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { RetargetingAgentDeploymentPanel } from "@/components/agents/retargeting-agent-deployment-panel";
 import { DeployableStacksPanel } from "@/components/dashboard/mission-control/deployable-stacks-panel";
-import { AiCopilotFab } from "@/components/dashboard/mission-control/ai-copilot-fab";
 import { CommandCenterBell } from "@/components/dashboard/mission-control/command-center-bell";
 import {
   AccountConnectionCenter,
@@ -211,7 +210,7 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
                 <div>
                   <h3 className="text-lg font-semibold">Inbound velocity</h3>
                   <p className="text-sm text-muted-foreground">
-                    Seven-day lead flow — tuned for fast executive reads.
+                    Seven-day lead flow with AI velocity annotations.
                   </p>
                 </div>
                 <span className="animate-pulse rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-cyan-200">
@@ -233,8 +232,6 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
           <AccountConnectionCenter data={data} />
         </section>
       </div>
-
-      <AiCopilotFab />
     </>
   );
 }

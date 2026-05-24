@@ -1,70 +1,114 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { MessageCircle, Rocket, Sparkles, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Activity,
+  ChevronRight,
+  Radar,
+  Rocket,
+  Sparkles,
+  Terminal,
+  TrendingDown,
+  X,
+  Zap,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type CopilotAction =
+type CopilotCommand =
   | {
+      id: string;
       label: string;
       description: string;
+      icon: typeof Terminal;
       kind: "deploy";
       launch: Parameters<ReturnType<typeof useAgentDeployment>["openDeployment"]>[0];
     }
-  | { label: string; description: string; kind: "link"; href: string };
+  | {
+      id: string;
+      label: string;
+      description: string;
+      icon: typeof Terminal;
+      kind: "brief";
+      brief: { title: string; body: string; href?: string; hrefLabel?: string };
+    };
 
-const COPILOT_ACTIONS: CopilotAction[] = [
+const OPERATOR_COMMANDS: CopilotCommand[] = [
   {
-    label: "Deploy lead engine",
-    description: "Landing → qualification → follow-up → CRM",
-    kind: "deploy",
-    launch: { stack: "lead_engine", goal: "generate_leads", source: "quick_action" },
-  },
-  {
-    label: "Launch ads stack",
-    description: "Meta, search, retargeting, analytics",
-    kind: "deploy",
-    launch: { stack: "paid_ads", goal: "launch_ads", source: "quick_action" },
-  },
-  {
-    label: "Launch growth engine",
-    description: "Full-stack deployment — primary onboarding",
+    id: "review-plan",
+    label: "Review my growth plan",
+    description: "Outcome, stack, guardrails, and approval",
+    icon: Sparkles,
     kind: "deploy",
     launch: {
-      goal: "deploy_full_growth_engine",
-      stack: "growth_engine",
-      source: "growth_engine",
-      step: "readiness",
+      stack: "lead_engine",
+      goal: "generate_leads",
+      step: "plan",
+      source: "control_plane",
     },
   },
   {
-    label: "Diagnose account",
-    description: "Executive briefing and health checks",
-    kind: "link",
-    href: "/dashboard",
+    id: "deploy-lead-stack",
+    label: "Deploy lead stack",
+    description: "Landing → qualification → follow-up → CRM",
+    icon: Rocket,
+    kind: "deploy",
+    launch: {
+      stack: "lead_engine",
+      goal: "generate_leads",
+      step: "stack",
+      source: "control_plane",
+    },
   },
   {
+    id: "diagnose-tracking",
+    label: "Diagnose tracking issues",
+    description: "Pixel, analytics, and conversion signals",
+    icon: Radar,
+    kind: "brief",
+    brief: {
+      title: "Tracking diagnostic",
+      body: "Meta pixel and GA4 events are the most common gaps before deploy. Verify domain verification, purchase/lead events, and CRM webhook handoff.",
+      href: "/dashboard/integrations",
+      hrefLabel: "Open integrations",
+    },
+  },
+  {
+    id: "explain-drop",
     label: "Explain performance drop",
-    description: "Funnel, leads, and velocity signals",
-    kind: "link",
-    href: "/dashboard/leads",
+    description: "Funnel, velocity, and inbound signals",
+    icon: TrendingDown,
+    kind: "brief",
+    brief: {
+      title: "Performance analysis",
+      body: "Check inbound velocity for weekend spikes, qualification drop-off, and follow-up SLA breaches. Mission Control briefing surfaces the primary driver.",
+      href: "/dashboard",
+      hrefLabel: "Open Mission Control",
+    },
   },
   {
+    id: "optimize-cpl",
     label: "Optimize CPL",
-    description: "Campaign and budget optimization",
-    kind: "link",
-    href: "/dashboard/optimization",
+    description: "Budget shift and creative fatigue recommendations",
+    icon: Activity,
+    kind: "deploy",
+    launch: {
+      goal: "improve_conversion",
+      step: "plan",
+      source: "control_plane",
+    },
   },
 ];
 
 export function AiCopilotFab() {
   const [open, setOpen] = useState(false);
+  const [activeBrief, setActiveBrief] = useState<CopilotCommand & { kind: "brief" } | null>(null);
   const { openDeployment } = useAgentDeployment();
+  const router = useRouter();
 
   useEffect(() => {
     if (!open) return;
@@ -72,19 +116,25 @@ export function AiCopilotFab() {
       if (e.key === "Escape") setOpen(false);
     };
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+
+  function runCommand(command: CopilotCommand) {
+    if (command.kind === "deploy") {
+      setActiveBrief(null);
+      setOpen(false);
+      openDeployment(command.launch);
+      return;
+    }
+    setActiveBrief(command);
+  }
 
   return (
     <>
       <AnimatePresence>
         {open ? (
           <motion.div
-            className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[55] bg-black/35 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -96,97 +146,126 @@ export function AiCopilotFab() {
 
       <AnimatePresence>
         {open ? (
-          <motion.aside
+          <motion.div
             role="dialog"
-            aria-label="Ask Diazites AI"
-            className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-md flex-col border-l border-white/10 bg-card/98 shadow-[-24px_0_80px_-20px_rgba(0,0,0,0.9)] backdrop-blur-xl"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 28, stiffness: 320 }}
+            aria-label="Diazites AI control plane"
+            className="fixed bottom-24 right-6 z-[60] flex w-[min(420px,calc(100vw-3rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-card/98 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.85)] backdrop-blur-xl"
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ type: "spring", damping: 26, stiffness: 340 }}
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-              <div className="flex items-center gap-2">
-                <span className="flex size-9 items-center justify-center rounded-xl border border-violet-500/30 bg-violet-500/15 shadow-[0_0_20px_-6px_rgba(139,92,246,0.5)]">
-                  <Sparkles className="size-4 text-violet-300" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold">Ask Diazites AI</p>
-                  <p className="text-[11px] text-muted-foreground">Autonomous control plane</p>
+            <div className="border-b border-white/10 bg-gradient-to-r from-violet-950/40 to-cyan-950/20 px-4 py-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex size-8 items-center justify-center rounded-lg border border-violet-500/35 bg-violet-500/15">
+                    <Terminal className="size-4 text-violet-200" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold">Ask Diazites AI</p>
+                    <p className="text-[10px] font-medium uppercase tracking-wider text-cyan-200/70">
+                      Operator console
+                    </p>
+                  </div>
                 </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-lg"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close control plane"
+                >
+                  <X className="size-4" />
+                </Button>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-lg"
-                onClick={() => setOpen(false)}
-                aria-label="Close assistant"
-              >
-                <X className="size-4" />
-              </Button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5">
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Run orchestration commands — deploy stacks, diagnose the account, or optimize spend.
+              <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                Orchestration commands — not support chat. Run plans, deploy stacks, diagnose systems.
               </p>
-              <ul className="mt-5 space-y-2">
-                {COPILOT_ACTIONS.map((action, i) => (
-                  <motion.li
-                    key={action.label}
-                    initial={{ opacity: 0, x: 12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.05 * i }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOpen(false);
-                        if (action.kind === "deploy") {
-                          openDeployment(action.launch);
-                        } else {
-                          window.location.href = action.href;
-                        }
-                      }}
-                      className={cn(
-                        buttonVariants({ variant: "outline" }),
-                        "mission-shimmer-btn h-auto w-full justify-start rounded-xl border-white/10 bg-white/[0.03] py-3 text-left transition-all hover:border-violet-500/40 hover:bg-violet-500/10",
-                      )}
-                    >
-                      <span className="flex w-full items-start gap-2">
-                        <Rocket className="mt-0.5 size-3.5 shrink-0 text-violet-300" />
-                        <span>
-                          <span className="block text-sm font-medium">{action.label}</span>
-                          <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                            {action.description}
-                          </span>
-                        </span>
-                      </span>
-                    </button>
-                  </motion.li>
-                ))}
-              </ul>
             </div>
 
-            <div className="border-t border-white/10 p-5">
-              <Link
-                href="/dashboard/agents"
-                onClick={() => setOpen(false)}
-                className={cn(
-                  buttonVariants({ variant: "gradient" }),
-                  "mission-shimmer-btn w-full rounded-xl",
-                )}
-              >
-                Open full AI workspace
-              </Link>
+            <div className="max-h-[min(420px,60vh)] overflow-y-auto p-3">
+              {activeBrief ? (
+                <div className="space-y-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-cyan-200/90">
+                    <Zap className="size-3.5" />
+                    {activeBrief.brief.title}
+                  </div>
+                  <p className="text-sm leading-relaxed text-foreground/90">{activeBrief.brief.body}</p>
+                  <div className="flex gap-2">
+                    {activeBrief.brief.href ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="rounded-lg border-white/10 text-xs"
+                        onClick={() => {
+                          setOpen(false);
+                          router.push(activeBrief.brief.href!);
+                        }}
+                      >
+                        {activeBrief.brief.hrefLabel ?? "Open"}
+                        <ChevronRight className="ml-1 size-3.5" />
+                      </Button>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-lg text-xs"
+                      onClick={() => setActiveBrief(null)}
+                    >
+                      Back to commands
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Commands
+                  </p>
+                  <ul className="space-y-1.5">
+                    {OPERATOR_COMMANDS.map((command, i) => (
+                      <motion.li
+                        key={command.id}
+                        initial={{ opacity: 0, x: 8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.04 * i }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => runCommand(command)}
+                          className="group flex w-full items-start gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3 py-2.5 text-left transition-all hover:border-violet-500/35 hover:bg-violet-500/10"
+                        >
+                          <command.icon className="mt-0.5 size-3.5 shrink-0 text-violet-300" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-medium text-foreground group-hover:text-violet-100">
+                              {command.label}
+                            </span>
+                            <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                              {command.description}
+                            </span>
+                          </span>
+                          <ChevronRight className="mt-1 size-3.5 shrink-0 text-muted-foreground/50 group-hover:text-violet-300" />
+                        </button>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
-          </motion.aside>
+
+            <div className="border-t border-white/10 px-3 py-2">
+              <p className="text-center text-[10px] text-muted-foreground/80">
+                Control plane · Mission Control · Execution · System · Approvals
+              </p>
+            </div>
+          </motion.div>
         ) : null}
       </AnimatePresence>
 
-      <div className="fixed bottom-6 right-6 z-[80]">
-        <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
+      <div className="fixed bottom-6 right-6 z-[65]">
+        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
           <Button
             type="button"
             variant="gradient"
@@ -195,16 +274,19 @@ export function AiCopilotFab() {
               "mission-shimmer-btn relative rounded-full px-5 shadow-[0_12px_40px_-8px_rgba(99,102,241,0.55)]",
               open && "ring-2 ring-cyan-400/40",
             )}
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => {
+              setActiveBrief(null);
+              setOpen((v) => !v);
+            }}
             aria-expanded={open}
           >
             {!open ? (
               <span
-                className="pointer-events-none absolute inset-0 animate-ping rounded-full bg-violet-500/25"
+                className="pointer-events-none absolute inset-0 animate-ping rounded-full bg-violet-500/20"
                 aria-hidden
               />
             ) : null}
-            <MessageCircle className="relative size-4" />
+            <Terminal className="relative size-4" />
             <span className="relative">Ask Diazites AI</span>
           </Button>
         </motion.div>
@@ -212,3 +294,6 @@ export function AiCopilotFab() {
     </>
   );
 }
+
+/** Alias for architecture docs / imports */
+export const AiControlPlane = AiCopilotFab;

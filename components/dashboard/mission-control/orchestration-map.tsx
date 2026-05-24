@@ -16,15 +16,27 @@ const FLOW_BADGE: Record<OrchestrationFlowStatus, string> = {
   live: "border-cyan-500/40 bg-cyan-500/15 text-cyan-200 mission-timeline-dot-pulse",
   active: "border-emerald-500/35 bg-emerald-500/12 text-emerald-200",
   running: "border-amber-500/35 bg-amber-500/12 text-amber-200 mission-timeline-dot-pulse",
-  processing: "border-sky-500/35 bg-sky-500/12 text-sky-200",
+  healthy: "border-teal-500/35 bg-teal-500/12 text-teal-200",
+  connected: "border-violet-500/35 bg-violet-500/12 text-violet-200",
+  processing: "border-sky-500/35 bg-sky-500/12 text-sky-200 mission-eta-tick",
   inactive: "border-white/15 bg-white/[0.04] text-muted-foreground",
+};
+
+const NODE_BORDER: Record<OrchestrationFlowStatus, string> = {
+  live: "border-cyan-500/35 bg-gradient-to-r from-cyan-500/10 to-transparent shadow-[0_0_20px_-10px_rgba(34,211,238,0.4)]",
+  active: "border-emerald-500/30 bg-gradient-to-r from-emerald-500/8 to-transparent",
+  running: "border-amber-500/30 bg-gradient-to-r from-amber-500/8 to-transparent",
+  healthy: "border-teal-500/30 bg-gradient-to-r from-teal-500/8 to-transparent",
+  connected: "border-violet-500/30 bg-gradient-to-r from-violet-500/8 to-transparent",
+  processing: "border-sky-500/30 bg-gradient-to-r from-sky-500/8 to-transparent",
+  inactive: "border-white/10 bg-white/[0.02]",
 };
 
 function FlowStatusBadge({ label, status }: { label: string; status: OrchestrationFlowStatus }) {
   return (
     <span
       className={cn(
-        "rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+        "shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
         FLOW_BADGE[status],
       )}
     >
@@ -33,40 +45,66 @@ function FlowStatusBadge({ label, status }: { label: string; status: Orchestrati
   );
 }
 
-function FlowConnector({ metric }: { metric: string }) {
+function FlowConnector() {
   return (
-    <div className="flex flex-col items-center gap-0.5 py-1.5">
-      <ArrowDown className="size-4 text-violet-400/80" aria-hidden />
-      <span className="text-[11px] font-medium tabular-nums text-cyan-300/90">{metric}</span>
-    </div>
+    <motion.div
+      className="flex justify-center py-1"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+    >
+      <ArrowDown className="size-4 text-violet-400/70" aria-hidden />
+    </motion.div>
   );
 }
 
 function OrchestrationMapFlow({ steps }: { steps: OrchestrationFlowStep[] }) {
   return (
-    <div className="mx-auto flex w-full max-w-sm flex-col">
+    <motion.div
+      className="mx-auto w-full max-w-md space-y-0"
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true }}
+    >
       {steps.map((step, i) => (
-        <div key={step.id}>
+        <motion.div
+          key={step.id}
+          initial={{ opacity: 0, x: -8 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: i * 0.05 }}
+        >
           <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.06 }}
             className={cn(
-              "flex items-center justify-between gap-3 rounded-xl border border-violet-500/25 bg-gradient-to-r from-violet-500/10 to-transparent px-4 py-3",
-              step.status === "live" && "border-cyan-500/30 shadow-[0_0_24px_-12px_rgba(34,211,238,0.35)]",
-              step.status === "running" && "border-amber-500/25",
+              "rounded-xl border px-3 py-2.5 sm:px-4 sm:py-3",
+              NODE_BORDER[step.status],
             )}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: "spring", stiffness: 400, damping: 28 }}
           >
-            <p className="text-sm font-semibold">{step.label}</p>
-            <FlowStatusBadge label={step.statusLabel} status={step.status} />
+            <motion.div
+              className="grid grid-cols-[1fr_auto_auto] items-center gap-3"
+            >
+              <p className="min-w-0 truncate text-sm font-semibold">{step.label}</p>
+              <span className="text-right text-[11px] font-medium tabular-nums text-cyan-300/90 sm:text-xs">
+                {step.metric}
+              </span>
+              <FlowStatusBadge label={step.statusLabel} status={step.status} />
+            </motion.div>
+            {step.signal ? (
+              <div className="mt-2.5 rounded-lg border border-cyan-500/25 bg-cyan-500/8 px-2.5 py-2 text-[11px] leading-relaxed">
+                <p className="font-semibold text-cyan-100">{step.signal.headline}</p>
+                <p className="mt-0.5 text-muted-foreground">
+                  <span className="font-medium text-cyan-200/80">Source: </span>
+                  {step.signal.source}
+                </p>
+              </div>
+            ) : null}
           </motion.div>
-          {step.flowMetric && i < steps.length - 1 ? (
-            <FlowConnector metric={`↓ ${step.flowMetric}`} />
-          ) : null}
-        </div>
+          {i < steps.length - 1 ? <FlowConnector /> : null}
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -88,22 +126,22 @@ export function OrchestrationMap({
 
   if (embedded) {
     return (
-      <div className={className}>
+      <motion.div className={className} variants={fadeItem} initial="hidden" animate="show">
         <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Orchestration map
+          Live system map
         </p>
         <OrchestrationMapFlow steps={steps} />
-      </div>
+      </motion.div>
     );
   }
 
   return (
     <motion.div variants={fadeItem} initial="hidden" animate="show" className={className}>
       <GlassCard
-        title="Orchestration map"
-        description="Live flow — status and volume between agents"
+        title="Live system map"
+        description="Operational status and volume across the growth engine"
         headerExtra={
-          <span className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-cyan-200">
+          <span className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-cyan-200 mission-timeline-dot-pulse">
             <GitBranch className="size-3" />
             Live
           </span>

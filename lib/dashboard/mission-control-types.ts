@@ -28,6 +28,10 @@ export type MissionControlBriefing = {
   aiConfidence: number;
   expectedUplift: string;
   riskLevel: "low" | "medium" | "high";
+  trafficSignal?: {
+    headline: string;
+    source: string;
+  };
 };
 
 export type RevenueForecast = {
@@ -55,12 +59,20 @@ export type AiDiagnostic = {
   detail: string;
 };
 
+export type PlanRisk = "low" | "medium" | "high";
+
+export type PlanIntelligence = {
+  confidence: number;
+  risk: PlanRisk;
+  deployEtaSeconds: number;
+};
+
 export type RecommendedNextAction = {
   title: string;
   impact: string;
   href: string;
   cta: string;
-};
+} & PlanIntelligence;
 
 export type FunnelDiagnosis = {
   summary: string;
@@ -97,7 +109,7 @@ export type AiRecommendation = {
   impact: string;
   cta: string;
   href: string;
-};
+} & PlanIntelligence;
 
 export type OpportunityDeployPreview = {
   title: string;
@@ -121,7 +133,7 @@ export type OpportunityItem = {
   reasoning?: string;
   deployPreview?: OpportunityDeployPreview;
   deployPreset?: "retargeting";
-};
+} & PlanIntelligence;
 
 export type GoalPacingStatus = "ahead" | "on_track" | "behind";
 
@@ -130,14 +142,19 @@ export type GoalCoaching = {
   suggestedMove: string;
 };
 
+export type SparkAnnotation = {
+  kind: "spike" | "warning" | "neutral";
+  label?: string;
+  title: string;
+  detail?: string;
+  source?: string;
+  predictions?: string[];
+};
+
 export type SparkPoint = {
   d: string;
   v: number;
-  annotation?: {
-    title: string;
-    detail: string;
-    kind: "spike" | "warning" | "neutral";
-  };
+  annotation?: SparkAnnotation;
 };
 
 export type OrchestrationTimelineEvent = {

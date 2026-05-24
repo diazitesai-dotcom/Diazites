@@ -1,20 +1,23 @@
-export type OrchestrationFlowStatus = "live" | "active" | "running" | "processing" | "inactive";
+export type OrchestrationFlowStatus =
+  | "live"
+  | "active"
+  | "running"
+  | "healthy"
+  | "connected"
+  | "processing"
+  | "inactive";
 
 export type OrchestrationFlowStep = {
   id: string;
   label: string;
+  /** Inline counter or state label (e.g. "132 visits", "synced") */
+  metric: string;
   status: OrchestrationFlowStatus;
   statusLabel: string;
-  /** Shown on the connector below this step (e.g. "132 visits") */
-  flowMetric?: string;
-};
-
-const STATUS_LABEL: Record<OrchestrationFlowStatus, string> = {
-  live: "LIVE",
-  active: "ACTIVE",
-  running: "RUNNING",
-  processing: "PROCESSING",
-  inactive: "IDLE",
+  signal?: {
+    headline: string;
+    source: string;
+  };
 };
 
 function formatCount(n: number, unit: string): string {
@@ -39,9 +42,15 @@ export function buildOrchestrationFlow(input: {
     booked: number;
   };
   agents: { agent_type: string; status: string }[];
+  crmConnected?: boolean;
+  activeAgentCount?: number;
+  hasPaidAds?: boolean;
 }): OrchestrationFlowStep[] {
   const { visitors, leads, qualified, booked } = input.funnelCounts;
   const hasTraffic = visitors > 0;
+  const hasPaidAds = input.hasPaidAds ?? false;
+  const crmConnected = input.crmConnected ?? true;
+  const activeAgents = input.activeAgentCount ?? input.agents.filter((a) => a.status === "active").length;
 
   const landingAgent = agentFlowStatus(input.agents, "landing_page");
   const landingStatus: OrchestrationFlowStatus = !hasTraffic
@@ -56,37 +65,116 @@ export function buildOrchestrationFlow(input: {
   else if (leads > 0 && qualified < leads) qualifyStatus = "running";
 
   const followAgent = agentFlowStatus(input.agents, "ai_follow_up");
+  const sequenceCount = followAgent !== "inactive" ? Math.max(booked, Math.min(qualified, 3)) : 0;
   const followupStatus: OrchestrationFlowStatus =
-    booked > 0 && followAgent !== "inactive" ? "active" : followAgent;
+    followAgent === "active" && sequenceCount > 0
+      ? "healthy"
+      : followAgent === "running"
+        ? "running"
+        : followAgent;
+
+  const crmStatus: OrchestrationFlowStatus = crmConnected && (qualified > 0 || booked > 0)
+    ? "connected"
+    : crmConnected
+      ? "processing"
+      : "inactive";
+
+  const hasOptimizationAgents =
+    agentFlowStatus(input.agents, "retargeting") !== "inactive" ||
+    agentFlowStatus(input.agents, "social_ads") !== "inactive" ||
+    agentFlowStatus(input.agents, "search_ads") !== "inactive";
+  const optimizationStatus: OrchestrationFlowStatus = hasOptimizationAgents && activeAgents > 0
+    ? "processing"
+    : hasOptimizationAgents
+      ? "running"
+      : "inactive";
+
+  const trafficSpikeDetected =
+    hasTraffic && !hasPaidAds && visitors >= Math.max(40, leads * 4);
+
+  const trafficSignal = trafficSpikeDetected
+    ? {
+        headline: "Traffic spike detected.",
+        source: "Direct + organic landing traffic.",
+      }
+    : undefined;
 
   return [
     {
       id: "traffic",
       label: "Traffic",
+      metric: formatCount(visitors, "visits"),
       status: hasTraffic ? "live" : "inactive",
-      statusLabel: hasTraffic ? "LIVE" : STATUS_LABEL.inactive,
-      flowMetric: formatCount(visitors, "visits"),
+      statusLabel: hasTraffic ? "LIVE" : "IDLE",
+      signal: trafficSignal,
     },
     {
       id: "landing",
       label: "Landing Agent",
+      metric: formatCount(leads, "converts"),
       status: landingStatus,
-      statusLabel: STATUS_LABEL[landingStatus],
-      flowMetric: formatCount(leads, "conversions"),
+      statusLabel:
+        landingStatus === "live"
+          ? "LIVE"
+          : landingStatus === "active"
+            ? "ACTIVE"
+            : landingStatus === "running"
+              ? "RUNNING"
+              : landingStatus === "processing"
+                ? "PROCESSING"
+                : "IDLE",
     },
     {
       id: "qualify",
       label: "Lead Qualification",
+      metric: formatCount(qualified, "scored"),
       status: qualifyStatus,
-      statusLabel: STATUS_LABEL[qualifyStatus],
-      flowMetric: formatCount(qualified, "scored"),
+      statusLabel:
+        qualifyStatus === "running"
+          ? "RUNNING"
+          : qualifyStatus === "active"
+            ? "ACTIVE"
+            : qualifyStatus === "processing"
+              ? "PROCESSING"
+              : "IDLE",
     },
     {
       id: "followup",
-      label: "Follow-Up Agent",
+      label: "Follow-Up",
+      metric: formatCount(sequenceCount, "sequences"),
       status: followupStatus,
-      statusLabel: STATUS_LABEL[followupStatus],
-      flowMetric: formatCount(booked, "booked"),
+      statusLabel:
+        followupStatus === "healthy"
+          ? "HEALTHY"
+          : followupStatus === "running"
+            ? "RUNNING"
+            : followupStatus === "active"
+              ? "ACTIVE"
+              : "IDLE",
+    },
+    {
+      id: "crm",
+      label: "CRM",
+      metric: crmConnected ? "synced" : "pending",
+      status: crmStatus,
+      statusLabel:
+        crmStatus === "connected"
+          ? "CONNECTED"
+          : crmStatus === "processing"
+            ? "PROCESSING"
+            : "IDLE",
+    },
+    {
+      id: "optimize",
+      label: "Optimization Loop",
+      metric: optimizationStatus !== "inactive" ? "tuning" : "idle",
+      status: optimizationStatus,
+      statusLabel:
+        optimizationStatus === "processing"
+          ? "PROCESSING"
+          : optimizationStatus === "running"
+            ? "RUNNING"
+            : "IDLE",
     },
   ];
 }
