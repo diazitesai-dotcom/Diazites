@@ -1,7 +1,12 @@
 "use client";
 
+import Link from "next/link";
+import { Megaphone, Sparkles, Target, Upload } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -27,8 +32,56 @@ export function CampaignsTable({ campaigns }: { campaigns: CampaignRow[] }) {
         <CardHeader>
           <CardTitle className="text-lg">No campaigns yet</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Create a campaign from the API or admin tools to see performance here.
+        <CardContent className="space-y-6">
+          <p className="text-sm text-muted-foreground">
+            Launch your first campaign from the Growth Engine, connect an ad platform, or import
+            existing performance data.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Link
+              href="/dashboard/engine"
+              className="flex items-start gap-3 rounded-xl border border-white/[0.06] p-4 transition-colors hover:bg-white/[0.03]"
+            >
+              <Sparkles className="mt-0.5 h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium">Launch Growth Engine</p>
+                <p className="text-xs text-muted-foreground">
+                  8-stage AI research, creative, funnel, and launch.
+                </p>
+              </div>
+            </Link>
+            <Link
+              href="/dashboard/ads"
+              className="flex items-start gap-3 rounded-xl border border-white/[0.06] p-4 transition-colors hover:bg-white/[0.03]"
+            >
+              <Target className="mt-0.5 h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium">Connect Ads Platform</p>
+                <p className="text-xs text-muted-foreground">
+                  Meta, Google, TikTok, Microsoft, Zernio, or Zapier.
+                </p>
+              </div>
+            </Link>
+            <Link
+              href="/dashboard/campaigns"
+              className="flex items-start gap-3 rounded-xl border border-white/[0.06] p-4 transition-colors hover:bg-white/[0.03]"
+            >
+              <Upload className="mt-0.5 h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium">Import Campaign</p>
+                <p className="text-xs text-muted-foreground">
+                  Sync campaigns after connecting an ad account.
+                </p>
+              </div>
+            </Link>
+          </div>
+          <Link
+            href="/dashboard/funnel"
+            className={cn(buttonVariants({ variant: "outline" }), "inline-flex rounded-xl")}
+          >
+            <Megaphone className="mr-2 h-4 w-4" />
+            Build a funnel landing page
+          </Link>
         </CardContent>
       </Card>
     );

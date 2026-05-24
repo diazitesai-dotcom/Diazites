@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { createAuditLogRepository } from "@/repositories/audit-log.repository";
+import { logAudit } from "@/lib/audit/log";
 
+/** Writes to cross-cutting audit_logs (011). */
 export async function writeAuditLog(
   client: SupabaseClient,
   input: {
@@ -14,10 +15,15 @@ export async function writeAuditLog(
     metadata?: Record<string, unknown>;
   },
 ): Promise<void> {
-  try {
-    const repo = createAuditLogRepository(client);
-    await repo.insert(input);
-  } catch (e) {
-    console.error("[writeAuditLog] failed", e);
-  }
+  await logAudit(client, {
+    businessId: input.businessId,
+    actorUserId: input.actorUserId,
+    action: input.action,
+    targetKind: input.entityType,
+    targetId: input.entityId ?? undefined,
+    metadata: {
+      ...input.metadata,
+      actorType: input.actorType ?? "user",
+    },
+  });
 }

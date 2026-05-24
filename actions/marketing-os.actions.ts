@@ -25,13 +25,15 @@ import {
   getLandingPageEditorState,
   listLandingPagesForBusiness,
   publishLandingPage,
+  archiveLandingPage,
+  pushLandingPageToCampaign,
   suggestAbTestWinner,
   updateLandingPageVersion,
 } from "@/services/landing/landing-page-editor.service";
 import {
   decideRecommendation,
   listOptimizationRecommendations,
-} from "@/services/optimization/optimization.service";
+} from "@/services/optimization/marketing-os-recommendations.service";
 import {
   listAgentPermissions,
   updateAgentPermission,
@@ -116,6 +118,29 @@ export async function cloneLandingPageAction(landingPageId: string) {
   return { ok: true as const, data: result.data };
 }
 
+export async function archiveLandingPageAction(landingPageId: string) {
+  const { supabase, userId, businessId } = await ctx();
+  const result = await archiveLandingPage(supabase, userId, businessId, landingPageId);
+  if (!result.success) return { ok: false as const, error: result.error };
+  revalidatePath("/dashboard/funnel");
+  return { ok: true as const };
+}
+
+export async function pushLandingPageToCampaignAction(landingPageId: string, campaignId: string) {
+  const { supabase, userId, businessId } = await ctx();
+  const result = await pushLandingPageToCampaign(
+    supabase,
+    userId,
+    businessId,
+    landingPageId,
+    campaignId,
+  );
+  if (!result.success) return { ok: false as const, error: result.error };
+  revalidatePath("/dashboard/funnel");
+  revalidatePath("/dashboard/campaigns");
+  return { ok: true as const };
+}
+
 export async function suggestWinnerAction(landingPageId: string) {
   const { supabase, businessId } = await ctx();
   const result = await suggestAbTestWinner(supabase, businessId, landingPageId);
@@ -160,7 +185,7 @@ export async function connectAdAccountAction(input: {
   const { supabase, userId, businessId } = await ctx();
   const result = await connectAdAccount(supabase, userId, businessId, input);
   if (!result.success) return { ok: false as const, error: result.error };
-  revalidatePath("/dashboard/integrations");
+  revalidatePath("/dashboard/ads");
   return { ok: true as const, data: result.data };
 }
 
@@ -168,7 +193,7 @@ export async function testAdAccountAction(adAccountId: string) {
   const { supabase, userId, businessId } = await ctx();
   const result = await testAdAccountConnection(supabase, userId, businessId, adAccountId);
   if (!result.success) return { ok: false as const, error: result.error };
-  revalidatePath("/dashboard/integrations");
+  revalidatePath("/dashboard/ads");
   return { ok: true as const, data: result.data };
 }
 
@@ -176,7 +201,7 @@ export async function syncAdAccountAction(adAccountId: string) {
   const { supabase, userId, businessId } = await ctx();
   const result = await syncAdAccountCampaigns(supabase, userId, businessId, adAccountId);
   if (!result.success) return { ok: false as const, error: result.error };
-  revalidatePath("/dashboard/integrations");
+  revalidatePath("/dashboard/ads");
   revalidatePath("/dashboard/campaigns");
   return { ok: true as const, data: result.data };
 }
@@ -185,7 +210,7 @@ export async function disconnectAdAccountAction(adAccountId: string) {
   const { supabase, userId, businessId } = await ctx();
   const result = await disconnectAdAccount(supabase, userId, businessId, adAccountId);
   if (!result.success) return { ok: false as const, error: result.error };
-  revalidatePath("/dashboard/integrations");
+  revalidatePath("/dashboard/ads");
   return { ok: true as const };
 }
 
@@ -256,7 +281,7 @@ export async function updateAgentPermissionAction(input: {
   const { supabase, userId, businessId } = await ctx();
   const result = await updateAgentPermission(supabase, userId, businessId, input);
   if (!result.success) return { ok: false as const, error: result.error };
-  revalidatePath("/dashboard/integrations");
+  revalidatePath("/dashboard/ads");
   return { ok: true as const };
 }
 
@@ -264,7 +289,7 @@ export async function startGrowthEngineAction(inputUrl: string) {
   const { supabase, userId, businessId } = await ctx();
   const result = await startGrowthEngineRun(supabase, userId, businessId, inputUrl);
   if (!result.success) return { ok: false as const, error: result.error };
-  revalidatePath("/dashboard/growth-engine");
+  revalidatePath("/dashboard/engine");
   return { ok: true as const, data: result.data };
 }
 

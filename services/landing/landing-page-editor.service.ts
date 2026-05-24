@@ -210,17 +210,36 @@ export async function publishLandingPage(
   }
 
   const versions = createLandingPageVersionRepository(client);
+  const { data: versionRow } = await versions.getById(versionId);
+
+  const { data: existingPage } = await client
+    .from("landing_pages")
+    .select("*")
+    .eq("id", landingPageId)
+    .eq("business_id", businessId)
+    .maybeSingle();
+
+  if (!existingPage) return fail("Landing page not found", "NOT_FOUND");
+
   await versions.update(versionId, {
     versionLabel: "published",
     publishedAt: new Date().toISOString(),
   });
 
+  const config = versionRow
+    ? buildPublicConfigFromVersion(
+        existingPage as Record<string, unknown>,
+        versionRow as Record<string, unknown>,
+      )
+    : {};
+
   const { data: page, error } = await client
     .from("landing_pages")
     .update({
       published: true,
-      status: "published",
+      page_status: "published",
       active_version_id: versionId,
+      config,
       updated_at: new Date().toISOString(),
     })
     .eq("id", landingPageId)
@@ -458,4 +477,106 @@ export async function addLandingPageAsset(
 
   if (error || !data) return fail(error?.message ?? "Failed to add asset");
   return ok(data);
+}
+
+function buildPublicConfigFromVersion(
+  page: Record<string, unknown>,
+  version: Record<string, unknown>,
+): Record<string, unknown> {
+  const sections = (version.sections as LandingSection[] | undefined) ?? [];
+  const hero = sections.find((s) => s.type === "hero" && s.enabled);
+  const offer = sections.find((s) => s.type === "offer" && s.enabled);
+  const benefits = sections.find((s) => s.type === "benefits" && s.enabled);
+
+  const bullets =
+    (benefits?.content?.items as string[] | undefined)?.filter(Boolean) ?? [];
+
+  return {
+    asset: {
+      headline: String(hero?.content?.headline ?? page.headline ?? ""),
+      subheadline: String(hero?.content?.subheadline ?? page.subheadline ?? ""),
+      primaryCta: String(hero?.content?.cta ?? page.cta_text ?? "Get Started"),
+      bullets,
+      socialProof: String(offer?.content?.body ?? page.offer ?? ""),
+    },
+    formFields: version.form_fields ?? [],
+    sections,
+  };
+}
+
+export async function archiveLandingPage(
+  client: SupabaseClient,
+  ownerUserId: string,
+  businessId: string,
+  landingPageId: string,
+): Promise<ServiceResult<void>> {
+  const businesses = createBusinessRepository(client);
+  const { data: business } = await businesses.getById(businessId);
+  if (!business || business.user_id !== ownerUserId) {
+    return fail("Forbidden", "FORBIDDEN");
+  }
+
+  const { error } = await client
+    .from("landing_pages")
+    .update({ page_status: "archived", published: false, updated_at: new Date().toISOString() })
+    .eq("id", landingPageId)
+    .eq("business_id", businessId);
+
+  if (error) return fail(error.message);
+
+  await writeAuditLog(client, {
+    businessId,
+    actorUserId: ownerUserId,
+    action: "landing_page.archived",
+    entityType: "landing_page",
+    entityId: landingPageId,
+  });
+
+  return ok(undefined);
+}
+
+export async function pushLandingPageToCampaign(
+  client: SupabaseClient,
+  ownerUserId: string,
+  businessId: string,
+  landingPageId: string,
+  campaignId: string,
+): Promise<ServiceResult<void>> {
+  const businesses = createBusinessRepository(client);
+  const { data: business } = await businesses.getById(businessId);
+  if (!business || business.user_id !== ownerUserId) {
+    return fail("Forbidden", "FORBIDDEN");
+  }
+
+  const { data: campaign } = await client
+    .from("campaigns")
+    .select("id")
+    .eq("id", campaignId)
+    .eq("business_id", businessId)
+    .maybeSingle();
+
+  if (!campaign) return fail("Campaign not found", "NOT_FOUND");
+
+  await client
+    .from("landing_pages")
+    .update({ campaign_id: campaignId, updated_at: new Date().toISOString() })
+    .eq("id", landingPageId)
+    .eq("business_id", businessId);
+
+  await client
+    .from("campaigns")
+    .update({ landing_page_id: landingPageId })
+    .eq("id", campaignId)
+    .eq("business_id", businessId);
+
+  await writeAuditLog(client, {
+    businessId,
+    actorUserId: ownerUserId,
+    action: "landing_page.linked_campaign",
+    entityType: "landing_page",
+    entityId: landingPageId,
+    metadata: { campaignId },
+  });
+
+  return ok(undefined);
 }

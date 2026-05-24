@@ -35,11 +35,11 @@ export async function createLead(
   });
 
   try {
-    const { createBusinessRepository } = await import("@/repositories/business.repository");
+    const { createBusinessRepository: getBiz } = await import("@/repositories/business.repository");
     const { createNotificationRepository } = await import(
       "@/repositories/cross-cutting.repository"
     );
-    const businesses = createBusinessRepository(client);
+    const businesses = getBiz(client);
     const { data: biz } = await businesses.getById(input.businessId);
     const ownerUserId = (biz as { user_id?: string | null } | null)?.user_id ?? null;
     if (ownerUserId) {
@@ -296,9 +296,6 @@ export async function updateLeadFields(
   return ok(data);
 }
 
-/**
- * Re-runs the AI follow-up + email path (e.g. operator retry or scheduled job).
- */
 export async function triggerFollowUpSequence(
   client: SupabaseClient,
   leadId: string,

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { decryptCredentials, encryptCredentials, maskCredential } from "@/lib/crypto/credentials";
 import { ok, fail, type ServiceResult } from "@/lib/result";
-import { createAdAccountRepository } from "@/repositories/ad-account.repository";
+import { createMarketingOsAdAccountRepository } from "@/repositories/marketing-os-ad-account.repository";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { EVENT_TYPES } from "@/types/backend";
 import type { AdPlatform, ConnectionStatus } from "@/types/marketing-os";
@@ -36,7 +36,7 @@ export async function connectAdAccount(
   const encrypted = encryptCredentials(credentialsJson);
   const hint = maskCredential(primaryValue);
 
-  const repo = createAdAccountRepository(client);
+  const repo = createMarketingOsAdAccountRepository(client);
   const { data, error } = await repo.upsert({
     businessId,
     platform: input.platform,
@@ -79,7 +79,7 @@ export async function listAdAccounts(
     return fail("Forbidden", "FORBIDDEN");
   }
 
-  const repo = createAdAccountRepository(client);
+  const repo = createMarketingOsAdAccountRepository(client);
   const { data, error } = await repo.listByBusiness(businessId);
   if (error) return fail(error.message);
   return ok(data ?? []);
@@ -97,7 +97,7 @@ export async function testAdAccountConnection(
     return fail("Forbidden", "FORBIDDEN");
   }
 
-  const repo = createAdAccountRepository(client);
+  const repo = createMarketingOsAdAccountRepository(client);
   const { data: account } = await repo.getById(adAccountId);
   if (!account || account.business_id !== businessId) {
     return fail("Ad account not found", "NOT_FOUND");
@@ -129,7 +129,7 @@ export async function syncAdAccountCampaigns(
     return fail("Forbidden", "FORBIDDEN");
   }
 
-  const repo = createAdAccountRepository(client);
+  const repo = createMarketingOsAdAccountRepository(client);
   const { data: account } = await repo.getById(adAccountId);
   if (!account || account.business_id !== businessId) {
     return fail("Ad account not found", "NOT_FOUND");
@@ -171,7 +171,7 @@ export async function disconnectAdAccount(
     return fail("Forbidden", "FORBIDDEN");
   }
 
-  const repo = createAdAccountRepository(client);
+  const repo = createMarketingOsAdAccountRepository(client);
   const { error } = await repo.delete(adAccountId, businessId);
   if (error) return fail(error.message);
 
