@@ -2,12 +2,25 @@ export type ConnectionStatus = "connected" | "pending" | "missing" | "error";
 
 export type ActivitySeverity = "success" | "warning" | "critical" | "info";
 
+export type CommandCenterKind = "alert" | "warning" | "recommendation";
+
+export type CommandCenterItem = {
+  id: string;
+  kind: CommandCenterKind;
+  title: string;
+  detail: string;
+  href?: string;
+};
+
 export type MissionControlBriefing = {
   leadsCaptured: number;
   campaignStatus: string;
   agentStatus: string;
   missedOpportunity: string;
   recommendedNextAction: string;
+  aiInsight: string;
+  leverageRecommendation: string;
+  expectedImpact: string;
 };
 
 export type RecommendedNextAction = {
@@ -15,6 +28,13 @@ export type RecommendedNextAction = {
   impact: string;
   href: string;
   cta: string;
+};
+
+export type FunnelDiagnosis = {
+  summary: string;
+  dropoffStage: string;
+  dropoffPercent: number;
+  recommendation: string;
 };
 
 export type HealthCheck = {
@@ -37,6 +57,7 @@ export type FunnelStage = {
   count: number;
   conversionRate: number | null;
   isBottleneck: boolean;
+  dropoffPercent: number | null;
 };
 
 export type KpiTrend = {
@@ -70,6 +91,8 @@ export type MarketSignal = {
   change: string;
   direction: "up" | "down" | "neutral";
   detail: string;
+  confidence: number;
+  source: string;
 };
 
 export type AgentPerformance = {
@@ -80,6 +103,10 @@ export type AgentPerformance = {
   resultMetric: string;
   lastActivity: string;
   href: string;
+  executionCount: number;
+  resultRate: number;
+  performanceScore: number;
+  lastExecutedAt: string;
 };
 
 export type AccountConnection = {

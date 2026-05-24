@@ -7,6 +7,8 @@ import type {
   AgentPerformance,
   AiRecommendation,
   BusinessGoal,
+  CommandCenterItem,
+  FunnelDiagnosis,
   FunnelStage,
   HealthCheck,
   KpiTrend,
@@ -135,12 +137,14 @@ export type DashboardOverviewData = {
   healthChecks: HealthCheck[];
   revenue: RevenueForecast;
   funnel: FunnelStage[];
+  funnelDiagnosis: FunnelDiagnosis;
   recommendations: AiRecommendation[];
   opportunities: OpportunityItem[];
   marketSignals: MarketSignal[];
   agentPerformance: AgentPerformance[];
   connections: AccountConnection[];
   goals: BusinessGoal[];
+  commandCenter: CommandCenterItem[];
 };
 
 export async function loadDashboardOverview(): Promise<DashboardOverviewData | null> {

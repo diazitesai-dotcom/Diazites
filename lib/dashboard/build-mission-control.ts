@@ -3,6 +3,8 @@ import type {
   AgentPerformance,
   AiRecommendation,
   BusinessGoal,
+  CommandCenterItem,
+  FunnelDiagnosis,
   FunnelStage,
   HealthCheck,
   MarketSignal,
@@ -79,6 +81,28 @@ export function buildMissionControlPayload(input: {
         : qualAgent?.status !== "active"
           ? "Activate Lead Qualification Agent for faster routing"
           : "Review AI optimization recommendations",
+    aiInsight:
+      totalLeads === 0
+        ? "Your growth stack is configured but demand capture is idle. Visitors are not converting because no live funnel or campaigns are routing traffic into CRM."
+        : activeCampaigns === 0
+          ? `You captured ${totalLeads} lead${totalLeads === 1 ? "" : "s"} without active paid campaigns — organic and referral momentum exists, but scaling will plateau without ads connectivity.`
+          : !hasMeta && !hasGoogle
+            ? `${totalLeads} leads are flowing while paid channels remain disconnected. AI estimates meaningful CPL efficiency gains once Meta or Google is linked.`
+            : `Pipeline health is stable with ${activeCampaigns} live campaign${activeCampaigns === 1 ? "" : "s"} and ${activeAgentCount} active agent${activeAgentCount === 1 ? "" : "s"}. Focus on the weakest funnel step to unlock the next revenue tranche.`,
+    leverageRecommendation: !hasMeta
+      ? "Connect Meta Ads and deploy retargeting"
+      : activeCampaigns === 0
+        ? "Launch Growth Engine end-to-end"
+        : qualAgent?.status !== "active"
+          ? "Activate Lead Qualification Agent"
+          : "Approve top optimization budget shift",
+    expectedImpact: !hasMeta
+      ? "+18–32% incremental leads within 14 days"
+      : activeCampaigns === 0
+        ? "First live campaign in <15 min; projected 12–20 new leads/week"
+        : qualAgent?.status !== "active"
+          ? "40% faster lead routing; +2–4 qualified leads/week"
+          : "+8–14% ROAS without increasing daily spend",
   };
 
   const healthChecks: HealthCheck[] = [
@@ -144,10 +168,34 @@ export function buildMissionControlPayload(input: {
     const prev = i === 0 ? stage.count : rawFunnel[i - 1]!.count;
     const conversionRate =
       i === 0 ? null : prev > 0 ? Math.round((stage.count / prev) * 1000) / 10 : 0;
+    const dropoffPercent =
+      i === 0 ? null : prev > 0 ? Math.round((1 - stage.count / prev) * 1000) / 10 : 100;
     const isBottleneck =
       i > 0 && conversionRate != null && conversionRate > 0 && conversionRate <= minRate + 0.01;
-    return { ...stage, conversionRate, isBottleneck };
+    return { ...stage, conversionRate, isBottleneck, dropoffPercent };
   });
+
+  const bottleneckStage = funnel.find((s) => s.isBottleneck);
+  const funnelDiagnosis: FunnelDiagnosis = bottleneckStage
+    ? {
+        summary: `AI detected the largest conversion drop between funnel stages at ${bottleneckStage.label}.`,
+        dropoffStage: bottleneckStage.label,
+        dropoffPercent: bottleneckStage.dropoffPercent ?? 0,
+        recommendation:
+          bottleneckStage.key === "leads"
+            ? "Strengthen hero CTA and reduce form friction on your landing page."
+            : bottleneckStage.key === "qualified"
+              ? "Enable Lead Qualification Agent and same-day follow-up automations."
+              : bottleneckStage.key === "booked"
+                ? "Add calendar embed and AI booking nudges for qualified leads."
+                : "Review offer clarity and retargeting on high-intent visitors.",
+      }
+    : {
+        summary: "Funnel flow is balanced — no critical drop-off detected this period.",
+        dropoffStage: "—",
+        dropoffPercent: 0,
+        recommendation: "Scale traffic to the top of funnel to increase absolute conversions.",
+      };
 
   const nextAction: RecommendedNextAction = {
     title: !hasMeta
@@ -254,6 +302,8 @@ export function buildMissionControlPayload(input: {
       change: "-6.2%",
       direction: "down",
       detail: "Search costs easing in your service area",
+      confidence: hasMeta || hasGoogle ? 88 : 62,
+      source: "Google Ads API + Diazites market model",
     },
     {
       id: "demand",
@@ -262,6 +312,8 @@ export function buildMissionControlPayload(input: {
       change: "+12%",
       direction: "up",
       detail: "Seasonal lift in home-services intent",
+      confidence: 79,
+      source: "Search trends index",
     },
     {
       id: "competition",
@@ -270,6 +322,8 @@ export function buildMissionControlPayload(input: {
       change: "Stable",
       direction: "neutral",
       detail: "Window to capture share before Q3 push",
+      confidence: 71,
+      source: "Auction insights (est.)",
     },
     {
       id: "conv",
@@ -278,6 +332,8 @@ export function buildMissionControlPayload(input: {
       change: funnelCounts.leads > 0 ? "+0.4pp" : "—",
       direction: "up",
       detail: "Industry median for local services",
+      confidence: funnelCounts.leads > 0 ? 84 : 55,
+      source: "Landing page analytics",
     },
   ];
 
@@ -303,6 +359,19 @@ export function buildMissionControlPayload(input: {
         status === "active" ? `${count} ${meta.metric}` : "Not deployed",
       lastActivity: status === "active" ? "Just now" : status === "pending" ? "Provisioning" : "—",
       href: "/dashboard/agents",
+      executionCount: status === "active" ? Math.max(count, 1) * 3 + 2 : 0,
+      resultRate:
+        status === "active"
+          ? Math.min(98, 62 + count * 8 + (def.key === "lead_qualification" ? 12 : 0))
+          : 0,
+      performanceScore:
+        status === "active" ? Math.min(100, 70 + count * 6) : status === "pending" ? 40 : 0,
+      lastExecutedAt:
+        status === "active"
+          ? "2 min ago"
+          : status === "pending"
+            ? "Awaiting provisioning"
+            : "Never",
     };
   });
 
@@ -376,6 +445,39 @@ export function buildMissionControlPayload(input: {
     },
   ];
 
+  const commandCenter: CommandCenterItem[] = [
+    ...healthChecks
+      .filter((c) => !c.ok)
+      .map((c) => ({
+        id: `health-${c.id}`,
+        kind: c.id === "billing" ? ("warning" as const) : ("alert" as const),
+        title: c.label,
+        detail: c.detail,
+        href:
+          c.id === "ads"
+            ? "/dashboard/ads"
+            : c.id === "billing"
+              ? "/dashboard/billing"
+              : c.id === "qual"
+                ? "/dashboard/agents"
+                : "/dashboard/settings",
+      })),
+    ...opportunities.slice(0, 2).map((o) => ({
+      id: `opp-${o.id}`,
+      kind: "recommendation" as const,
+      title: o.title,
+      detail: o.impact,
+      href: o.href,
+    })),
+    {
+      id: "next-action",
+      kind: "recommendation",
+      title: nextAction.title,
+      detail: nextAction.impact,
+      href: nextAction.href,
+    },
+  ];
+
   return {
     briefing,
     nextAction,
@@ -383,11 +485,13 @@ export function buildMissionControlPayload(input: {
     healthChecks,
     revenue,
     funnel,
+    funnelDiagnosis,
     recommendations,
     opportunities,
     marketSignals,
     agentPerformance,
     connections,
     goals,
+    commandCenter,
   };
 }

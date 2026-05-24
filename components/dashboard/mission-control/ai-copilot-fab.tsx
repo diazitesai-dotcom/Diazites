@@ -8,10 +8,10 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const SUGGESTED_PROMPTS = [
-  "Why are conversions low?",
-  "Generate ad copy",
-  "Optimize my funnel",
-  "What should I do next?",
+  "Why are leads low?",
+  "Build my campaign",
+  "Optimize funnel",
+  "Analyze account",
 ];
 
 export function AiCopilotFab() {
@@ -85,11 +85,12 @@ export function AiCopilotFab() {
             type="button"
             variant="gradient"
             size="lg"
-            className="rounded-full px-5 shadow-[0_12px_40px_-8px_rgba(99,102,241,0.55)]"
+            className="relative rounded-full px-5 shadow-[0_12px_40px_-8px_rgba(99,102,241,0.55)]"
             onClick={() => setOpen((v) => !v)}
           >
-            <MessageCircle className="size-4" />
-            Ask Diazites AI
+            <span className="absolute inset-0 animate-ping rounded-full bg-violet-500/20" aria-hidden />
+            <MessageCircle className="relative size-4" />
+            <span className="relative">Ask Diazites AI</span>
           </Button>
         </motion.div>
       </div>

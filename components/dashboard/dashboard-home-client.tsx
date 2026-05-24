@@ -12,6 +12,7 @@ import {
 
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { AiCopilotFab } from "@/components/dashboard/mission-control/ai-copilot-fab";
+import { CommandCenterBell } from "@/components/dashboard/mission-control/command-center-bell";
 import {
   AccountConnectionCenter,
   AgentPerformanceBoard,
@@ -127,6 +128,7 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
           eyebrow="AI Growth OS"
           title="Mission control"
           description="Your AI-powered marketing command center — what is happening, what is broken, and what to do next."
+          actions={<CommandCenterBell items={data.commandCenter} />}
         />
 
         <AiCommandBriefing data={data} />
