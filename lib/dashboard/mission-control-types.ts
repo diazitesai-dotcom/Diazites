@@ -1,5 +1,7 @@
 import type { OrchestrationRunStatus } from "@/lib/dashboard/orchestration-status";
 
+export type { OrchestrationFlowStep, OrchestrationFlowStatus } from "@/lib/dashboard/build-orchestration-flow";
+
 export type ConnectionStatus = "connected" | "pending" | "missing" | "error";
 
 export type ActivitySeverity = "success" | "warning" | "critical" | "info";

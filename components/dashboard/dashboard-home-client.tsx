@@ -142,9 +142,9 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
         <AiCommandBriefing data={data} />
         <RecommendedNextActionCard data={data} />
 
-        <RetargetingAgentDeploymentPanel />
+        <RetargetingAgentDeploymentPanel flow={data.orchestrationFlow} />
 
-        <DeployableStacksPanel />
+        <DeployableStacksPanel flow={data.orchestrationFlow} />
 
         <QuickActionsRow />
 
@@ -199,7 +199,10 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
           <OpportunityFeed data={data} />
         </section>
 
-        <GrowthOrchestrationTimeline events={data.orchestrationTimeline} />
+        <GrowthOrchestrationTimeline
+          events={data.orchestrationTimeline}
+          flow={data.orchestrationFlow}
+        />
 
         <section className="grid gap-6 lg:grid-cols-5">
           <motion.div variants={fadeItem} initial="hidden" animate="show" className="lg:col-span-3">

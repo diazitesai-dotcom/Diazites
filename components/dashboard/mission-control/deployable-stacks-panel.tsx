@@ -15,6 +15,7 @@ import {
   componentIcon,
   type DeployableStackDefinition,
 } from "@/lib/agents/stack-deployment-catalog";
+import type { OrchestrationFlowStep } from "@/lib/dashboard/build-orchestration-flow";
 import { fadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +33,7 @@ function stackPreviewFromDefinition(stack: DeployableStackDefinition): GrowthSta
   };
 }
 
-export function DeployableStacksPanel() {
+export function DeployableStacksPanel({ flow }: { flow?: OrchestrationFlowStep[] }) {
   const { openDeployment, agents } = useAgentDeployment();
   const stacks = useMemo(() => buildDeployableStacks(agents), [agents]);
   const [preview, setPreview] = useState<GrowthStackPreviewData | null>(null);
@@ -134,7 +135,7 @@ export function DeployableStacksPanel() {
         </div>
 
         <div className="mt-5 border-t border-white/[0.06] pt-5">
-          <OrchestrationMap embedded />
+          <OrchestrationMap embedded flow={flow} />
         </div>
       </GlassCard>
 

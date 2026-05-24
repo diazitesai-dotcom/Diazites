@@ -2,6 +2,7 @@ import {
   buildGoalCoaching,
   enrichBusinessGoals,
 } from "@/lib/dashboard/build-goal-diagnostics";
+import { buildOrchestrationFlow } from "@/lib/dashboard/build-orchestration-flow";
 import type {
   AccountConnection,
   AgentPerformance,
@@ -686,6 +687,16 @@ export function buildMissionControlPayload(input: {
     },
   ];
 
+  const orchestrationFlow = buildOrchestrationFlow({
+    funnelCounts: {
+      visitors: funnelCounts.visitors,
+      leads: funnelCounts.leads,
+      qualified: funnelCounts.qualified,
+      booked: funnelCounts.booked,
+    },
+    agents: agents.map((a) => ({ agent_type: a.key, status: a.status })),
+  });
+
   return {
     briefing,
     nextAction,
@@ -702,6 +713,7 @@ export function buildMissionControlPayload(input: {
     goals,
     goalCoaching,
     orchestrationTimeline,
+    orchestrationFlow,
     commandCenter,
     kpiInsights,
     diagnostics,

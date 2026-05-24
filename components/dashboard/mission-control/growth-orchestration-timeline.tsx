@@ -7,6 +7,7 @@ import { DeploymentRollbackButton } from "@/components/agents/deployment-rollbac
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
 import { OrchestrationTimelineRow } from "@/components/dashboard/mission-control/orchestration-timeline-row";
 import { OrchestrationMap } from "@/components/dashboard/mission-control/orchestration-map";
+import type { OrchestrationFlowStep } from "@/lib/dashboard/build-orchestration-flow";
 import type { OrchestrationTimelineEvent } from "@/lib/dashboard/mission-control-types";
 import { ORCHESTRATION_STATUS_META } from "@/lib/dashboard/orchestration-status";
 import { fadeItem } from "@/lib/motion";
@@ -23,9 +24,11 @@ const ICONS = {
 export function GrowthOrchestrationTimeline({
   events,
   showMap = true,
+  flow,
 }: {
   events: OrchestrationTimelineEvent[];
   showMap?: boolean;
+  flow?: OrchestrationFlowStep[];
 }) {
   return (
     <motion.div variants={fadeItem} initial="hidden" animate="show">
@@ -78,7 +81,7 @@ export function GrowthOrchestrationTimeline({
 
         {showMap ? (
           <div className="mt-5 border-t border-white/[0.06] pt-5">
-            <OrchestrationMap embedded />
+            <OrchestrationMap embedded flow={flow} />
           </div>
         ) : null}
 

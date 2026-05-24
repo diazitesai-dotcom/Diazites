@@ -152,6 +152,7 @@ export type DashboardOverviewData = {
   goals: BusinessGoal[];
   goalCoaching: GoalCoaching;
   orchestrationTimeline: OrchestrationTimelineEvent[];
+  orchestrationFlow: import("@/lib/dashboard/build-orchestration-flow").OrchestrationFlowStep[];
   commandCenter: CommandCenterItem[];
   kpiInsights: KpiInsight[];
   diagnostics: AiDiagnostic[];
