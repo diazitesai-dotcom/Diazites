@@ -1,8 +1,11 @@
+import {
+  buildGoalCoaching,
+  enrichBusinessGoals,
+} from "@/lib/dashboard/build-goal-diagnostics";
 import type {
   AccountConnection,
   AgentPerformance,
   AiRecommendation,
-  BusinessGoal,
   AiDiagnostic,
   CommandCenterItem,
   FunnelDiagnosis,
@@ -12,6 +15,7 @@ import type {
   MarketSignal,
   MissionControlBriefing,
   OpportunityItem,
+  OrchestrationTimelineEvent,
   RecommendedNextAction,
   RevenueForecast,
 } from "@/lib/dashboard/mission-control-types";
@@ -280,8 +284,18 @@ export function buildMissionControlPayload(input: {
       detail: "Recent visitors returned multiple times — no follow-up automation",
       impact: "+12–18% recovered leads",
       priority: "high",
-      cta: "Deploy Now",
+      cta: "Deploy",
       href: "/dashboard?deploy=retargeting",
+      deployPreset: "retargeting",
+      reasoning:
+        "Multiple repeat visitors detected without active follow-up automation.",
+      deployPreview: {
+        title: "Deploy Retargeting Agent",
+        audience: "Recent visitors",
+        budget: "$5/day",
+        followUp: "3-touch sequence",
+        expected: "+12–18% recovered leads",
+      },
     },
     {
       id: "1",
@@ -291,6 +305,13 @@ export function buildMissionControlPayload(input: {
       priority: "high",
       cta: "Deploy",
       href: "/dashboard/leads",
+      reasoning: "Same lead viewed key pages repeatedly within 24 hours — high intent signal.",
+      deployPreview: {
+        title: "Deploy Follow-Up Agent",
+        audience: "High-intent leads (3+ page views)",
+        followUp: "Same-day outreach sequence",
+        expected: "+22% close probability",
+      },
     },
     {
       id: "2",
@@ -300,6 +321,12 @@ export function buildMissionControlPayload(input: {
       priority: "medium",
       cta: "Deploy",
       href: "/dashboard/funnel",
+      reasoning: "A/B data shows variant B outperforming control on conversion rate.",
+      deployPreview: {
+        title: "Deploy Landing Page Agent",
+        audience: "All inbound traffic",
+        expected: "+8–15% funnel conversion lift",
+      },
     },
     {
       id: "3",
@@ -309,6 +336,7 @@ export function buildMissionControlPayload(input: {
       priority: "medium",
       cta: "Fix Now",
       href: "/dashboard/ads",
+      reasoning: "Search auction pressure eased in your service area for high-intent terms.",
     },
     {
       id: "4",
@@ -318,6 +346,7 @@ export function buildMissionControlPayload(input: {
       priority: "low",
       cta: "Deploy",
       href: "/dashboard/optimization",
+      reasoning: "Paused ad sets are holding budget that top performers could absorb.",
     },
     {
       id: "5",
@@ -327,6 +356,13 @@ export function buildMissionControlPayload(input: {
       priority: "high",
       cta: "Deploy",
       href: "/dashboard/automations",
+      reasoning: "Qualified pipeline stalled beyond SLA — automation can re-engage.",
+      deployPreview: {
+        title: "Deploy AI Follow-Up",
+        audience: "Qualified leads · 48h+ idle",
+        followUp: "3-touch recovery sequence",
+        expected: "Recover 2–3 stalled opportunities",
+      },
     },
   ];
 
@@ -450,35 +486,30 @@ export function buildMissionControlPayload(input: {
     },
   ];
 
-  const goals: BusinessGoal[] = [
-    {
-      id: "revenue",
-      label: "Revenue goal",
-      current: Math.round(pipelineValue * 0.35),
-      target: 50000,
-      unit: "currency",
-    },
-    {
-      id: "leads",
-      label: "Lead goal",
-      current: totalLeads,
-      target: Math.max(40, totalLeads + 12),
-      unit: "count",
-    },
-    {
-      id: "booked",
-      label: "Booked calls",
-      current: funnelCounts.booked + funnelCounts.won,
-      target: 15,
-      unit: "count",
-    },
-    {
-      id: "campaigns",
-      label: "Campaign launches",
-      current: activeCampaigns,
-      target: 3,
-      unit: "count",
-    },
+  const goals = enrichBusinessGoals({
+    revenueCurrent: Math.round(pipelineValue * 0.35),
+    revenueTarget: 50000,
+    leadCurrent: totalLeads,
+    leadTarget: Math.max(40, totalLeads + 12),
+    bookedCurrent: funnelCounts.booked + funnelCounts.won,
+    bookedTarget: 15,
+    campaignCurrent: activeCampaigns,
+    campaignTarget: 3,
+    periodDays: metrics?.periodDays ?? 30,
+  });
+
+  const goalCoaching = buildGoalCoaching({
+    activeCampaigns,
+    hasAds: hasMeta || hasGoogle,
+  });
+
+  const orchestrationTimeline: OrchestrationTimelineEvent[] = [
+    { id: "o1", time: "09:02", label: "Landing page generated", kind: "asset" },
+    { id: "o2", time: "09:04", label: "Meta campaign launched", kind: "campaign" },
+    { id: "o3", time: "09:07", label: "Lead Qualification activated", kind: "deployment" },
+    { id: "o4", time: "09:09", label: "Lead captured", kind: "lead" },
+    { id: "o5", time: "09:12", label: "Follow-Up triggered", kind: "execution" },
+    { id: "o6", time: "09:15", label: "Optimization applied", kind: "execution" },
   ];
 
   const kpiInsights: KpiInsight[] = [
@@ -612,6 +643,8 @@ export function buildMissionControlPayload(input: {
     agentPerformance,
     connections,
     goals,
+    goalCoaching,
+    orchestrationTimeline,
     commandCenter,
     kpiInsights,
     diagnostics,

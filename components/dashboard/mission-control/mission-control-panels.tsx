@@ -20,8 +20,11 @@ import {
   Zap,
 } from "lucide-react";
 
+import { useState } from "react";
+
 import { AgentDeployTrigger } from "@/components/agents/agent-deploy-trigger";
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
+import { OpportunityDeployPreview } from "@/components/dashboard/mission-control/opportunity-deploy-preview";
 import { AnimatedCounter, AnimatedMoney } from "@/components/dashboard/mission-control/animated-counter";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
 import { inferGoalFromHref } from "@/lib/agents/deployment-catalog";
@@ -30,7 +33,11 @@ import { FunnelEmptyHint } from "@/components/dashboard/mission-control/mission-
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { DashboardOverviewData } from "@/lib/dashboard/load-dashboard-overview";
-import type { ConnectionStatus } from "@/lib/dashboard/mission-control-types";
+import type {
+  BusinessGoal,
+  ConnectionStatus,
+  OpportunityItem,
+} from "@/lib/dashboard/mission-control-types";
 import { fadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -82,30 +89,26 @@ function agentBadge(status: string) {
   }
 }
 
-function GoalBar({
-  label,
-  current,
-  target,
-  unit,
-}: {
-  label: string;
-  current: number;
-  target: number;
-  unit: "currency" | "count";
-}) {
-  const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+const pacingStyles = {
+  ahead: "text-emerald-300",
+  on_track: "text-cyan-300",
+  behind: "text-amber-300",
+};
+
+function GoalDiagnosticRow({ goal }: { goal: BusinessGoal }) {
+  const pct = goal.target > 0 ? Math.min(100, Math.round((goal.current / goal.target) * 100)) : 0;
   const display =
-    unit === "currency"
-      ? `${formatMoney(current)} / ${formatMoney(target)}`
-      : `${current} / ${target}`;
+    goal.unit === "currency"
+      ? `${formatMoney(goal.current)} / ${formatMoney(goal.target)}`
+      : `${goal.current} / ${goal.target}`;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="font-medium text-foreground">{label}</span>
-        <span className="tabular-nums text-muted-foreground">{display}</span>
+    <div className="space-y-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-sm font-medium text-foreground">{goal.label}</span>
+        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{display}</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
         <motion.div
           className="h-full rounded-full bg-gradient-to-r from-violet-500 via-blue-500 to-cyan-400"
           initial={{ width: 0 }}
@@ -113,6 +116,30 @@ function GoalBar({
           viewport={{ once: true }}
           transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
         />
+      </div>
+      <div className="grid gap-1 text-[11px]">
+        <p className="text-muted-foreground">
+          Forecast pacing:{" "}
+          <span className={cn("font-semibold", pacingStyles[goal.pacingStatus])}>
+            {goal.pacingLabel}
+          </span>
+        </p>
+        {goal.projectedLabel ? (
+          <p className="text-muted-foreground">
+            Projected: <span className="font-medium text-foreground">{goal.projectedLabel}</span>
+          </p>
+        ) : null}
+        {goal.pacePerDay != null ? (
+          <p className="text-muted-foreground">
+            Current pace:{" "}
+            <span className="font-medium text-foreground">{goal.pacePerDay}/day</span>
+          </p>
+        ) : null}
+        {goal.etaDays != null && goal.etaDays > 0 ? (
+          <p className="text-muted-foreground">
+            ETA: <span className="font-medium text-violet-200">{goal.etaDays} days remaining</span>
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -581,6 +608,7 @@ export function AiRecommendationsPanel({ data }: { data: DashboardOverviewData }
 
 export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
   const { openDeployment } = useAgentDeployment();
+  const [previewOpp, setPreviewOpp] = useState<OpportunityItem | null>(null);
   const priorityColor = {
     high: "border-rose-500/25 bg-rose-500/5",
     medium: "border-amber-500/20 bg-amber-500/5",
@@ -617,13 +645,23 @@ export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
                 </div>
                 <p className="text-xs text-muted-foreground">{item.detail}</p>
                 <p className="text-xs font-medium text-cyan-200/80">{item.impact}</p>
+                {item.reasoning ? (
+                  <p className="text-[11px] leading-relaxed text-muted-foreground/90">
+                    <span className="font-medium text-violet-300/90">Why this surfaced: </span>
+                    {item.reasoning}
+                  </p>
+                ) : null}
               </div>
               <Button
                 type="button"
                 variant="gradient"
                 size="sm"
                 className="shrink-0 rounded-xl"
-                onClick={() =>
+                onClick={() => {
+                  if (item.deployPreview) {
+                    setPreviewOpp(item);
+                    return;
+                  }
                   openDeployment(
                     item.id === "retargeting"
                       ? {
@@ -638,8 +676,8 @@ export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
                           goal: inferGoalFromHref(item.href),
                           source: "opportunity",
                         },
-                  )
-                }
+                  );
+                }}
               >
                 {item.cta}
               </Button>
@@ -647,6 +685,7 @@ export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
           </li>
         ))}
       </ul>
+      <OpportunityDeployPreview opportunity={previewOpp} onClose={() => setPreviewOpp(null)} />
     </GlassCard>
   );
 }
@@ -765,18 +804,25 @@ export function AccountConnectionCenter({ data }: { data: DashboardOverviewData 
 }
 
 export function BusinessGoalsWidget({ data }: { data: DashboardOverviewData }) {
+  const coaching = data.goalCoaching;
   return (
-    <GlassCard title="Business Goals" description="Monthly progress toward targets">
-      <div className="space-y-4">
+    <GlassCard title="Business Goals" description="Diagnostics, pacing, and AI coaching">
+      <div className="space-y-3">
         {data.goals.map((goal) => (
-          <GoalBar
-            key={goal.id}
-            label={goal.label}
-            current={goal.current}
-            target={goal.target}
-            unit={goal.unit}
-          />
+          <GoalDiagnosticRow key={goal.id} goal={goal} />
         ))}
+      </div>
+      <div className="mt-4 rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-transparent p-3">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-300/90">
+          AI Insight
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Highest blocker:{" "}
+          <span className="font-medium text-foreground">{coaching.blocker}</span>
+        </p>
+        <p className="mt-1 text-xs text-cyan-200/90">
+          Suggested move: {coaching.suggestedMove}
+        </p>
       </div>
     </GlassCard>
   );

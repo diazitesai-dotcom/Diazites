@@ -34,7 +34,8 @@ import {
   ZeroCampaignsEmpty,
   ZeroSpendEmpty,
 } from "@/components/dashboard/mission-control/mission-empty-states";
-import { OverviewSparkChart } from "@/components/dashboard/overview-chart";
+import { GrowthOrchestrationTimeline } from "@/components/dashboard/mission-control/growth-orchestration-timeline";
+import { InboundVelocityChart } from "@/components/dashboard/mission-control/inbound-velocity-chart";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { PageHeader } from "@/components/layout/page-header";
 import type { DashboardOverviewData } from "@/lib/dashboard/load-dashboard-overview";
@@ -195,6 +196,8 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
           <OpportunityFeed data={data} />
         </section>
 
+        <GrowthOrchestrationTimeline events={data.orchestrationTimeline} />
+
         <section className="grid gap-6 lg:grid-cols-5">
           <motion.div variants={fadeItem} initial="hidden" animate="show" className="lg:col-span-3">
             <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-card/90 to-card/60 shadow-lg backdrop-blur-sm transition-shadow hover:shadow-[0_8px_32px_-12px_rgba(139,92,246,0.2)]">
@@ -210,7 +213,7 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
                 </span>
               </div>
               <div className="p-6 pt-2">
-                <OverviewSparkChart data={data.sparkSeries} />
+                <InboundVelocityChart data={data.sparkSeries} />
               </div>
             </div>
           </motion.div>

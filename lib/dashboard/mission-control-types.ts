@@ -95,6 +95,14 @@ export type AiRecommendation = {
   href: string;
 };
 
+export type OpportunityDeployPreview = {
+  title: string;
+  audience?: string;
+  budget?: string;
+  followUp?: string;
+  expected?: string;
+};
+
 export type OpportunityItem = {
   id: string;
   title: string;
@@ -103,6 +111,33 @@ export type OpportunityItem = {
   priority: "high" | "medium" | "low";
   cta: string;
   href: string;
+  reasoning?: string;
+  deployPreview?: OpportunityDeployPreview;
+  deployPreset?: "retargeting";
+};
+
+export type GoalPacingStatus = "ahead" | "on_track" | "behind";
+
+export type GoalCoaching = {
+  blocker: string;
+  suggestedMove: string;
+};
+
+export type SparkPoint = {
+  d: string;
+  v: number;
+  annotation?: {
+    title: string;
+    detail: string;
+    kind: "spike" | "warning" | "neutral";
+  };
+};
+
+export type OrchestrationTimelineEvent = {
+  id: string;
+  time: string;
+  label: string;
+  kind: "asset" | "campaign" | "lead" | "execution" | "deployment";
 };
 
 export type MarketSignal = {
@@ -143,4 +178,9 @@ export type BusinessGoal = {
   current: number;
   target: number;
   unit: "currency" | "count";
+  pacingStatus: GoalPacingStatus;
+  pacingLabel: string;
+  projectedLabel?: string;
+  pacePerDay?: number;
+  etaDays?: number | null;
 };

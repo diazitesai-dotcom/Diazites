@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 
+import { annotateSparkSeries } from "@/lib/dashboard/build-goal-diagnostics";
 import { buildMissionControlPayload } from "@/lib/dashboard/build-mission-control";
 import type {
   AccountConnection,
@@ -8,7 +9,10 @@ import type {
   AiDiagnostic,
   AiRecommendation,
   BusinessGoal,
+  GoalCoaching,
   CommandCenterItem,
+  OrchestrationTimelineEvent,
+  SparkPoint,
   FunnelDiagnosis,
   FunnelStage,
   HealthCheck,
@@ -123,7 +127,7 @@ export type DashboardOverviewData = {
     periodDays: number;
   } | null;
   bookedOrWonCount: number;
-  sparkSeries: { d: string; v: number }[];
+  sparkSeries: SparkPoint[];
   agents: { key: string; name: string; status: string }[];
   activity: {
     id: string;
@@ -146,6 +150,8 @@ export type DashboardOverviewData = {
   agentPerformance: AgentPerformance[];
   connections: AccountConnection[];
   goals: BusinessGoal[];
+  goalCoaching: GoalCoaching;
+  orchestrationTimeline: OrchestrationTimelineEvent[];
   commandCenter: CommandCenterItem[];
   kpiInsights: KpiInsight[];
   diagnostics: AiDiagnostic[];
@@ -227,7 +233,7 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     .eq("business_id", business.id)
     .gte("created_at", since.toISOString());
 
-  const sparkSeries = buildLeadVelocitySeries(weekLeads ?? []);
+  const sparkSeries = annotateSparkSeries(buildLeadVelocitySeries(weekLeads ?? []));
 
   const agentsRepo = createAgentRepository(supabase);
   const { data: agentRows } = await agentsRepo.listByBusiness(business.id);
