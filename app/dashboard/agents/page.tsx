@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import { AgentMcpDocs } from "@/components/agents/agent-mcp-docs";
 import { AgentMcpAccessPanel } from "@/components/agents/agent-mcp-access-panel";
-import { AgentManagerGrid } from "@/components/agents/agent-manager-grid";
+import { AgentManagerClient } from "@/components/agents/agent-manager-client";
+import { loadAgentDeploymentContext } from "@/lib/agents/load-agent-deployment-context";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { getPublicAppUrl } from "@/lib/env";
@@ -38,6 +39,7 @@ export default async function AgentManagerPage() {
   }
 
   const mcpEndpoint = `${getPublicAppUrl()}/api/mcp`;
+  const deploymentContext = await loadAgentDeploymentContext();
 
   return (
     <div className="mx-auto max-w-6xl space-y-10">
@@ -64,7 +66,7 @@ export default async function AgentManagerPage() {
         connections={mcpConnections}
         setupError={mcpSetupError}
       />
-      <AgentManagerGrid agents={agents} />
+      <AgentManagerClient agents={agents} deploymentContext={deploymentContext} />
     </div>
   );
 }
