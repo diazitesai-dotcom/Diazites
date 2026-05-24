@@ -1,17 +1,18 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Activity, FileText, Megaphone, Rocket, Users } from "lucide-react";
+import { Activity, Cpu, FileText, Megaphone, Rocket, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { TimelineEvent } from "@/types/agent-deployment";
+import type { TimelineEvent, TimelineEventKind } from "@/types/agent-deployment";
 
-const ICONS = {
+const ICONS: Record<TimelineEventKind, typeof Rocket> = {
   deployment: Rocket,
   asset: FileText,
   campaign: Megaphone,
   lead: Users,
-} as const;
+  execution: Cpu,
+};
 
 export function AgentOrchestrationTimeline({
   events,
@@ -26,7 +27,7 @@ export function AgentOrchestrationTimeline({
     <div className={cn("space-y-3", className)}>
       <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
         <Activity className="size-3.5" />
-        Orchestration timeline
+        Deployment timeline
       </div>
       <ol className="relative space-y-0 border-l border-white/10 pl-4">
         {events.map((ev, i) => {
@@ -37,7 +38,7 @@ export function AgentOrchestrationTimeline({
               className="relative pb-4 last:pb-0"
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.06 }}
+              transition={{ delay: i * 0.05 }}
             >
               <span className="absolute -left-[21px] top-0.5 flex size-3.5 items-center justify-center rounded-full border border-violet-500/40 bg-card">
                 <span className="size-1.5 rounded-full bg-violet-400" />

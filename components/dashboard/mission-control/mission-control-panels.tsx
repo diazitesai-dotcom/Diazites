@@ -20,12 +20,15 @@ import {
   Zap,
 } from "lucide-react";
 
+import { AgentDeployTrigger } from "@/components/agents/agent-deploy-trigger";
+import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
 import { AnimatedCounter, AnimatedMoney } from "@/components/dashboard/mission-control/animated-counter";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
+import { inferGoalFromHref } from "@/lib/agents/deployment-catalog";
 import { HealthRadialChart } from "@/components/dashboard/mission-control/health-radial-chart";
 import { FunnelEmptyHint } from "@/components/dashboard/mission-control/mission-empty-states";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import type { DashboardOverviewData } from "@/lib/dashboard/load-dashboard-overview";
 import type { ConnectionStatus } from "@/lib/dashboard/mission-control-types";
 import { fadeItem } from "@/lib/motion";
@@ -116,6 +119,7 @@ function GoalBar({
 }
 
 export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
+  const { openDeployment } = useAgentDeployment();
   const b = data.briefing;
   const riskStyles = {
     low: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
@@ -166,15 +170,20 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
             </div>
           </div>
           <div className="mt-4 flex justify-end border-t border-white/[0.06] pt-4">
-            <Link
-              href={data.nextAction.href}
-              className={cn(
-                buttonVariants({ variant: "gradient", size: "sm" }),
-                "mission-shimmer-btn shrink-0 rounded-xl",
-              )}
+            <Button
+              type="button"
+              variant="gradient"
+              size="sm"
+              className="mission-shimmer-btn shrink-0 rounded-xl"
+              onClick={() =>
+                openDeployment({
+                  goal: inferGoalFromHref(data.nextAction.href),
+                  source: "command_briefing",
+                })
+              }
             >
-              Take action
-            </Link>
+              Deploy from briefing
+            </Button>
           </div>
         </div>
 
@@ -204,24 +213,23 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
           ))}
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
+          <AgentDeployTrigger
+            label="Deploy agents"
+            deploy={{ goal: "deploy_full_growth_engine", stack: "growth_engine", source: "command_briefing" }}
+            className="mission-shimmer-btn rounded-xl"
+          />
           <Link
             href="/dashboard/engine"
-            className={cn(buttonVariants({ variant: "gradient" }), "mission-shimmer-btn rounded-xl")}
-          >
-            Generate Strategy
-          </Link>
-          <Link
-            href="/dashboard/campaigns"
             className={cn(buttonVariants({ variant: "outline" }), "mission-shimmer-btn rounded-xl")}
           >
-            Launch Campaign
+            Growth Engine
           </Link>
-          <Link
-            href="/dashboard/agents"
-            className={cn(buttonVariants({ variant: "outline" }), "mission-shimmer-btn rounded-xl")}
-          >
-            Ask AI
-          </Link>
+          <AgentDeployTrigger
+            label="Launch ads stack"
+            deploy={{ goal: "launch_ads", stack: "paid_ads", source: "command_briefing" }}
+            variant="outline"
+            className="mission-shimmer-btn rounded-xl"
+          />
         </div>
       </GlassCard>
     </motion.div>
@@ -229,6 +237,7 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
 }
 
 export function RecommendedNextActionCard({ data }: { data: DashboardOverviewData }) {
+  const { openDeployment } = useAgentDeployment();
   const action = data.nextAction;
   return (
     <motion.div variants={fadeItem} initial="hidden" animate="show">
@@ -243,16 +252,21 @@ export function RecommendedNextActionCard({ data }: { data: DashboardOverviewDat
             <p className="text-lg font-semibold tracking-tight text-foreground">{action.title}</p>
             <p className="text-sm text-cyan-200/90">{action.impact}</p>
           </div>
-          <Link
-            href={action.href}
-            className={cn(
-              buttonVariants({ variant: "gradient", size: "lg" }),
-              "shrink-0 rounded-xl shadow-[0_8px_32px_-12px_rgba(99,102,241,0.5)]",
-            )}
+          <Button
+            type="button"
+            variant="gradient"
+            size="lg"
+            className="shrink-0 rounded-xl shadow-[0_8px_32px_-12px_rgba(99,102,241,0.5)]"
+            onClick={() =>
+              openDeployment({
+                goal: inferGoalFromHref(action.href),
+                source: "recommended_action",
+              })
+            }
           >
             {action.cta}
             <ArrowRight className="size-4" />
-          </Link>
+          </Button>
         </div>
       </GlassCard>
     </motion.div>
@@ -471,32 +485,67 @@ export function FunnelSnapshot({ data }: { data: DashboardOverviewData }) {
 
 export function QuickActionsRow() {
   const actions = [
-    { label: "Create Campaign", href: "/dashboard/engine", icon: Rocket },
-    { label: "Build Landing Page", href: "/dashboard/funnel", icon: Megaphone },
-    { label: "Activate Agent", href: "/dashboard/agents", icon: Bot },
+    {
+      label: "Activate Agent",
+      deploy: { source: "quick_action" as const },
+      icon: Bot,
+    },
+    {
+      label: "Deploy Growth Engine",
+      deploy: {
+        goal: "deploy_full_growth_engine" as const,
+        stack: "growth_engine" as const,
+        source: "quick_action" as const,
+      },
+      icon: Rocket,
+    },
+    {
+      label: "Build Landing Page",
+      deploy: { goal: "build_landing_page" as const, source: "quick_action" as const },
+      icon: Megaphone,
+    },
     { label: "Import Leads", href: "/dashboard/leads", icon: Import },
-    { label: "Connect Ad Account", href: "/dashboard/ads", icon: Plug },
+    {
+      label: "Connect Ad Account",
+      deploy: { goal: "launch_ads" as const, source: "quick_action" as const },
+      href: "/dashboard/ads",
+      icon: Plug,
+    },
   ];
   return (
     <div className="flex flex-wrap gap-2">
-      {actions.map((a) => (
-        <Link
-          key={a.label}
-          href={a.href}
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "rounded-xl border-white/10 bg-white/[0.03] transition-all hover:border-violet-500/40 hover:bg-violet-500/10 hover:shadow-[0_4px_20px_-8px_rgba(139,92,246,0.35)]",
-          )}
-        >
-          <a.icon className="size-3.5" />
-          {a.label}
-        </Link>
-      ))}
+      {actions.map((a) =>
+        "deploy" in a && a.deploy ? (
+          <AgentDeployTrigger
+            key={a.label}
+            label={a.label}
+            href={"href" in a ? a.href : undefined}
+            deploy={a.deploy}
+            variant="outline"
+            size="sm"
+            icon={<a.icon className="size-3.5" />}
+            className="rounded-xl border-white/10 bg-white/[0.03] transition-all hover:border-violet-500/40 hover:bg-violet-500/10 hover:shadow-[0_4px_20px_-8px_rgba(139,92,246,0.35)]"
+          />
+        ) : (
+          <Link
+            key={a.label}
+            href={"href" in a ? a.href! : "#"}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "rounded-xl border-white/10 bg-white/[0.03] transition-all hover:border-violet-500/40 hover:bg-violet-500/10",
+            )}
+          >
+            <a.icon className="size-3.5" />
+            {a.label}
+          </Link>
+        ),
+      )}
     </div>
   );
 }
 
 export function AiRecommendationsPanel({ data }: { data: DashboardOverviewData }) {
+  const { openDeployment } = useAgentDeployment();
   return (
     <GlassCard title="AI Recommendations" description="Highest-impact next moves">
       <ul className="space-y-3">
@@ -509,12 +558,20 @@ export function AiRecommendationsPanel({ data }: { data: DashboardOverviewData }
               <p className="font-medium text-foreground">{rec.title}</p>
               <p className="text-xs text-cyan-200/80">{rec.impact}</p>
             </div>
-            <Link
-              href={rec.href}
-              className={cn(buttonVariants({ variant: "gradient", size: "sm" }), "shrink-0 rounded-xl")}
+            <Button
+              type="button"
+              variant="gradient"
+              size="sm"
+              className="shrink-0 rounded-xl"
+              onClick={() =>
+                openDeployment({
+                  goal: inferGoalFromHref(rec.href),
+                  source: "recommendation",
+                })
+              }
             >
               {rec.cta}
-            </Link>
+            </Button>
           </li>
         ))}
       </ul>
@@ -523,6 +580,7 @@ export function AiRecommendationsPanel({ data }: { data: DashboardOverviewData }
 }
 
 export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
+  const { openDeployment } = useAgentDeployment();
   const priorityColor = {
     high: "border-rose-500/25 bg-rose-500/5",
     medium: "border-amber-500/20 bg-amber-500/5",
@@ -560,15 +618,20 @@ export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
                 <p className="text-xs text-muted-foreground">{item.detail}</p>
                 <p className="text-xs font-medium text-cyan-200/80">{item.impact}</p>
               </div>
-              <Link
-                href={item.href}
-                className={cn(
-                  buttonVariants({ variant: "gradient", size: "sm" }),
-                  "shrink-0 rounded-xl",
-                )}
+              <Button
+                type="button"
+                variant="gradient"
+                size="sm"
+                className="shrink-0 rounded-xl"
+                onClick={() =>
+                  openDeployment({
+                    goal: inferGoalFromHref(item.href),
+                    source: "opportunity",
+                  })
+                }
               >
                 {item.cta}
-              </Link>
+              </Button>
             </div>
           </li>
         ))}

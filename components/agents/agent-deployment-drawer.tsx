@@ -12,6 +12,7 @@ import {
   Loader2,
   Rocket,
   Settings2,
+  SkipForward,
   Sparkles,
   Target,
   X,
@@ -21,12 +22,15 @@ import {
 import { deployAgentStackAction } from "@/actions/agent-deployment.actions";
 import { AgentLifecycleBadge } from "@/components/agents/agent-lifecycle-badge";
 import { AgentOrchestrationTimeline } from "@/components/agents/agent-orchestration-timeline";
+import { AgentStackFlow } from "@/components/agents/agent-stack-flow";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   agentDisplayName,
+  buildStackFlow,
   estimateSetupMinutes,
+  expectedUpliftForGoal,
   impactForAgents,
   mapDbStatusToLifecycle,
   recommendAgentsForGoal,
@@ -40,6 +44,8 @@ import {
   type DeploymentConfig,
   type DeploymentGoalId,
   type AgentStackId,
+  type DeploymentLaunchSource,
+  type ReadinessCheckId,
   type TimelineEvent,
 } from "@/types/agent-deployment";
 import type { AgentType } from "@/types/domain";
@@ -58,20 +64,13 @@ const STEPS: { id: StepId; label: string }[] = [
 ];
 
 const DEPLOY_PHASES = [
-  "Initializing…",
-  "Provisioning agents…",
-  "Connecting integrations…",
-  "Launching growth engine…",
+  "Initializing orchestration…",
+  "Provisioning agent infrastructure…",
+  "Initializing agents…",
+  "Connecting CRM & ads…",
+  "Generating assets…",
+  "Launching campaigns…",
 ] as const;
-
-const DEFAULT_CONFIG: DeploymentConfig = {
-  budget: "50",
-  platform: "meta_google",
-  audience: "Homeowners · 25mi radius",
-  offer: "Free roof inspection",
-  cta: "Book Your Inspection",
-  brandVoice: "Professional, trustworthy, local expert",
-};
 
 type Props = {
   open: boolean;
@@ -81,6 +80,8 @@ type Props = {
   initialGoal?: DeploymentGoalId;
   initialStack?: AgentStackId;
   initialAgent?: AgentType;
+  initialStep?: StepId;
+  launchSource?: DeploymentLaunchSource;
 };
 
 export function AgentDeploymentDrawer({
@@ -91,16 +92,30 @@ export function AgentDeploymentDrawer({
   initialGoal,
   initialStack,
   initialAgent,
+  initialStep,
+  launchSource,
 }: Props) {
-  const [step, setStep] = useState<StepId>("goal");
+  const defaultConfig = context?.prefill ?? {
+    budget: "50",
+    platform: "meta_google",
+    audience: "Homeowners · 25mi radius",
+    offer: "Free roof inspection",
+    cta: "Book Your Inspection",
+    brandVoice: "Professional, trustworthy, local expert",
+  };
+
+  const [step, setStep] = useState<StepId>(initialStep ?? "goal");
   const [goalId, setGoalId] = useState<DeploymentGoalId>(initialGoal ?? "generate_leads");
   const [selectedAgents, setSelectedAgents] = useState<AgentType[]>(() =>
-    initialStack
-      ? [...(AGENT_STACKS.find((s) => s.id === initialStack)?.agents ?? [])]
-      : recommendAgentsForGoal("generate_leads"),
+    initialAgent
+      ? [initialAgent]
+      : initialStack
+        ? [...(AGENT_STACKS.find((s) => s.id === initialStack)?.agents ?? [])]
+        : recommendAgentsForGoal(initialGoal ?? "generate_leads"),
   );
   const [customizeStack, setCustomizeStack] = useState(false);
-  const [config, setConfig] = useState<DeploymentConfig>(DEFAULT_CONFIG);
+  const [config, setConfig] = useState<DeploymentConfig>(defaultConfig);
+  const [skippedReadiness, setSkippedReadiness] = useState<Set<ReadinessCheckId>>(new Set());
   const [mode, setMode] = useState<AutonomousMode>("guided");
   const [deployPhase, setDeployPhase] = useState(0);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
@@ -112,7 +127,11 @@ export function AgentDeploymentDrawer({
   const monitoring = context?.monitoring;
   const setupMinutes = estimateSetupMinutes(selectedAgents.length);
   const impact = impactForAgents(selectedAgents);
-  const readinessOk = readiness.filter((r) => r.ok).length;
+  const uplift = expectedUpliftForGoal(goalId);
+  const stackFlow = useMemo(() => buildStackFlow(selectedAgents), [selectedAgents]);
+  const readinessOk = readiness.filter(
+    (r) => r.ok || skippedReadiness.has(r.id),
+  ).length;
   const readinessTotal = readiness.length || 6;
 
   const byType = useMemo(() => new Map(agents.map((a) => [a.agent_type, a])), [agents]);
@@ -139,9 +158,12 @@ export function AgentDeploymentDrawer({
     }
     if (initialAgent) {
       setSelectedAgents([initialAgent]);
-      setStep("stack");
+      setStep(initialStep ?? "stack");
+    } else if (initialStep) {
+      setStep(initialStep);
     }
-  }, [open, initialGoal, initialStack, initialAgent]);
+    if (context?.prefill) setConfig(context.prefill);
+  }, [open, initialGoal, initialStack, initialAgent, initialStep, context?.prefill]);
 
   function selectGoal(id: DeploymentGoalId) {
     setGoalId(id);
@@ -174,10 +196,10 @@ export function AgentDeploymentDrawer({
       phase += 1;
       setDeployPhase(phase);
       if (phase >= DEPLOY_PHASES.length) clearInterval(phaseTimer);
-    }, 900);
+    }, 750);
 
     startTransition(async () => {
-      await new Promise((r) => setTimeout(r, DEPLOY_PHASES.length * 900 + 200));
+      await new Promise((r) => setTimeout(r, DEPLOY_PHASES.length * 750 + 300));
       clearInterval(phaseTimer);
 
       const result = await deployAgentStackAction({
@@ -204,6 +226,7 @@ export function AgentDeploymentDrawer({
     setStep("goal");
     setError(null);
     setTimeline([]);
+    setSkippedReadiness(new Set());
     onOpenChange(false);
   }
 
@@ -243,7 +266,11 @@ export function AgentDeploymentDrawer({
                   </span>
                   <div>
                     <p className="text-sm font-semibold">Agent Deployment</p>
-                    <p className="text-[11px] text-muted-foreground">AI-native growth orchestration</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {launchSource
+                        ? `Launched from ${launchSource.replace(/_/g, " ")}`
+                        : "Unified orchestration"}
+                    </p>
                   </div>
                 </div>
                 <Button
@@ -343,6 +370,7 @@ export function AgentDeploymentDrawer({
                           >
                             <p className="text-sm font-medium">{g.label}</p>
                             <p className="mt-0.5 text-xs text-muted-foreground">{g.description}</p>
+                            <p className="mt-1 text-[10px] font-medium text-emerald-300/90">{g.uplift}</p>
                           </button>
                         </li>
                       ))}
@@ -372,11 +400,17 @@ export function AgentDeploymentDrawer({
                           <dd className="mt-0.5 font-semibold">~{setupMinutes} min</dd>
                         </div>
                         <div>
-                          <dt className="text-muted-foreground">Expected impact</dt>
-                          <dd className="mt-0.5 font-semibold text-emerald-300/90">{impact}</dd>
+                          <dt className="text-muted-foreground">Expected uplift</dt>
+                          <dd className="mt-0.5 font-semibold text-emerald-300/90">{uplift}</dd>
+                        </div>
+                        <div className="col-span-2">
+                          <dt className="text-muted-foreground">Impact model</dt>
+                          <dd className="mt-0.5 text-xs text-foreground/90">{impact}</dd>
                         </div>
                       </dl>
                     </div>
+
+                    <AgentStackFlow flow={stackFlow} />
 
                     <ul className="space-y-2">
                       {(customizeStack ? (["social_ads", "search_ads", "landing_page", "lead_qualification", "ai_follow_up", "retargeting"] as AgentType[]) : selectedAgents).map(
@@ -385,6 +419,7 @@ export function AgentDeploymentDrawer({
                           const lifecycle = mapDbStatusToLifecycle(
                             row?.status ?? "inactive",
                             deployingTypes.has(type),
+                            mode,
                           );
                           const checked = selectedAgents.includes(type);
                           return (
@@ -465,8 +500,13 @@ export function AgentDeploymentDrawer({
                         Agent configuration
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Parameters for {selectedAgents.length} agent{selectedAgents.length !== 1 ? "s" : ""} in your stack.
+                        AI-prefilled for {selectedAgents.length} agent{selectedAgents.length !== 1 ? "s" : ""} — edit before deploy.
                       </p>
+                    </div>
+
+                    <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-3 py-2 text-xs text-cyan-200/90">
+                      <Sparkles className="mr-1.5 inline size-3.5" />
+                      Prefilled from your business profile · {context?.expectedUplift ?? uplift}
                     </div>
 
                     <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
@@ -547,27 +587,69 @@ export function AgentDeploymentDrawer({
                     ) : null}
 
                     <ul className="space-y-2">
-                      {readiness.map((item) => (
-                        <li
-                          key={item.id}
-                          className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5"
-                        >
-                          <div>
-                            <p className="text-sm font-medium">{item.label}</p>
-                            <p className="text-xs text-muted-foreground">{item.detail}</p>
-                          </div>
-                          {item.ok ? (
-                            <Check className="size-4 text-emerald-400" />
-                          ) : (
-                            <Link
-                              href={item.href}
-                              className="text-xs text-violet-300 underline"
-                            >
-                              Fix
-                            </Link>
-                          )}
-                        </li>
-                      ))}
+                      {readiness.map((item) => {
+                        const skipped = skippedReadiness.has(item.id);
+                        const passed = item.ok || skipped;
+                        return (
+                          <li
+                            key={item.id}
+                            className={cn(
+                              "rounded-xl border px-3 py-2.5",
+                              passed
+                                ? "border-emerald-500/20 bg-emerald-500/5"
+                                : "border-white/10 bg-white/[0.02]",
+                            )}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="text-sm font-medium">{item.label}</p>
+                                <p className="text-xs text-muted-foreground">{item.detail}</p>
+                              </div>
+                              {passed ? (
+                                <Check className="size-4 shrink-0 text-emerald-400" />
+                              ) : null}
+                            </div>
+                            {!passed ? (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 rounded-lg border-white/10 text-[11px]"
+                                  onClick={() => window.open(item.href, "_blank")}
+                                >
+                                  <Zap className="mr-1 size-3" />
+                                  Auto fix
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 rounded-lg text-[11px]"
+                                  onClick={() =>
+                                    setSkippedReadiness((s) => new Set([...s, item.id]))
+                                  }
+                                >
+                                  <SkipForward className="mr-1 size-3" />
+                                  Skip
+                                </Button>
+                                <Link
+                                  href={item.settingsHref ?? item.href}
+                                  className={cn(
+                                    buttonVariants({ variant: "ghost", size: "sm" }),
+                                    "h-7 rounded-lg text-[11px]",
+                                  )}
+                                >
+                                  <Settings2 className="mr-1 size-3" />
+                                  Settings
+                                </Link>
+                              </div>
+                            ) : skipped ? (
+                              <p className="mt-1 text-[10px] text-amber-300/80">Skipped for this deploy</p>
+                            ) : null}
+                          </li>
+                        );
+                      })}
                     </ul>
 
                     <div className="flex flex-col gap-2">
@@ -577,20 +659,21 @@ export function AgentDeploymentDrawer({
                         className="rounded-xl border-white/10"
                         onClick={() => {
                           readiness
-                            .filter((r) => !r.ok)
+                            .filter((r) => !r.ok && !skippedReadiness.has(r.id))
                             .forEach((r) => window.open(r.href, "_blank"));
                         }}
                       >
                         <Zap className="mr-2 size-4" />
-                        Fix automatically
+                        Auto fix all
                       </Button>
                       <Button
                         type="button"
                         variant="gradient"
                         className="mission-shimmer-btn rounded-xl"
                         onClick={runDeploySequence}
+                        disabled={pending}
                       >
-                        {readinessOk < readinessTotal ? "Continue anyway" : "Begin deployment"}
+                        {readinessOk < readinessTotal ? "Deploy anyway" : "Begin deployment"}
                         <ArrowRight className="ml-2 size-4" />
                       </Button>
                     </div>
@@ -666,7 +749,7 @@ export function AgentDeploymentDrawer({
                             ["traffic", "Traffic", monitoring.traffic],
                             ["leadVelocity", "Lead velocity", monitoring.leadVelocity],
                             ["agentHealth", "Agent health", monitoring.agentHealth],
-                            ["optimizationStatus", "Optimization", monitoring.optimizationStatus],
+                            ["optimizationScore", "Optimization score", monitoring.optimizationScore],
                           ] as const
                         ).map(([key, label, value]) => (
                           <div

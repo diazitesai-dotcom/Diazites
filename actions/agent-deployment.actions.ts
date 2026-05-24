@@ -2,11 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 
+import { agentDisplayName } from "@/lib/agents/deployment-catalog";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { activateAgent } from "@/services/agents/agent.service";
-import type { DeployStackResult, DeploymentConfig, TimelineEvent } from "@/types/agent-deployment";
+import type {
+  AutonomousMode,
+  DeployStackResult,
+  DeploymentConfig,
+  DeploymentGoalId,
+  TimelineEvent,
+} from "@/types/agent-deployment";
 import type { AgentType } from "@/types/domain";
-import type { AutonomousMode, DeploymentGoalId } from "@/types/agent-deployment";
 
 export async function deployAgentStackAction(input: {
   goalId: DeploymentGoalId;
@@ -34,6 +40,14 @@ export async function deployAgentStackAction(input: {
   });
 
   for (const agentType of input.agentTypes) {
+    timeline.push({
+      id: `init-${agentType}`,
+      at: now(),
+      kind: "execution",
+      title: `Initializing ${agentDisplayName(agentType)}`,
+      detail: "Provisioning automation rules and webhooks",
+    });
+
     const result = await activateAgent(supabase, user.id, agentType);
     if (result.success) {
       activated.push(agentType);
@@ -41,7 +55,7 @@ export async function deployAgentStackAction(input: {
         id: `agent-${agentType}`,
         at: now(),
         kind: "deployment",
-        title: `${agentType.replace(/_/g, " ")} agent live`,
+        title: `${agentDisplayName(agentType)} live`,
         detail: `${result.data.rulesCreated} automation rule(s) provisioned`,
       });
     } else {
@@ -49,13 +63,21 @@ export async function deployAgentStackAction(input: {
     }
   }
 
+  timeline.push({
+    id: "asset-landing",
+    at: now(),
+    kind: "asset",
+    title: "Funnel assets generated",
+    detail: `Offer: ${input.config.offer} · CTA: ${input.config.cta}`,
+  });
+
   if (input.config.budget) {
     timeline.push({
       id: "asset-budget",
       at: now(),
-      kind: "campaign",
+      kind: "asset",
       title: "Budget profile applied",
-      detail: `Daily budget: ${input.config.budget} · Platform: ${input.config.platform || "multi"}`,
+      detail: `Daily budget: $${input.config.budget} · Platform: ${input.config.platform || "multi"}`,
     });
   }
 
@@ -64,7 +86,7 @@ export async function deployAgentStackAction(input: {
     at: now(),
     kind: "campaign",
     title: "Campaign orchestration started",
-    detail: `Offer: ${input.config.offer || "default"} · CTA: ${input.config.cta || "Get Started"}`,
+    detail: `Audience: ${input.config.audience} · Voice: ${input.config.brandVoice.slice(0, 48)}…`,
   });
 
   timeline.push({
@@ -73,6 +95,17 @@ export async function deployAgentStackAction(input: {
     kind: "lead",
     title: "Lead capture armed",
     detail: "CRM routing and qualification agents listening for inbound events",
+  });
+
+  timeline.push({
+    id: "exec-optimize",
+    at: now(),
+    kind: "execution",
+    title: "Optimization loop queued",
+    detail:
+      input.mode === "autonomous"
+        ? "Agents will learn and adjust within guardrails"
+        : "Awaiting approval for high-impact changes",
   });
 
   revalidatePath("/dashboard");

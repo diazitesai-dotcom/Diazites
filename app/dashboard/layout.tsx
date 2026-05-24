@@ -1,3 +1,6 @@
+import { Suspense } from "react";
+
+import { AgentDeploymentShell } from "@/components/agents/agent-deployment-shell";
 import { AppSidebarShell } from "@/components/layout/app-sidebar-shell";
 
 /** Avoid prerendering without Supabase env (e.g. Vercel build before env is applied). */
@@ -15,7 +18,9 @@ export default function DashboardLayout({
       brandTitle="Diazites"
       footerLink={{ href: "/", label: "Marketing site" }}
     >
-      {children}
+      <Suspense fallback={null}>
+        <AgentDeploymentShell>{children}</AgentDeploymentShell>
+      </Suspense>
     </AppSidebarShell>
   );
 }

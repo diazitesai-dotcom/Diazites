@@ -1,4 +1,5 @@
 import { requireAuth } from "@/lib/auth/session";
+import { prefillDeploymentConfig } from "@/lib/agents/prefill-deployment-config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import type { AgentDeploymentContext, ReadinessItem } from "@/types/agent-deployment";
@@ -43,34 +44,7 @@ export async function loadAgentDeploymentContext(): Promise<AgentDeploymentConte
       ok: true,
       detail: "Leads CRM connected",
       href: "/dashboard/leads",
-    },
-    {
-      id: "ads",
-      label: "Ads",
-      ok: hasAds,
-      detail: hasAds ? "Ad platform linked" : "Connect Meta or Google",
-      href: "/dashboard/ads",
-    },
-    {
-      id: "pixel",
-      label: "Pixel",
-      ok: false,
-      detail: "Tracking pixel pending",
-      href: "/dashboard/settings",
-    },
-    {
-      id: "domain",
-      label: "Domain",
-      ok: true,
-      detail: "Workspace domain ready",
-      href: "/dashboard/funnel",
-    },
-    {
-      id: "analytics",
-      label: "Analytics",
-      ok: weekLeads != null,
-      detail: weekLeads ? `${weekLeads} leads (7d) tracked` : "Awaiting first events",
-      href: "/dashboard/reports",
+      settingsHref: "/dashboard/leads",
     },
     {
       id: "billing",
@@ -78,16 +52,57 @@ export async function loadAgentDeploymentContext(): Promise<AgentDeploymentConte
       ok: billingOk,
       detail: billingOk ? "Plan active" : "Billing setup required",
       href: "/dashboard/billing",
+      settingsHref: "/dashboard/billing",
+    },
+    {
+      id: "domain",
+      label: "Domain",
+      ok: Boolean(business.website),
+      detail: business.website ? `Connected · ${business.website}` : "Add business website",
+      href: "/dashboard/settings",
+      settingsHref: "/dashboard/settings",
+    },
+    {
+      id: "pixel",
+      label: "Pixel",
+      ok: false,
+      detail: "Tracking pixel pending",
+      href: "/dashboard/settings",
+      settingsHref: "/dashboard/settings",
+    },
+    {
+      id: "ads",
+      label: "Ads",
+      ok: hasAds,
+      detail: hasAds ? "Ad platform linked" : "Connect Meta or Google",
+      href: "/dashboard/ads",
+      settingsHref: "/dashboard/ads",
+    },
+    {
+      id: "analytics",
+      label: "Analytics",
+      ok: (weekLeads ?? 0) > 0,
+      detail:
+        weekLeads && weekLeads > 0
+          ? `${weekLeads} leads (7d) tracked`
+          : "Awaiting first events",
+      href: "/dashboard/reports",
+      settingsHref: "/dashboard/reports",
     },
   ];
 
+  const healthPct = readiness.filter((r) => r.ok).length;
+  const optimizationScore = `${Math.round((healthPct / readiness.length) * 100)} / 100`;
+
   return {
     readiness,
+    prefill: prefillDeploymentConfig(business),
+    expectedUplift: "+18–32% projected lift",
     monitoring: {
       traffic: hasAds ? "Paid + organic active" : "Organic / direct",
       leadVelocity: `${weekLeads ?? 0} leads / 7d`,
-      agentHealth: "Monitoring post-deploy",
-      optimizationStatus: "AI optimization queued",
+      agentHealth: healthPct >= 4 ? "Healthy" : "Needs attention",
+      optimizationScore,
     },
   };
 }

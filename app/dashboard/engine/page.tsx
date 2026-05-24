@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Activity, Rocket, Sparkles } from "lucide-react";
 
 import { AdvanceRunButton } from "@/components/engine/advance-run-button";
+import { EngineDeployAgentsButton } from "@/components/engine/engine-deploy-agents-button";
 import { EngineRunCanvas } from "@/components/engine/engine-run-canvas";
 import { RunFullEngineButton } from "@/components/engine/run-full-engine-button";
 import { EngineRunHistory } from "@/components/engine/engine-run-history";
@@ -95,6 +96,9 @@ export default async function EnginePage() {
         eyebrow="Growth Engine"
         title="AI Marketing Operating System"
         description="Input → Research → Strategy → Funnel → Generation → Variants → Scoring → Launch. The same 8-stage pipeline shown on the AIWORKERS map, applied to your business."
+        actions={
+          <EngineDeployAgentsButton className="mission-shimmer-btn rounded-xl" />
+        }
       />
 
       {activeRun ? (

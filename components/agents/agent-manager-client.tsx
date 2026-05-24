@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Bot, CheckCircle2, Clock, Layers, Rocket } from "lucide-react";
 
-import { AgentDeploymentDrawer } from "@/components/agents/agent-deployment-drawer";
+import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
 import { AgentLifecycleBadge } from "@/components/agents/agent-lifecycle-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +13,7 @@ import { mapDbStatusToLifecycle } from "@/lib/agents/deployment-catalog";
 import { AGENT_PLAYBOOKS } from "@/services/agents/agent-playbooks";
 import { deactivateAgentAction } from "@/services/agents/actions";
 import { AGENTS } from "@/utils/constants";
-import type { AgentDeploymentContext } from "@/types/agent-deployment";
-import type { AgentStackId, DeploymentGoalId } from "@/types/agent-deployment";
+import type { AgentStackId } from "@/types/agent-deployment";
 import type { AgentType } from "@/types/domain";
 
 type AgentRow = {
@@ -24,29 +22,13 @@ type AgentRow = {
   activated_at: string | null;
 };
 
-export function AgentManagerClient({
-  agents,
-  deploymentContext,
-}: {
-  agents: AgentRow[];
-  deploymentContext: AgentDeploymentContext | null;
-}) {
+export function AgentManagerClient({ agents }: { agents: AgentRow[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerGoal, setDrawerGoal] = useState<DeploymentGoalId | undefined>();
-  const [drawerStack, setDrawerStack] = useState<AgentStackId | undefined>();
-  const [drawerAgent, setDrawerAgent] = useState<AgentType | undefined>();
-  const [deployingTypes] = useState<Set<string>>(new Set());
+  const { openDeployment } = useAgentDeployment();
 
   const byType = new Map(agents.map((a) => [a.agent_type, a]));
-
-  function openDeploy(opts?: { goal?: DeploymentGoalId; stack?: AgentStackId; agent?: AgentType }) {
-    setDrawerGoal(opts?.goal);
-    setDrawerStack(opts?.stack);
-    setDrawerAgent(opts?.agent);
-    setDrawerOpen(true);
-  }
+  const liveCount = agents.filter((a) => a.status === "active").length;
 
   function deactivate(type: AgentType) {
     const fd = new FormData();
@@ -57,21 +39,17 @@ export function AgentManagerClient({
     });
   }
 
-  const liveCount = agents.filter((a) => a.status === "active").length;
-
   return (
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            {liveCount} of {AGENTS.length} agents live · Deploy stacks in one orchestrated flow
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          {liveCount} of {AGENTS.length} agents live · Unified deployment orchestration
+        </p>
         <Button
           type="button"
           variant="gradient"
           className="mission-shimmer-btn rounded-xl"
-          onClick={() => openDeploy()}
+          onClick={() => openDeployment({ source: "activate_agent" })}
         >
           <Rocket className="mr-2 size-4" />
           Activate Agent
@@ -81,15 +59,15 @@ export function AgentManagerClient({
       <div className="grid gap-3 sm:grid-cols-3">
         {(
           [
-            { id: "lead_engine" as const, label: "Lead Engine Stack" },
-            { id: "paid_ads" as const, label: "Paid Ads Stack" },
-            { id: "growth_engine" as const, label: "Growth Engine Stack" },
-          ] as const
+            { id: "lead_engine" as const, label: "Lead Engine" },
+            { id: "paid_ads" as const, label: "Paid Ads" },
+            { id: "growth_engine" as const, label: "Growth Engine" },
+          ] as { id: AgentStackId; label: string }[]
         ).map((stack) => (
           <button
             key={stack.id}
             type="button"
-            onClick={() => openDeploy({ stack: stack.id })}
+            onClick={() => openDeployment({ stack: stack.id, source: "activate_agent" })}
             className="mission-elevate flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm transition-all hover:border-violet-500/35"
           >
             <Layers className="size-4 shrink-0 text-violet-300" />
@@ -105,7 +83,7 @@ export function AgentManagerClient({
           const playbook = AGENT_PLAYBOOKS[agent.key];
           const isActive = status === "active";
           const isPending = status === "pending";
-          const lifecycle = mapDbStatusToLifecycle(status, deployingTypes.has(agent.key));
+          const lifecycle = mapDbStatusToLifecycle(status, false);
 
           return (
             <Card key={agent.key} className="border-white/[0.06]">
@@ -161,7 +139,9 @@ export function AgentManagerClient({
                     variant="gradient"
                     className="mission-shimmer-btn w-full rounded-xl"
                     disabled={pending || isPending}
-                    onClick={() => openDeploy({ agent: agent.key })}
+                    onClick={() =>
+                      openDeployment({ agent: agent.key, source: "activate_agent" })
+                    }
                   >
                     {isPending ? "Setup in progress…" : "Activate agent"}
                   </Button>
@@ -171,19 +151,6 @@ export function AgentManagerClient({
           );
         })}
       </section>
-
-      <AgentDeploymentDrawer
-        open={drawerOpen}
-        onOpenChange={(o) => {
-          setDrawerOpen(o);
-          if (!o) router.refresh();
-        }}
-        agents={agents}
-        context={deploymentContext}
-        initialGoal={drawerGoal}
-        initialStack={drawerStack}
-        initialAgent={drawerAgent}
-      />
     </>
   );
 }
