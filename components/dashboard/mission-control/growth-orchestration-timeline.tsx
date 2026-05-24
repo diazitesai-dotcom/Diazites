@@ -5,7 +5,8 @@ import { Activity, Cpu, FileText, Megaphone, Rocket, Users } from "lucide-react"
 
 import { DeploymentRollbackButton } from "@/components/agents/deployment-rollback-button";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
-import { OrchestrationStatusBadge } from "@/components/dashboard/mission-control/orchestration-status-badge";
+import { OrchestrationTimelineRow } from "@/components/dashboard/mission-control/orchestration-timeline-row";
+import { OrchestrationMap } from "@/components/dashboard/mission-control/orchestration-map";
 import type { OrchestrationTimelineEvent } from "@/lib/dashboard/mission-control-types";
 import { ORCHESTRATION_STATUS_META } from "@/lib/dashboard/orchestration-status";
 import { fadeItem } from "@/lib/motion";
@@ -21,8 +22,10 @@ const ICONS = {
 
 export function GrowthOrchestrationTimeline({
   events,
+  showMap = true,
 }: {
   events: OrchestrationTimelineEvent[];
+  showMap?: boolean;
 }) {
   return (
     <motion.div variants={fadeItem} initial="hidden" animate="show">
@@ -57,20 +60,27 @@ export function GrowthOrchestrationTimeline({
                 >
                   <span className={cn("size-1.5 rounded-full", statusMeta.dotClass)} />
                 </span>
-                <div className="flex gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 transition-colors hover:border-violet-500/20">
-                  <Icon className="mt-0.5 size-3.5 shrink-0 text-violet-300" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[10px] tabular-nums text-cyan-300/80">{ev.time}</span>
-                      <OrchestrationStatusBadge status={ev.status} />
-                    </div>
-                    <p className="text-sm font-medium">{ev.label}</p>
-                  </div>
-                </div>
+                <OrchestrationTimelineRow
+                  icon={Icon}
+                  row={{
+                    time: ev.time,
+                    label: ev.label,
+                    status: ev.status,
+                    durationSeconds: ev.durationSeconds,
+                    system: ev.system,
+                  }}
+                />
               </motion.li>
             );
           })}
         </ol>
+
+        {showMap ? (
+          <div className="mt-5 border-t border-white/[0.06] pt-5">
+            <OrchestrationMap embedded />
+          </div>
+        ) : null}
+
         <DeploymentRollbackButton />
       </GlassCard>
     </motion.div>

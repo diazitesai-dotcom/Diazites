@@ -22,7 +22,6 @@ import {
 
 import { useState } from "react";
 
-import { AgentDeployTrigger } from "@/components/agents/agent-deploy-trigger";
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
 import { OpportunityDeployPreview } from "@/components/dashboard/mission-control/opportunity-deploy-preview";
 import { AnimatedCounter, AnimatedMoney } from "@/components/dashboard/mission-control/animated-counter";
@@ -199,17 +198,18 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
           <div className="mt-4 flex justify-end border-t border-white/[0.06] pt-4">
             <Button
               type="button"
-              variant="gradient"
+              variant="outline"
               size="sm"
-              className="mission-shimmer-btn shrink-0 rounded-xl"
+              className="shrink-0 rounded-xl border-white/10"
               onClick={() =>
                 openDeployment({
                   goal: inferGoalFromHref(data.nextAction.href),
+                  step: "readiness",
                   source: "command_briefing",
                 })
               }
             >
-              Deploy from briefing
+              Review Plan
             </Button>
           </div>
         </div>
@@ -239,24 +239,16 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
             </div>
           ))}
         </div>
-        <div className="mt-5 flex flex-wrap gap-2">
-          <AgentDeployTrigger
-            label="Deploy agents"
-            deploy={{ goal: "deploy_full_growth_engine", stack: "growth_engine", source: "command_briefing" }}
-            className="mission-shimmer-btn rounded-xl"
-          />
+        <div className="mt-5 flex justify-end">
           <Link
             href="/dashboard/engine"
-            className={cn(buttonVariants({ variant: "outline" }), "mission-shimmer-btn rounded-xl")}
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "sm" }),
+              "text-xs text-muted-foreground hover:text-foreground",
+            )}
           >
-            Growth Engine
+            Open engine workspace →
           </Link>
-          <AgentDeployTrigger
-            label="Launch ads stack"
-            deploy={{ goal: "launch_ads", stack: "paid_ads", source: "command_briefing" }}
-            variant="outline"
-            className="mission-shimmer-btn rounded-xl"
-          />
         </div>
       </GlassCard>
     </motion.div>
@@ -281,17 +273,18 @@ export function RecommendedNextActionCard({ data }: { data: DashboardOverviewDat
           </div>
           <Button
             type="button"
-            variant="gradient"
+            variant="outline"
             size="lg"
-            className="shrink-0 rounded-xl shadow-[0_8px_32px_-12px_rgba(99,102,241,0.5)]"
+            className="shrink-0 rounded-xl border-white/10"
             onClick={() =>
               openDeployment({
                 goal: inferGoalFromHref(action.href),
+                step: "readiness",
                 source: "recommended_action",
               })
             }
           >
-            {action.cta}
+            Review Plan
             <ArrowRight className="size-4" />
           </Button>
         </div>
@@ -513,60 +506,29 @@ export function FunnelSnapshot({ data }: { data: DashboardOverviewData }) {
 export function QuickActionsRow() {
   const actions = [
     {
-      label: "Activate Agent",
-      deploy: { source: "quick_action" as const },
+      label: "Agent workspace",
+      href: "/dashboard/agents",
       icon: Bot,
     },
-    {
-      label: "Deploy Growth Engine",
-      deploy: {
-        goal: "deploy_full_growth_engine" as const,
-        stack: "growth_engine" as const,
-        source: "quick_action" as const,
-      },
-      icon: Rocket,
-    },
-    {
-      label: "Build Landing Page",
-      deploy: { goal: "build_landing_page" as const, source: "quick_action" as const },
-      icon: Megaphone,
-    },
     { label: "Import Leads", href: "/dashboard/leads", icon: Import },
-    {
-      label: "Connect Ad Account",
-      deploy: { goal: "launch_ads" as const, source: "quick_action" as const },
-      href: "/dashboard/ads",
-      icon: Plug,
-    },
+    { label: "Connect Ad Account", href: "/dashboard/ads", icon: Plug },
+    { label: "View reports", href: "/dashboard/reports", icon: LineChart },
   ];
   return (
     <div className="flex flex-wrap gap-2">
-      {actions.map((a) =>
-        "deploy" in a && a.deploy ? (
-          <AgentDeployTrigger
-            key={a.label}
-            label={a.label}
-            href={"href" in a ? a.href : undefined}
-            deploy={a.deploy}
-            variant="outline"
-            size="sm"
-            icon={<a.icon className="size-3.5" />}
-            className="rounded-xl border-white/10 bg-white/[0.03] transition-all hover:border-violet-500/40 hover:bg-violet-500/10 hover:shadow-[0_4px_20px_-8px_rgba(139,92,246,0.35)]"
-          />
-        ) : (
-          <Link
-            key={a.label}
-            href={"href" in a ? a.href! : "#"}
-            className={cn(
-              buttonVariants({ variant: "outline", size: "sm" }),
-              "rounded-xl border-white/10 bg-white/[0.03] transition-all hover:border-violet-500/40 hover:bg-violet-500/10",
-            )}
-          >
-            <a.icon className="size-3.5" />
-            {a.label}
-          </Link>
-        ),
-      )}
+      {actions.map((a) => (
+        <Link
+          key={a.label}
+          href={a.href}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "rounded-xl border-white/10 bg-white/[0.03] transition-all hover:border-violet-500/40 hover:bg-violet-500/10",
+          )}
+        >
+          <a.icon className="size-3.5" />
+          {a.label}
+        </Link>
+      ))}
     </div>
   );
 }
@@ -587,17 +549,18 @@ export function AiRecommendationsPanel({ data }: { data: DashboardOverviewData }
             </div>
             <Button
               type="button"
-              variant="gradient"
+              variant="outline"
               size="sm"
-              className="shrink-0 rounded-xl"
+              className="shrink-0 rounded-xl border-white/10"
               onClick={() =>
                 openDeployment({
                   goal: inferGoalFromHref(rec.href),
+                  step: "readiness",
                   source: "recommendation",
                 })
               }
             >
-              {rec.cta}
+              Review Plan
             </Button>
           </li>
         ))}
@@ -654,9 +617,9 @@ export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
               </div>
               <Button
                 type="button"
-                variant="gradient"
+                variant="outline"
                 size="sm"
-                className="shrink-0 rounded-xl"
+                className="shrink-0 rounded-xl border-white/10"
                 onClick={() => {
                   if (item.deployPreview) {
                     setPreviewOpp(item);
@@ -674,12 +637,13 @@ export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
                         }
                       : {
                           goal: inferGoalFromHref(item.href),
+                          step: "readiness",
                           source: "opportunity",
                         },
                   );
                 }}
               >
-                {item.cta}
+                Review Plan
               </Button>
             </div>
           </li>

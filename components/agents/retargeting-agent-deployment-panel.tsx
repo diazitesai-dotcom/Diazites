@@ -16,15 +16,15 @@ import {
   Zap,
 } from "lucide-react";
 
-import { AiModeCallout } from "@/components/agents/ai-mode-callout";
+import { AiModeSelector } from "@/components/agents/ai-mode-selector";
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
-import { OrchestrationStatusBadge } from "@/components/dashboard/mission-control/orchestration-status-badge";
+import { OrchestrationMap } from "@/components/dashboard/mission-control/orchestration-map";
+import { OrchestrationTimelineRow } from "@/components/dashboard/mission-control/orchestration-timeline-row";
+import { StackLaunchPills } from "@/components/dashboard/mission-control/stack-launch-pills";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
-import { AI_MODE_BEHAVIOR } from "@/lib/agents/ai-mode-behavior";
 import { Button } from "@/components/ui/button";
 import { RETARGETING_DEPLOYMENT_PRESET } from "@/lib/agents/deployment-presets";
 import { fadeItem } from "@/lib/motion";
-import { cn } from "@/lib/utils";
 import type { AutonomousMode } from "@/types/agent-deployment";
 
 const TIMELINE_ICONS = {
@@ -40,7 +40,7 @@ export function RetargetingAgentDeploymentPanel() {
   const preset = RETARGETING_DEPLOYMENT_PRESET;
   const [mode, setMode] = useState<AutonomousMode>(preset.defaultMode);
 
-  function deployRetargeting() {
+  function reviewPlan() {
     openDeployment({
       preset: "retargeting",
       agent: preset.agent,
@@ -63,8 +63,8 @@ export function RetargetingAgentDeploymentPanel() {
   return (
     <motion.div variants={fadeItem} initial="hidden" animate="show">
       <GlassCard
-        title={preset.title}
-        description="AI-detected recovery opportunity · one-click deploy"
+        title="Growth execution stack"
+        description="Recommendation → plan review → deployment → live orchestration"
         className="border-cyan-500/20 shadow-[0_12px_48px_-20px_rgba(34,211,238,0.25)]"
         headerExtra={
           <span className="flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-cyan-200">
@@ -78,7 +78,8 @@ export function RetargetingAgentDeploymentPanel() {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <dl className="grid gap-3 sm:grid-cols-2">
+          <p className="text-sm font-semibold">{preset.title}</p>
+          <dl className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
               <dt className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                 Expected
@@ -109,12 +110,11 @@ export function RetargetingAgentDeploymentPanel() {
 
           <Button
             type="button"
-            variant="gradient"
-            className="mission-shimmer-btn mt-4 w-full rounded-xl"
-            onClick={deployRetargeting}
+            variant="outline"
+            className="mt-4 w-full rounded-xl border-white/10"
+            onClick={reviewPlan}
           >
-            <Rocket className="mr-2 size-4" />
-            {AI_MODE_BEHAVIOR[mode].deployLabel}
+            Review Plan
           </Button>
         </motion.div>
 
@@ -179,58 +179,28 @@ export function RetargetingAgentDeploymentPanel() {
               return (
                 <li key={row.label} className="relative pb-3 last:pb-0">
                   <span className="absolute -left-[15px] top-1 size-2 rounded-full bg-cyan-400/80 ring-2 ring-card" />
-                  <div className="flex items-start gap-2 rounded-lg border border-white/[0.05] bg-white/[0.02] px-2.5 py-2">
-                    <Icon className="mt-0.5 size-3 text-violet-300" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] tabular-nums text-cyan-300/80">{row.time}</span>
-                        <OrchestrationStatusBadge status={row.status} />
-                      </div>
-                      <p className="text-xs font-medium">{row.label}</p>
-                    </div>
-                  </div>
+                  <OrchestrationTimelineRow icon={Icon} row={row} />
                 </li>
               );
             })}
           </ol>
+          <div className="mt-4 border-t border-white/[0.06] pt-4">
+            <OrchestrationMap embedded />
+          </div>
         </div>
 
-        <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.02] p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            AI Mode
-          </p>
-          <div className="mt-2 flex gap-1">
-            {(["manual", "guided", "autonomous"] as AutonomousMode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-xs capitalize transition-all",
-                  mode === m
-                    ? "border-violet-500/50 bg-violet-500/15 text-violet-100 shadow-[0_0_20px_-8px_rgba(139,92,246,0.5)]"
-                    : "border-white/10 text-muted-foreground hover:border-white/20",
-                )}
-              >
-                <span
-                  className={cn(
-                    "size-2 rounded-full border",
-                    mode === m ? "border-violet-300 bg-violet-400" : "border-white/30",
-                  )}
-                />
-                {m}
-              </button>
-            ))}
-          </div>
-          <AiModeCallout mode={mode} className="mt-3" />
-        </div>
+        <AiModeSelector mode={mode} onChange={setMode} className="mt-5" />
+
+        <StackLaunchPills className="mt-4" />
 
         <Button
           type="button"
-          variant="outline"
-          className="mission-shimmer-btn mt-4 w-full rounded-xl border-white/10"
+          variant="gradient"
+          size="lg"
+          className="mission-shimmer-btn mt-5 w-full rounded-xl py-6 text-base shadow-[0_12px_40px_-12px_rgba(99,102,241,0.55)]"
           onClick={deployFullEngine}
         >
+          <Rocket className="mr-2 size-5" />
           Deploy Full Growth Engine
         </Button>
       </GlassCard>

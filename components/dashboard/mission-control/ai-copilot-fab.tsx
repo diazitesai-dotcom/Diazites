@@ -56,8 +56,24 @@ const COPILOT_ACTIONS: CopilotAction[] = [
     },
   },
   {
-    label: "Optimize CPL",
-    description: "Open optimization workspace",
+    label: "Launch growth engine",
+    description: "Full stack — primary onboarding path",
+    kind: "deploy",
+    launch: {
+      goal: "deploy_full_growth_engine",
+      stack: "growth_engine",
+      source: "growth_engine",
+    },
+  },
+  {
+    label: "Why are leads low?",
+    description: "AI diagnostic on funnel and velocity",
+    kind: "link",
+    href: "/dashboard/leads",
+  },
+  {
+    label: "Optimize campaigns",
+    description: "CPL, budget, and creative tuning",
     kind: "link",
     href: "/dashboard/optimization",
   },

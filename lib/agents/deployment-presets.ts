@@ -21,6 +21,8 @@ export type AgentDeploymentPreset = {
     label: string;
     kind: TimelineEvent["kind"];
     status: OrchestrationRunStatus;
+    durationSeconds?: number;
+    system?: string;
   }[];
   aiActionsToday: {
     automationsExecuted: number;
@@ -53,11 +55,46 @@ export const RETARGETING_DEPLOYMENT_PRESET: AgentDeploymentPreset = {
   },
   defaultMode: "autonomous",
   growthTimeline: [
-    { time: "09:02", label: "Landing page generated", kind: "asset", status: "completed" },
-    { time: "09:04", label: "Meta deployment", kind: "campaign", status: "running" },
-    { time: "09:06", label: "Pixel validation", kind: "deployment", status: "failed" },
-    { time: "09:10", label: "Follow-up triggered", kind: "execution", status: "completed" },
-    { time: "09:14", label: "AI optimization applied", kind: "execution", status: "processing" },
+    {
+      time: "09:02",
+      label: "Landing page generated",
+      kind: "asset",
+      status: "completed",
+      durationSeconds: 38,
+      system: "Landing Stack",
+    },
+    {
+      time: "09:04",
+      label: "Meta campaign deployed",
+      kind: "campaign",
+      status: "running",
+      durationSeconds: 42,
+      system: "Paid Ads Stack",
+    },
+    {
+      time: "09:06",
+      label: "Pixel validation",
+      kind: "deployment",
+      status: "failed",
+      durationSeconds: 12,
+      system: "Paid Ads Stack",
+    },
+    {
+      time: "09:10",
+      label: "Follow-up triggered",
+      kind: "execution",
+      status: "completed",
+      durationSeconds: 6,
+      system: "Lead Recovery Stack",
+    },
+    {
+      time: "09:14",
+      label: "AI optimization applied",
+      kind: "execution",
+      status: "processing",
+      durationSeconds: 24,
+      system: "Optimization Loop",
+    },
   ],
   aiActionsToday: {
     automationsExecuted: 12,

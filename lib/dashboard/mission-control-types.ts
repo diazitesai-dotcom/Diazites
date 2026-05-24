@@ -144,6 +144,8 @@ export type OrchestrationTimelineEvent = {
   label: string;
   kind: "asset" | "campaign" | "lead" | "execution" | "deployment";
   status: OrchestrationRunStatus;
+  durationSeconds?: number;
+  system?: string;
 };
 
 export type MarketSignal = {

@@ -507,12 +507,60 @@ export function buildMissionControlPayload(input: {
   });
 
   const orchestrationTimeline: OrchestrationTimelineEvent[] = [
-    { id: "o1", time: "09:02", label: "Landing page generated", kind: "asset", status: "completed" },
-    { id: "o2", time: "09:04", label: "Meta deployment", kind: "campaign", status: "running" },
-    { id: "o3", time: "09:06", label: "Pixel validation", kind: "deployment", status: "failed" },
-    { id: "o4", time: "09:09", label: "Follow-up triggered", kind: "execution", status: "completed" },
-    { id: "o5", time: "09:11", label: "Lead captured", kind: "lead", status: "completed" },
-    { id: "o6", time: "09:15", label: "Optimization applied", kind: "execution", status: "processing" },
+    {
+      id: "o1",
+      time: "09:02",
+      label: "Landing page generated",
+      kind: "asset",
+      status: "completed",
+      durationSeconds: 38,
+      system: "Landing Stack",
+    },
+    {
+      id: "o2",
+      time: "09:04",
+      label: "Meta campaign deployed",
+      kind: "campaign",
+      status: "running",
+      durationSeconds: 42,
+      system: "Paid Ads Stack",
+    },
+    {
+      id: "o3",
+      time: "09:06",
+      label: "Pixel validation",
+      kind: "deployment",
+      status: "failed",
+      durationSeconds: 12,
+      system: "Paid Ads Stack",
+    },
+    {
+      id: "o4",
+      time: "09:09",
+      label: "Follow-up triggered",
+      kind: "execution",
+      status: "completed",
+      durationSeconds: 6,
+      system: "Lead Engine Stack",
+    },
+    {
+      id: "o5",
+      time: "09:11",
+      label: "Lead captured",
+      kind: "lead",
+      status: "completed",
+      durationSeconds: 1,
+      system: "CRM",
+    },
+    {
+      id: "o6",
+      time: "09:15",
+      label: "Optimization applied",
+      kind: "execution",
+      status: "processing",
+      durationSeconds: 24,
+      system: "Optimization Loop",
+    },
   ];
 
   const kpiInsights: KpiInsight[] = [

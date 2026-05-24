@@ -35,7 +35,7 @@ import {
   mapDbStatusToLifecycle,
   recommendAgentsForGoal,
 } from "@/lib/agents/deployment-catalog";
-import { AiModeCallout } from "@/components/agents/ai-mode-callout";
+import { AiModeSelector } from "@/components/agents/ai-mode-selector";
 import { DeploymentRollbackButton } from "@/components/agents/deployment-rollback-button";
 import { AI_MODE_BEHAVIOR } from "@/lib/agents/ai-mode-behavior";
 import {
@@ -553,29 +553,7 @@ export function AgentDeploymentDrawer({
                       Prefilled from your business profile · {context?.expectedUplift ?? uplift}
                     </div>
 
-                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Autonomous mode
-                      </p>
-                      <div className="mt-2 grid grid-cols-3 gap-1">
-                        {(["manual", "guided", "autonomous"] as AutonomousMode[]).map((m) => (
-                          <button
-                            key={m}
-                            type="button"
-                            onClick={() => setMode(m)}
-                            className={cn(
-                              "rounded-lg border px-2 py-2 text-xs capitalize transition-all",
-                              mode === m
-                                ? "border-violet-500/50 bg-violet-500/15 text-violet-100"
-                                : "border-white/10 text-muted-foreground hover:border-white/20",
-                            )}
-                          >
-                            {m}
-                          </button>
-                        ))}
-                      </div>
-                      <AiModeCallout mode={mode} className="mt-2" />
-                    </div>
+                    <AiModeSelector mode={mode} onChange={setMode} />
 
                     <div className="grid gap-4">
                       {(
