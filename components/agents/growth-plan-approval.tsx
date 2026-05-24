@@ -25,7 +25,7 @@ type Props = {
 
 export function GrowthPlanApproval({
   plan,
-  planStatus = "pending_review",
+  planStatus = "reviewing",
   onApprove,
   onModify,
   onReject,
@@ -47,11 +47,12 @@ export function GrowthPlanApproval({
       <dl className="space-y-3 text-sm">
         <div>
           <dt className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Expected outcome
+            Expected
           </dt>
-          <dd className="mt-0.5 font-medium text-emerald-300/95">{plan.expectedOutcome}</dd>
+          <dd className="mt-0.5 font-medium text-emerald-300/95">{plan.projectedLeads}</dd>
+          <dd className="text-sm font-medium text-cyan-200/90">{plan.projectedPipeline}</dd>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div>
             <dt className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Confidence
@@ -68,12 +69,20 @@ export function GrowthPlanApproval({
               {plan.risk}
             </dd>
           </div>
+          <div>
+            <dt className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              Budget
+            </dt>
+            <dd className="mt-0.5 text-lg font-semibold tabular-nums text-foreground/90">
+              {plan.budget}
+            </dd>
+          </div>
         </div>
       </dl>
 
       <div className="space-y-2">
         <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-          Included stack
+          Included systems
         </p>
         <ul className="flex flex-wrap gap-2">
           {plan.stackItems.map((item) => (

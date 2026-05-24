@@ -91,6 +91,9 @@ function OrchestrationMapFlow({ steps }: { steps: OrchestrationFlowStep[] }) {
                 {step.secondaryMetric ? (
                   <p className="text-[10px] tabular-nums text-muted-foreground">{step.secondaryMetric}</p>
                 ) : null}
+                {step.runtimeMetric ? (
+                  <p className="text-[10px] tabular-nums text-violet-200/80">{step.runtimeMetric}</p>
+                ) : null}
               </div>
               <FlowStatusBadge label={step.statusLabel} status={step.status} />
               </div>

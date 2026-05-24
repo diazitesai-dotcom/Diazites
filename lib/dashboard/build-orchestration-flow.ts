@@ -12,8 +12,10 @@ export type OrchestrationFlowStep = {
   label: string;
   /** Primary throughput (e.g. "24 visits", "2 converts") */
   throughput: string;
-  /** Secondary runtime metric (CVR, queue, latency label) */
+  /** Secondary runtime metric (CVR, queue, source) */
   secondaryMetric?: string;
+  /** Latency, processing time, or ETA */
+  runtimeMetric?: string;
   /** @deprecated use throughput — kept for backward compat */
   metric: string;
   status: OrchestrationFlowStatus;
@@ -132,23 +134,23 @@ export function buildOrchestrationFlow(input: {
       label: "Landing Agent",
       throughput: formatCount(leads, leads === 1 ? "convert" : "converts"),
       secondaryMetric: formatCvr(leads, visitors),
-      status: landingStatus,
+      runtimeMetric: hasTraffic ? "Latency: 1.4s" : undefined,
+      status: landingStatus === "active" || landingStatus === "live" ? "healthy" : landingStatus,
       statusLabel:
-        landingStatus === "live"
-          ? "LIVE"
-          : landingStatus === "active"
-            ? "ACTIVE"
-            : landingStatus === "running"
-              ? "RUNNING"
-              : landingStatus === "processing"
-                ? "PROCESSING"
-                : "IDLE",
+        landingStatus === "active" || landingStatus === "live"
+          ? "HEALTHY"
+          : landingStatus === "running"
+            ? "RUNNING"
+            : landingStatus === "processing"
+              ? "PROCESSING"
+              : "IDLE",
     }),
     flowStep({
       id: "qualify",
       label: "Lead Qualification",
       throughput: formatCount(qualified, "scored"),
-      secondaryMetric: qualQueue > 0 ? `Queue: ${qualQueue}` : leads > 0 ? "Latency: ~4m" : undefined,
+      secondaryMetric: qualQueue > 0 ? `Queue: ${qualQueue}` : undefined,
+      runtimeMetric: qualQueue > 0 ? "Processing: 12s" : leads > 0 ? "Processing: 8s" : undefined,
       status: qualifyStatus,
       statusLabel:
         qualifyStatus === "running"
@@ -163,16 +165,15 @@ export function buildOrchestrationFlow(input: {
       id: "followup",
       label: "Follow-Up",
       throughput: formatCount(pendingFollowUp, pendingFollowUp === 1 ? "pending" : "pending"),
-      secondaryMetric: followAgent !== "inactive" ? "Latency: ~12m" : undefined,
-      status: followupStatus,
+      secondaryMetric: pendingFollowUp > 0 ? "1 sequence active" : undefined,
+      runtimeMetric: followAgent !== "inactive" ? "ETA: 4m" : undefined,
+      status: followupStatus === "healthy" ? "active" : followupStatus,
       statusLabel:
-        followupStatus === "healthy"
-          ? "HEALTHY"
+        followupStatus === "healthy" || followupStatus === "active"
+          ? "ACTIVE"
           : followupStatus === "running"
             ? "RUNNING"
-            : followupStatus === "active"
-              ? "ACTIVE"
-              : "IDLE",
+            : "IDLE",
     }),
     flowStep({
       id: "crm",

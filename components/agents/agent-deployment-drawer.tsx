@@ -140,7 +140,7 @@ export function AgentDeploymentDrawer({
   const [deployPhase, setDeployPhase] = useState(0);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [deployingTypes, setDeployingTypes] = useState<Set<string>>(new Set());
-  const [planStatus, setPlanStatus] = useState<import("@/lib/dashboard/mission-control-types").PlanLifecycleStatus>("pending_review");
+  const [planStatus, setPlanStatus] = useState<import("@/lib/dashboard/mission-control-types").PlanLifecycleStatus>("reviewing");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -258,7 +258,7 @@ export function AgentDeploymentDrawer({
       });
 
       setTimeline(result.timeline);
-      setPlanStatus("live");
+      setPlanStatus(selectedAgents.some((a) => ["retargeting", "social_ads", "search_ads"].includes(a)) ? "optimizing" : "live");
       setStep("monitor");
     });
   }

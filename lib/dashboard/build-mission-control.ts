@@ -255,6 +255,7 @@ export function buildMissionControlPayload(input: {
         confidence: 88,
         risk: "low",
         deployEtaSeconds: 300,
+        approvalState: "user_approval_required",
         businessOutcome: {
           leadsPerMonth: "+18–32 leads/month",
           pipelineValue: "+$8.4k–14.2k modeled pipeline",
@@ -269,6 +270,7 @@ export function buildMissionControlPayload(input: {
           confidence: 91,
           risk: "low",
           deployEtaSeconds: 180,
+          approvalState: "ai_approved",
           businessOutcome: {
             leadsPerMonth: "+24–40 leads/month",
             pipelineValue: "+$11k–18k modeled pipeline",
@@ -283,6 +285,7 @@ export function buildMissionControlPayload(input: {
             confidence: 86,
             risk: "low",
             deployEtaSeconds: 120,
+            approvalState: "ai_approved",
             businessOutcome: {
               leadsPerMonth: "+12–22 qualified leads/month",
               pipelineValue: "+$6.2k–11.5k modeled pipeline",
@@ -296,6 +299,7 @@ export function buildMissionControlPayload(input: {
             confidence: 82,
             risk: "low",
             deployEtaSeconds: 120,
+            approvalState: "pending",
             businessOutcome: {
               leadsPerMonth: "+8–14% efficiency gain",
               pipelineValue: "+$4.8k–9.1k modeled pipeline",
@@ -608,9 +612,11 @@ export function buildMissionControlPayload(input: {
       system: "Paid Ads Stack",
       rollbackStatus: "available",
       details: [
+        { label: "Status", value: "RUNNING" },
         { label: "Budget", value: "$5/day" },
         { label: "Creative", value: "2 generated" },
-        { label: "Targeting", value: "Recent visitors" },
+        { label: "Audience", value: "Recent visitors" },
+        { label: "Stack", value: "Paid Ads" },
         { label: "Duration", value: "42 sec" },
         { label: "Rollback", value: "Available" },
       ],

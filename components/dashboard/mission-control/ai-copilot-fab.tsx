@@ -53,7 +53,7 @@ const OPERATOR_COMMANDS: CopilotCommand[] = [
   },
   {
     id: "deploy-lead-stack",
-    label: "Deploy lead engine",
+    label: "Deploy lead stack",
     description: "Landing → qualification → follow-up → CRM",
     icon: Rocket,
     kind: "deploy",
@@ -66,12 +66,12 @@ const OPERATOR_COMMANDS: CopilotCommand[] = [
   },
   {
     id: "explain-tracking",
-    label: "Explain tracking failure",
-    description: "Pixel, analytics, and conversion signal gaps",
+    label: "Explain pixel validation failure",
+    description: "Pixel, domain verification, and event gaps",
     icon: Radar,
     kind: "brief",
     brief: {
-      title: "Tracking failure analysis",
+      title: "Pixel validation failure",
       body: "Meta pixel and GA4 events are the most common gaps before deploy. Verify domain verification, purchase/lead events, and CRM webhook handoff.",
       href: "/dashboard/integrations",
       hrefLabel: "Open integrations",
@@ -79,12 +79,12 @@ const OPERATOR_COMMANDS: CopilotCommand[] = [
   },
   {
     id: "diagnose-qualification",
-    label: "Diagnose low qualification",
+    label: "Diagnose qualification bottleneck",
     description: "Queue depth, scoring rules, and follow-up SLA",
     icon: TrendingDown,
     kind: "brief",
     brief: {
-      title: "Qualification diagnostic",
+      title: "Qualification bottleneck",
       body: "Check lead queue depth on the live system map, activation status of the Lead Qualification Agent, and same-day follow-up coverage on high-intent leads.",
       href: "/dashboard/agents",
       hrefLabel: "Open agents",
@@ -113,6 +113,19 @@ const OPERATOR_COMMANDS: CopilotCommand[] = [
       goal: "improve_conversion",
       step: "plan",
       source: "control_plane",
+    },
+  },
+  {
+    id: "rollback-last",
+    label: "Rollback last deployment",
+    description: "Revert the most recent stack or campaign change",
+    icon: Zap,
+    kind: "brief",
+    brief: {
+      title: "Rollback last deployment",
+      body: "The most recent Meta campaign deploy (Paid Ads Stack) supports rollback. Confirm in Growth Orchestration timeline — rollback restores prior budget, creative, and audience settings within ~90 seconds.",
+      href: "/dashboard",
+      hrefLabel: "Open timeline",
     },
   },
 ];

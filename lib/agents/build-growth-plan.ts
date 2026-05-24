@@ -12,6 +12,9 @@ import { expectedUpliftForGoal } from "@/lib/agents/deployment-catalog";
 export type GrowthPlan = {
   title: string;
   expectedOutcome: string;
+  projectedLeads: string;
+  projectedPipeline: string;
+  budget: string;
   confidence: number;
   risk: PlanRisk;
   stackItems: string[];
@@ -55,19 +58,34 @@ export function buildGrowthPlan(params: {
   const stackItems = agents.map((a) => STACK_SHORT[a] ?? a.replace(/_/g, " "));
 
   const guardrails: string[] = [
-    `$${config.budget || "25"} max daily spend`,
+    `$${config.budget || "25"}/day cap`,
     "Rollback enabled",
   ];
 
   if (mode === "manual" || mode === "guided") {
-    guardrails.push("Human approval for new campaigns");
+    guardrails.push("Approval required for new campaigns");
   } else {
     guardrails.push("Auto-optimize within spend cap");
   }
 
+  const projectedLeads =
+    goalId === "generate_leads" || goalId === "follow_up_leads"
+      ? "+18–32 leads/month"
+      : goalId === "deploy_full_growth_engine"
+        ? "+24–40 leads/month"
+        : "+12–22 leads/month";
+
+  const projectedPipeline =
+    goalId === "deploy_full_growth_engine"
+      ? "+$11k–18k modeled pipeline"
+      : "+$8.4k–14.2k modeled pipeline";
+
   return {
     title: `AI Growth Plan · ${goalLabel}`,
     expectedOutcome: contextUplift ?? expectedUpliftForGoal(goalId),
+    projectedLeads,
+    projectedPipeline,
+    budget: `$${config.budget || "5"}/day`,
     confidence: planConfidence(agents),
     risk: planRisk(mode, agents),
     stackItems,

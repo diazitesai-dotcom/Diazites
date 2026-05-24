@@ -72,15 +72,27 @@ export type BusinessOutcomeProjection = {
   pipelineValue: string;
 };
 
+export type ApprovalState = "pending" | "ai_approved" | "user_approval_required";
+
 export type RecommendedNextAction = {
   title: string;
   impact: string;
   href: string;
   cta: string;
   businessOutcome: BusinessOutcomeProjection;
+  approvalState: ApprovalState;
 } & PlanIntelligence;
 
-export type PlanLifecycleStatus = "pending_review" | "approved" | "deploying" | "live";
+export type PlanLifecycleStatus =
+  | "draft"
+  | "reviewing"
+  | "approved"
+  | "deploying"
+  | "live"
+  | "optimizing"
+  | "paused"
+  | "failed"
+  | "rolled_back";
 
 export type StackHealthStatus = "healthy" | "warning" | "degraded" | "active";
 

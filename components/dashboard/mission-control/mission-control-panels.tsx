@@ -25,6 +25,7 @@ import { useState } from "react";
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
 import { OpportunityDeployPreview } from "@/components/dashboard/mission-control/opportunity-deploy-preview";
 import { BusinessOutcomeBlock } from "@/components/dashboard/mission-control/business-outcome-block";
+import { ApprovalStateBadge } from "@/components/dashboard/mission-control/approval-state-badge";
 import { PlanIntelligenceMeta, resolvePlanIntelligence } from "@/components/dashboard/mission-control/plan-intelligence-meta";
 import { AnimatedCounter, AnimatedMoney } from "@/components/dashboard/mission-control/animated-counter";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
@@ -287,6 +288,7 @@ export function RecommendedNextActionCard({ data }: { data: DashboardOverviewDat
               risk={action.risk}
               deployEtaSeconds={action.deployEtaSeconds}
             />
+            <ApprovalStateBadge state={action.approvalState} />
           </div>
           <Button
             type="button"

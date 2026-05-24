@@ -132,14 +132,14 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
   return (
     <>
       <div className="relative mx-auto max-w-7xl space-y-10 pb-24">
+        <RuntimeOverview flow={data.orchestrationFlow} stackHealth={data.stackHealth} />
+
         <PageHeader
           eyebrow="AI Growth OS"
           title="Mission control"
           description="Your AI-powered marketing command center — what is happening, what is broken, and what to do next."
           actions={<CommandCenterBell items={data.commandCenter} />}
         />
-
-        <RuntimeOverview flow={data.orchestrationFlow} stackHealth={data.stackHealth} />
 
         <AiCommandBriefing data={data} />
         <RecommendedNextActionCard data={data} />
