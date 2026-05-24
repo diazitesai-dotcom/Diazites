@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Activity, Cpu, FileText, Megaphone, Rocket, Users } from "lucide-react";
 
@@ -27,6 +28,31 @@ export function GrowthOrchestrationTimeline({
   events: OrchestrationTimelineEvent[];
   autonomousPolicy?: AutonomousPolicy;
 }) {
+  const router = useRouter();
+
+  function handleTimelineAction(
+    actionId: import("@/lib/dashboard/mission-control-types").TimelineAction["id"],
+    row: { label: string },
+  ) {
+    if (actionId === "open_logs" || actionId === "view_payload") {
+      router.push("/dashboard/settings");
+      return;
+    }
+    if (actionId === "ai_fix" || actionId === "retry") {
+      router.push("/dashboard/integrations");
+      return;
+    }
+    if (actionId === "rollback") {
+      router.push("/dashboard");
+      return;
+    }
+    if (actionId === "agent_reasoning") {
+      router.push("/dashboard/agents");
+      return;
+    }
+    void row;
+  }
+
   return (
     <motion.div variants={fadeItem} initial="hidden" animate="show">
       <GlassCard
@@ -70,7 +96,11 @@ export function GrowthOrchestrationTimeline({
                     system: ev.system,
                     rollbackStatus: ev.rollbackStatus,
                     details: ev.details,
+                    failureReason: ev.failureReason,
+                    aiReasoning: ev.aiReasoning,
+                    actions: ev.actions,
                   }}
+                  onAction={handleTimelineAction}
                 />
               </motion.li>
             );

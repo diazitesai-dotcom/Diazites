@@ -35,12 +35,42 @@ import {
   ZeroSpendEmpty,
 } from "@/components/dashboard/mission-control/mission-empty-states";
 import { GrowthOrchestrationTimeline } from "@/components/dashboard/mission-control/growth-orchestration-timeline";
+import { CredentialVaultPanel } from "@/components/dashboard/mission-control/credential-vault-panel";
+import { LandingStackManager } from "@/components/dashboard/mission-control/landing-stack-manager";
+import { RevenueCommandCenterRow } from "@/components/dashboard/mission-control/revenue-command-center";
+import { MissionControlAlerts } from "@/components/dashboard/mission-control/mission-control-alerts";
 import { RuntimeOverview } from "@/components/dashboard/mission-control/runtime-overview";
 import { InboundVelocityChart } from "@/components/dashboard/mission-control/inbound-velocity-chart";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { PageHeader } from "@/components/layout/page-header";
 import type { DashboardOverviewData } from "@/lib/dashboard/load-dashboard-overview";
+import type { SystemModuleContext } from "@/lib/dashboard/system-module-types";
 import { fadeItem } from "@/lib/motion";
+
+function buildModuleContext(data: DashboardOverviewData): SystemModuleContext {
+  const hasPaidAds = data.connections.some(
+    (c) => (c.id === "meta" || c.id === "google") && c.status === "connected",
+  );
+  const crmConnected = data.connections.some(
+    (c) => (c.id === "crm" || c.id === "hubspot") && c.status === "connected",
+  );
+  const funnel = data.funnel;
+  const visitors = funnel.find((s) => s.key === "visitors")?.count ?? 0;
+  const leads = funnel.find((s) => s.key === "leads")?.count ?? data.metrics?.totalLeads ?? 0;
+  const qualified = funnel.find((s) => s.key === "qualified")?.count ?? 0;
+  const booked = funnel.find((s) => s.key === "booked")?.count ?? 0;
+  const won = funnel.find((s) => s.key === "won")?.count ?? 0;
+
+  return {
+    funnelCounts: { visitors, leads, qualified, booked, won },
+    metrics: data.metrics,
+    agents: data.agents,
+    landingStackVersions: data.landingStackVersions,
+    recommendations: data.recommendations,
+    crmConnected,
+    hasPaidAds,
+  };
+}
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -129,10 +159,24 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
     },
   ] as const;
 
+  const kpiLinks: Record<string, string> = {
+    leads: "/dashboard/leads",
+    campaigns: "/dashboard/campaigns",
+    booked: "/dashboard/leads",
+  };
+
   return (
     <>
       <div className="relative mx-auto max-w-7xl space-y-10 pb-24">
-        <RuntimeOverview flow={data.orchestrationFlow} stackHealth={data.stackHealth} />
+        <RuntimeOverview
+          flow={data.orchestrationFlow}
+          stackHealth={data.stackHealth}
+          moduleContext={buildModuleContext(data)}
+        />
+
+        <MissionControlAlerts data={data} />
+
+        <AgentPerformanceBoard data={data} />
 
         <PageHeader
           eyebrow="AI Growth OS"
@@ -142,6 +186,7 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
         />
 
         <AiCommandBriefing data={data} />
+        <RevenueCommandCenterRow data={data.revenueCommandCenter} />
         <RecommendedNextActionCard data={data} />
 
         <RetargetingAgentDeploymentPanel />
@@ -158,8 +203,6 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
             {zeroSpend ? <ZeroSpendEmpty /> : null}
           </>
         )}
-
-        <AgentPerformanceBoard data={data} />
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {metricsCards.map((card) => {
@@ -179,6 +222,7 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
               trafficSource={insight?.trafficSource}
               periodLabel={insight?.periodLabel}
               microInsight={insight?.microInsight}
+              href={kpiLinks[card.key]}
             />
           );
           })}
@@ -193,7 +237,12 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
 
         <section className="grid gap-6 lg:grid-cols-2">
           <FunnelSnapshot data={data} />
+          <LandingStackManager versions={data.landingStackVersions} />
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-2">
           <MarketSignalsWidget data={data} />
+          <CredentialVaultPanel />
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">

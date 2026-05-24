@@ -25,6 +25,8 @@ import type {
   OpportunityItem,
   RecommendedNextAction,
   RevenueForecast,
+  LandingStackVersion,
+  RevenueCommandCenter,
 } from "@/lib/dashboard/mission-control-types";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -166,6 +168,7 @@ export type DashboardOverviewData = {
   healthScore: number;
   healthChecks: HealthCheck[];
   revenue: RevenueForecast;
+  revenueCommandCenter: RevenueCommandCenter;
   funnel: FunnelStage[];
   funnelDiagnosis: FunnelDiagnosis;
   recommendations: AiRecommendation[];
@@ -173,6 +176,7 @@ export type DashboardOverviewData = {
   marketSignals: MarketSignal[];
   agentPerformance: AgentPerformance[];
   connections: AccountConnection[];
+  landingStackVersions: LandingStackVersion[];
   goals: BusinessGoal[];
   goalCoaching: GoalCoaching;
   orchestrationTimeline: OrchestrationTimelineEvent[];

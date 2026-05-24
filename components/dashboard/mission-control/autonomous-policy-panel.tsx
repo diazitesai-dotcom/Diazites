@@ -16,6 +16,10 @@ export function buildAutonomousPolicy(
           ? "guided"
           : "manual",
     rollbackEnabled: true,
+    budgetApprovalThreshold: "Require approval >$100 spend",
+    autoPauseOnCplSpike: true,
+    rollbackThreshold: "Auto rollback on 25% CPL spike",
+    businessHoursMode: true,
   };
 }
 
@@ -33,13 +37,23 @@ export function AutonomousPolicyPanel({
   className?: string;
 }) {
   const rows = [
-    { label: "Spend cap", value: policy.spendCap },
+    { label: "Marketing budget cap", value: policy.spendCap },
+    { label: "Spend approval", value: policy.budgetApprovalThreshold },
     {
-      label: "Approval",
+      label: "Campaign approval",
       value: policy.approvalRequired ? "Required for new campaigns" : "Not required",
     },
     { label: "Optimization", value: OPTIMIZATION_LABEL[policy.optimizationMode] },
+    {
+      label: "Auto pause on CPL spike",
+      value: policy.autoPauseOnCplSpike ? "Enabled" : "Disabled",
+    },
+    { label: "Rollback threshold", value: policy.rollbackThreshold },
     { label: "Rollback", value: policy.rollbackEnabled ? "Enabled" : "Disabled" },
+    {
+      label: "Business hours mode",
+      value: policy.businessHoursMode ? "Active · 9am–6pm" : "Off",
+    },
   ];
 
   return (
@@ -50,7 +64,10 @@ export function AutonomousPolicyPanel({
       )}
     >
       <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-200/80">
-        Autonomous policy
+        Human approval policy
+      </p>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        Autonomy settings — guardrails for spend, rollback, and operating hours.
       </p>
       <dl className="mt-3 space-y-2">
         {rows.map((row) => (

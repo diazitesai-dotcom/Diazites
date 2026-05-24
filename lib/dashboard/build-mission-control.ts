@@ -15,11 +15,13 @@ import type {
   FunnelStage,
   HealthCheck,
   KpiInsight,
+  LandingStackVersion,
   MarketSignal,
   MissionControlBriefing,
   OpportunityItem,
   OrchestrationTimelineEvent,
   RecommendedNextAction,
+  RevenueCommandCenter,
   RevenueForecast,
   StackHealthItem,
 } from "@/lib/dashboard/mission-control-types";
@@ -30,6 +32,7 @@ type Metrics = {
   activeCampaigns: number;
   totalSpend: number;
   costPerLead: number | null;
+  roi: number | null;
   periodDays: number;
 } | null;
 
@@ -311,31 +314,40 @@ export function buildMissionControlPayload(input: {
       id: "retarget",
       title: "Activate Retargeting Agent",
       impact: "+12–18% recovered leads from site visitors",
+      expectedOutcome: "+12–18% recovered leads",
       cta: "Deploy",
       href: "/dashboard/agents",
       confidence: 82,
       risk: "low",
       deployEtaSeconds: 120,
+      reasoning:
+        "Repeat visitors detected without active retargeting sequences — warm traffic is exiting without follow-up.",
     },
     {
       id: "ads",
       title: "Connect Meta / Google Ads",
       impact: "Unlock paid acquisition + budget optimization",
+      expectedOutcome: "+18–32 leads/month modeled",
       cta: "Fix Now",
       href: "/dashboard/ads",
       confidence: 91,
       risk: "low",
       deployEtaSeconds: 300,
+      reasoning:
+        "Paid channels disconnected while organic leads exist — scaling will plateau without ads connectivity.",
     },
     {
       id: "lp",
       title: "Launch Landing Page A/B Test",
       impact: "+8–15% conversion lift on top funnel",
+      expectedOutcome: "+15% conversion lift",
       cta: "Deploy",
       href: "/dashboard/funnel",
       confidence: 76,
       risk: "medium",
       deployEtaSeconds: 180,
+      reasoning:
+        "Variant B outperforming control by 22% on conversion rate — traffic shift recommended.",
     },
   ];
 
@@ -505,6 +517,8 @@ export function buildMissionControlPayload(input: {
             ? Math.max(1, activeCampaigns)
             : 0;
 
+    const qualQueue = Math.max(0, funnelCounts.leads - funnelCounts.qualified);
+
     return {
       key: def.key,
       name: def.name,
@@ -527,6 +541,21 @@ export function buildMissionControlPayload(input: {
           : status === "pending"
             ? "Awaiting provisioning"
             : "Never",
+      queueDepth:
+        def.key === "lead_qualification" && status === "active"
+          ? qualQueue
+          : def.key === "ai_follow_up" && status === "active"
+            ? Math.max(0, funnelCounts.qualified - funnelCounts.booked)
+            : 0,
+      memoryLabel:
+        status === "active"
+          ? def.key === "lead_qualification"
+            ? "48 context items"
+            : def.key === "ai_follow_up"
+              ? "12 sequences"
+              : "32MB agent memory"
+          : "—",
+      taskCount: status === "active" ? Math.max(1, count) : 0,
     };
   });
 
@@ -536,36 +565,137 @@ export function buildMissionControlPayload(input: {
       name: "Meta Ads",
       status: hasMeta ? "connected" : "missing",
       href: "/dashboard/ads",
+      category: "ads",
+      healthDetail: hasMeta ? "Token valid · syncing" : "Connect to unlock paid",
     },
     {
       id: "google",
       name: "Google Ads",
       status: hasGoogle ? "connected" : "missing",
       href: "/dashboard/ads",
+      category: "ads",
+      healthDetail: hasGoogle ? "Account linked" : "Not connected",
+    },
+    {
+      id: "tiktok",
+      name: "TikTok Ads",
+      status: "missing",
+      href: "/dashboard/ads",
+      category: "ads",
+      healthDetail: "Available in integrations",
+    },
+    {
+      id: "linkedin",
+      name: "LinkedIn Ads",
+      status: "missing",
+      href: "/dashboard/ads",
+      category: "ads",
+    },
+    {
+      id: "youtube",
+      name: "YouTube",
+      status: "needs_attention",
+      href: "/dashboard/ads",
+      category: "ads",
+      healthDetail: "Channel not linked",
+    },
+    {
+      id: "hubspot",
+      name: "HubSpot",
+      status: crmConnected ? "connected" : "pending",
+      href: "/dashboard/leads",
+      category: "crm",
+      healthDetail: crmConnected ? "Syncing leads" : "Setup incomplete",
+    },
+    {
+      id: "ghl",
+      name: "GoHighLevel",
+      status: "missing",
+      href: "/dashboard/integrations",
+      category: "crm",
+    },
+    {
+      id: "salesforce",
+      name: "Salesforce",
+      status: "missing",
+      href: "/dashboard/integrations",
+      category: "crm",
+    },
+    {
+      id: "shopify",
+      name: "Shopify",
+      status: "missing",
+      href: "/dashboard/integrations",
+      category: "commerce",
+    },
+    {
+      id: "zapier",
+      name: "Zapier",
+      status: "pending",
+      href: "/dashboard/integrations",
+      category: "comms",
+      healthDetail: "Webhook ready — no Zaps active",
     },
     {
       id: "crm",
-      name: "CRM",
+      name: "Leads CRM",
       status: crmConnected ? "connected" : "pending",
       href: "/dashboard/leads",
+      category: "crm",
     },
     {
       id: "stripe",
       name: "Stripe",
       status: billingActive ? "connected" : "pending",
       href: "/dashboard/billing",
+      category: "commerce",
+      healthDetail: billingActive ? "Billing active" : "Complete setup",
     },
     {
       id: "analytics",
       name: "Analytics",
-      status: "pending",
+      status: "needs_attention",
       href: "/dashboard/settings",
+      category: "analytics",
+      healthDetail: "GA4 property pending",
     },
     {
       id: "pixel",
-      name: "Domain / Pixel",
-      status: "missing",
+      name: "Pixel / Domain",
+      status: "error",
       href: "/dashboard/settings",
+      category: "analytics",
+      healthDetail: "Meta Pixel ID missing",
+    },
+    {
+      id: "dns",
+      name: "Domain DNS",
+      status: "pending",
+      href: "/dashboard/settings",
+      category: "analytics",
+    },
+    {
+      id: "openai",
+      name: "OpenAI API",
+      status: "connected",
+      href: "/dashboard/settings",
+      category: "ai",
+      healthDetail: "Platform key active",
+    },
+    {
+      id: "twilio",
+      name: "Twilio",
+      status: "missing",
+      href: "/dashboard/integrations",
+      category: "comms",
+    },
+    {
+      id: "sendgrid",
+      name: "SendGrid",
+      status: "expired",
+      href: "/dashboard/integrations",
+      category: "comms",
+      healthDetail: "Token expired — reconnect",
     },
   ];
 
@@ -630,6 +760,19 @@ export function buildMissionControlPayload(input: {
       durationSeconds: 12,
       system: "Paid Ads Stack",
       rollbackStatus: "used",
+      failureReason: "Meta Pixel ID missing.",
+      aiReasoning:
+        "Validation failed because no Meta Pixel ID is configured on the domain. Ads can deploy but conversion tracking and retargeting audiences will not populate until pixel is verified.",
+      actions: [
+        { id: "retry", label: "Retry Validation" },
+        { id: "open_logs", label: "Open Debug" },
+        { id: "ai_fix", label: "AI Fix Suggestion" },
+      ],
+      details: [
+        { label: "Status", value: "FAILED" },
+        { label: "Reason", value: "Meta Pixel ID missing" },
+        { label: "Rollback", value: "Used" },
+      ],
     },
     {
       id: "o4",
@@ -660,6 +803,56 @@ export function buildMissionControlPayload(input: {
       durationSeconds: 24,
       system: "Optimization Loop",
       rollbackStatus: "available",
+      aiReasoning:
+        "CPL increased 18% over 48h. AI reduced spend on Ad Set B and reallocated budget to the highest CTR audience segment.",
+      actions: [
+        { id: "agent_reasoning", label: "Agent Reasoning" },
+        { id: "view_payload", label: "View Payload" },
+        { id: "rollback", label: "Rollback Deployment" },
+      ],
+      details: [
+        { label: "Status", value: "PROCESSING" },
+        { label: "Trigger", value: "CPL +18%" },
+        { label: "Action", value: "Budget reallocation" },
+        { label: "Rollback", value: "Available" },
+      ],
+    },
+  ];
+
+  const revenueCommandCenter: RevenueCommandCenter = {
+    spend: metrics?.totalSpend ?? 0,
+    leads: totalLeads,
+    cpl: metrics?.costPerLead ?? null,
+    roas: metrics?.roi ?? null,
+    revenue: Math.round(pipelineValue * 0.35),
+    pipeline: pipelineValue,
+    appointments: funnelCounts.booked,
+    closedDeals: funnelCounts.won,
+  };
+
+  const landingStackVersions: LandingStackVersion[] = [
+    {
+      id: "v1",
+      name: "V1 — Healthcare Lead Gen",
+      status: "live",
+      headline: "Book your free consultation today",
+      conversions: "3.8% CVR",
+      lastUpdated: "2 days ago",
+    },
+    {
+      id: "v2",
+      name: "V2 — Nonprofit Growth",
+      status: "draft",
+      headline: "Grow impact with predictable donor leads",
+      conversions: "A/B testing",
+      lastUpdated: "5 hours ago",
+    },
+    {
+      id: "v3",
+      name: "V3 — Reentry Program Funnel",
+      status: "draft",
+      headline: "Get support on your path forward",
+      lastUpdated: "1 week ago",
     },
   ];
 
@@ -805,6 +998,10 @@ export function buildMissionControlPayload(input: {
     approvalRequired: true,
     optimizationMode: "guided",
     rollbackEnabled: true,
+    budgetApprovalThreshold: "Require approval >$100 spend",
+    autoPauseOnCplSpike: true,
+    rollbackThreshold: "Auto rollback on 25% CPL spike",
+    businessHoursMode: true,
   };
 
   return {
@@ -813,6 +1010,7 @@ export function buildMissionControlPayload(input: {
     healthScore,
     healthChecks,
     revenue,
+    revenueCommandCenter,
     funnel,
     funnelDiagnosis,
     recommendations,
@@ -820,6 +1018,7 @@ export function buildMissionControlPayload(input: {
     marketSignals,
     agentPerformance,
     connections,
+    landingStackVersions,
     goals,
     goalCoaching,
     orchestrationTimeline,

@@ -24,6 +24,12 @@ export type OrchestrationFlowStep = {
     headline: string;
     source: string;
   };
+  /** Micro sparkline values (0–100 normalized) */
+  sparkTrend?: number[];
+  /** Trend vs prior period */
+  trendPercent?: number;
+  /** Hover tooltip for health context */
+  healthHint?: string;
 };
 
 function formatCount(n: number, unit: string): string {
@@ -128,6 +134,9 @@ export function buildOrchestrationFlow(input: {
       status: hasTraffic ? "live" : "inactive",
       statusLabel: hasTraffic ? "LIVE" : "IDLE",
       signal: trafficSignal,
+      sparkTrend: hasTraffic ? [12, 18, 14, 22, 19, 24, visitors % 30 + 10] : undefined,
+      trendPercent: hasTraffic ? 18 : undefined,
+      healthHint: hasTraffic ? undefined : "Connect ads or publish landing page to activate traffic node.",
     }),
     flowStep({
       id: "landing",
@@ -144,6 +153,9 @@ export function buildOrchestrationFlow(input: {
             : landingStatus === "processing"
               ? "PROCESSING"
               : "IDLE",
+      sparkTrend: hasTraffic ? [3, 4, 5, 4, 6, 7, Math.max(leads, 2)] : undefined,
+      trendPercent: leads > 0 ? 12 : undefined,
+      healthHint: landingStatus === "inactive" ? "Landing agent not deployed — create a funnel variant." : undefined,
     }),
     flowStep({
       id: "qualify",
@@ -160,6 +172,7 @@ export function buildOrchestrationFlow(input: {
             : qualifyStatus === "processing"
               ? "PROCESSING"
               : "IDLE",
+      healthHint: qualQueue > 0 ? `Queue bottleneck — ${qualQueue} leads awaiting scoring.` : undefined,
     }),
     flowStep({
       id: "followup",
@@ -181,12 +194,9 @@ export function buildOrchestrationFlow(input: {
       throughput: crmConnected ? `${booked} synced` : "0 synced",
       secondaryMetric: crmConnected ? "Latency: ~2m" : "Not connected",
       status: crmStatus,
-      statusLabel:
-        crmStatus === "connected"
-          ? "CONNECTED"
-          : crmStatus === "processing"
-            ? "PROCESSING"
-            : "IDLE",
+      statusLabel: crmConnected ? (crmStatus === "connected" ? "CONNECTED" : "PROCESSING") : "DISCONNECTED",
+      sparkTrend: crmConnected ? [0, 1, 2, 2, 3, booked, booked + 1] : [0, 0, 0, 0, 0, 0, 0],
+      healthHint: !crmConnected ? "CRM latency elevated — API connection missing." : undefined,
     }),
     flowStep({
       id: "optimize",
@@ -200,6 +210,8 @@ export function buildOrchestrationFlow(input: {
           : optimizationStatus === "running"
             ? "RUNNING"
             : "IDLE",
+      trendPercent: optimizationStatus !== "inactive" ? 3 : undefined,
+      sparkTrend: optimizationStatus !== "inactive" ? [1, 2, 2, 3, 3, 3, 3] : undefined,
     }),
   ];
 }

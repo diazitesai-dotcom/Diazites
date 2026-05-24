@@ -2,7 +2,13 @@ import type { OrchestrationRunStatus } from "@/lib/dashboard/orchestration-statu
 
 export type { OrchestrationFlowStep, OrchestrationFlowStatus } from "@/lib/dashboard/build-orchestration-flow";
 
-export type ConnectionStatus = "connected" | "pending" | "missing" | "error";
+export type ConnectionStatus =
+  | "connected"
+  | "pending"
+  | "missing"
+  | "error"
+  | "expired"
+  | "needs_attention";
 
 export type ActivitySeverity = "success" | "warning" | "critical" | "info";
 
@@ -107,6 +113,43 @@ export type AutonomousPolicy = {
   approvalRequired: boolean;
   optimizationMode: "auto-approved" | "manual" | "guided";
   rollbackEnabled: boolean;
+  budgetApprovalThreshold: string;
+  autoPauseOnCplSpike: boolean;
+  rollbackThreshold: string;
+  businessHoursMode: boolean;
+};
+
+export type RevenueCommandCenter = {
+  spend: number;
+  leads: number;
+  cpl: number | null;
+  roas: number | null;
+  revenue: number;
+  pipeline: number;
+  appointments: number;
+  closedDeals: number;
+};
+
+export type TimelineActionId =
+  | "retry"
+  | "open_logs"
+  | "agent_reasoning"
+  | "view_payload"
+  | "rollback"
+  | "ai_fix";
+
+export type TimelineAction = {
+  id: TimelineActionId;
+  label: string;
+};
+
+export type LandingStackVersion = {
+  id: string;
+  name: string;
+  status: "live" | "draft" | "archived";
+  headline: string;
+  conversions?: string;
+  lastUpdated: string;
 };
 
 export type OrchestrationTimelineDetail = {
@@ -149,6 +192,8 @@ export type AiRecommendation = {
   impact: string;
   cta: string;
   href: string;
+  reasoning?: string;
+  expectedOutcome?: string;
 } & PlanIntelligence;
 
 export type OpportunityDeployPreview = {
@@ -207,6 +252,9 @@ export type OrchestrationTimelineEvent = {
   system?: string;
   rollbackStatus?: "available" | "unavailable" | "used";
   details?: OrchestrationTimelineDetail[];
+  failureReason?: string;
+  aiReasoning?: string;
+  actions?: TimelineAction[];
 };
 
 export type MarketSignal = {
@@ -232,6 +280,9 @@ export type AgentPerformance = {
   resultRate: number;
   performanceScore: number;
   lastExecutedAt: string;
+  queueDepth: number;
+  memoryLabel: string;
+  taskCount: number;
 };
 
 export type AccountConnection = {
@@ -239,6 +290,8 @@ export type AccountConnection = {
   name: string;
   status: ConnectionStatus;
   href: string;
+  healthDetail?: string;
+  category?: "ads" | "crm" | "commerce" | "comms" | "analytics" | "ai";
 };
 
 export type BusinessGoal = {

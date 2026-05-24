@@ -62,9 +62,15 @@ function connectionBadge(status: ConnectionStatus) {
     case "pending":
       return <Badge variant="warning">Pending</Badge>;
     case "error":
-      return <Badge variant="destructive" className="animate-pulse">
-        Error
-      </Badge>;
+      return (
+        <Badge variant="destructive" className="animate-pulse">
+          Error
+        </Badge>
+      );
+    case "expired":
+      return <Badge variant="destructive">Expired token</Badge>;
+    case "needs_attention":
+      return <Badge variant="warning">Needs attention</Badge>;
     default:
       return <Badge variant="outline">Missing</Badge>;
   }
@@ -555,37 +561,73 @@ export function QuickActionsRow() {
 export function AiRecommendationsPanel({ data }: { data: DashboardOverviewData }) {
   const { openDeployment } = useAgentDeployment();
   return (
-    <GlassCard title="AI Recommendations" description="Highest-impact next moves">
+    <GlassCard title="AI Recommendations" description="Highest-impact next moves — approve or auto-execute">
       <ul className="space-y-3">
         {data.recommendations.map((rec) => (
           <li
             key={rec.id}
-            className="flex flex-col gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition-all hover:border-violet-500/20 hover:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition-all hover:border-violet-500/20 hover:bg-white/[0.04]"
           >
             <div className="min-w-0 space-y-1">
               <p className="font-medium text-foreground">{rec.title}</p>
               <p className="text-xs text-cyan-200/80">{rec.impact}</p>
+              {rec.expectedOutcome ? (
+                <p className="text-xs font-medium text-emerald-300/90">
+                  Expected: {rec.expectedOutcome}
+                </p>
+              ) : null}
               <PlanIntelligenceMeta
                 confidence={rec.confidence}
                 risk={rec.risk}
                 deployEtaSeconds={rec.deployEtaSeconds}
               />
+              {rec.reasoning ? (
+                <p className="text-[11px] leading-relaxed text-muted-foreground/90">
+                  <span className="font-medium text-violet-300/90">Why: </span>
+                  {rec.reasoning}
+                </p>
+              ) : null}
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="shrink-0 rounded-xl border-white/10"
-              onClick={() =>
-                openDeployment({
-                  goal: inferGoalFromHref(rec.href),
-                  step: "plan",
-                  source: "recommendation",
-                })
-              }
-            >
-              Review Plan
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="gradient"
+                size="sm"
+                className="rounded-lg text-xs"
+                onClick={() =>
+                  openDeployment({
+                    goal: inferGoalFromHref(rec.href),
+                    step: "plan",
+                    mode: "guided",
+                    source: "recommendation",
+                  })
+                }
+              >
+                Approve
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-lg border-white/10 text-xs"
+                onClick={() =>
+                  openDeployment({
+                    goal: inferGoalFromHref(rec.href),
+                    step: "stack",
+                    mode: "autonomous",
+                    source: "recommendation",
+                  })
+                }
+              >
+                Auto Execute
+              </Button>
+              <Button type="button" variant="outline" size="sm" className="rounded-lg border-white/10 text-xs">
+                Schedule
+              </Button>
+              <Button type="button" variant="ghost" size="sm" className="rounded-lg text-xs text-muted-foreground">
+                Reject
+              </Button>
+            </div>
           </li>
         ))}
       </ul>
@@ -682,9 +724,12 @@ export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
 export function AgentPerformanceBoard({ data }: { data: DashboardOverviewData }) {
   return (
     <section className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Bot className="size-5 text-violet-400" />
-        <h2 className="text-lg font-semibold tracking-tight">Agent Performance Board</h2>
+      <div>
+        <div className="flex items-center gap-2">
+          <Bot className="size-5 text-violet-400" />
+          <h2 className="text-lg font-semibold tracking-tight">Active Agents</h2>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">Status · queue · memory · task count</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.agentPerformance.map((agent) => {
@@ -718,6 +763,26 @@ export function AgentPerformanceBoard({ data }: { data: DashboardOverviewData })
               <div className="flex items-center justify-between gap-2">
                 {agentBadge(agent.status)}
                 <span className="text-xs text-muted-foreground">{agent.lastActivity}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
+                  <p className="text-[9px] uppercase text-muted-foreground">Queue</p>
+                  <p className="text-sm font-bold tabular-nums text-amber-200/90">
+                    {agent.status === "active" ? agent.queueDepth : "—"}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
+                  <p className="text-[9px] uppercase text-muted-foreground">Memory</p>
+                  <p className="text-[10px] font-semibold leading-tight text-violet-200/90">
+                    {agent.memoryLabel}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
+                  <p className="text-[9px] uppercase text-muted-foreground">Tasks</p>
+                  <p className="text-sm font-bold tabular-nums">
+                    {agent.status === "active" ? agent.taskCount : "0"}
+                  </p>
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
@@ -774,17 +839,30 @@ export function AgentPerformanceBoard({ data }: { data: DashboardOverviewData })
 }
 
 export function AccountConnectionCenter({ data }: { data: DashboardOverviewData }) {
+  const connected = data.connections.filter((c) => c.status === "connected").length;
+  const attention = data.connections.filter(
+    (c) => c.status === "error" || c.status === "expired" || c.status === "needs_attention",
+  ).length;
+
   return (
-    <GlassCard title="Account Connection Center" description="Integrations at a glance">
-      <div className="grid gap-2 sm:grid-cols-2">
+    <GlassCard
+      title="Account Connection Center"
+      description={`${connected} connected · ${attention} need attention`}
+    >
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {data.connections.map((conn) => (
           <Link
             key={conn.id}
             href={conn.href}
-            className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 transition-all hover:border-violet-500/30 hover:bg-white/[0.05] hover:shadow-[0_4px_16px_-8px_rgba(139,92,246,0.3)]"
+            className="flex flex-col gap-1 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 transition-all hover:border-violet-500/30 hover:bg-white/[0.05]"
           >
-            <span className="text-sm font-medium">{conn.name}</span>
-            {connectionBadge(conn.status)}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium">{conn.name}</span>
+              {connectionBadge(conn.status)}
+            </div>
+            {conn.healthDetail ? (
+              <span className="text-[10px] text-muted-foreground">{conn.healthDetail}</span>
+            ) : null}
           </Link>
         ))}
       </div>
