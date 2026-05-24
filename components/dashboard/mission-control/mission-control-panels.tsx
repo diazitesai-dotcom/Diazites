@@ -62,7 +62,11 @@ function agentBadge(status: string) {
   switch (status) {
     case "active":
       return (
-        <Badge variant="success" className="shadow-[0_0_12px_-4px_rgba(52,211,153,0.5)]">
+        <Badge
+          variant="success"
+          className="shadow-[0_0_16px_-2px_rgba(52,211,153,0.6)] ring-1 ring-emerald-400/40"
+        >
+          <span className="mr-1 inline-block size-1.5 animate-pulse rounded-full bg-emerald-300" />
           Active
         </Badge>
       );
@@ -113,6 +117,11 @@ function GoalBar({
 
 export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
   const b = data.briefing;
+  const riskStyles = {
+    low: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+    medium: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+    high: "border-rose-500/30 bg-rose-500/10 text-rose-300",
+  };
   return (
     <motion.div variants={fadeItem} initial="hidden" animate="show">
       <GlassCard
@@ -120,25 +129,49 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
         description="Executive snapshot — what matters right now"
         className="border-violet-500/15 shadow-[0_12px_48px_-20px_rgba(139,92,246,0.35)]"
         headerExtra={
-          <span className="inline-flex animate-pulse items-center gap-1 rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-violet-200">
-            <Sparkles className="size-3" />
-            Live
-          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex animate-pulse items-center gap-1 rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-violet-200">
+              <Sparkles className="size-3" />
+              Live
+            </span>
+            <span className="rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-cyan-200">
+              {b.aiConfidence}% AI confidence
+            </span>
+            <span
+              className={cn(
+                "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase",
+                riskStyles[b.riskLevel],
+              )}
+            >
+              {b.riskLevel} risk
+            </span>
+          </div>
         }
       >
         <div className="mb-5 rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-transparent to-cyan-500/5 p-4">
           <p className="text-sm leading-relaxed text-foreground/95">{b.aiInsight}</p>
-          <div className="mt-4 flex flex-col gap-2 border-t border-white/[0.06] pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Expected uplift (model)
+              </p>
+              <p className="mt-1 text-sm font-semibold text-emerald-300/95">{b.expectedUplift}</p>
+            </div>
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Highest leverage
               </p>
-              <p className="text-sm font-semibold text-violet-200">{b.leverageRecommendation}</p>
-              <p className="mt-1 text-xs text-cyan-200/80">Expected impact: {b.expectedImpact}</p>
+              <p className="mt-1 text-sm font-semibold text-violet-200">{b.leverageRecommendation}</p>
+              <p className="mt-1 text-xs text-cyan-200/80">{b.expectedImpact}</p>
             </div>
+          </div>
+          <div className="mt-4 flex justify-end border-t border-white/[0.06] pt-4">
             <Link
               href={data.nextAction.href}
-              className={cn(buttonVariants({ variant: "gradient", size: "sm" }), "shrink-0 rounded-xl")}
+              className={cn(
+                buttonVariants({ variant: "gradient", size: "sm" }),
+                "mission-shimmer-btn shrink-0 rounded-xl",
+              )}
             >
               Take action
             </Link>
@@ -173,19 +206,19 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
         <div className="mt-5 flex flex-wrap gap-2">
           <Link
             href="/dashboard/engine"
-            className={cn(buttonVariants({ variant: "gradient" }), "rounded-xl")}
+            className={cn(buttonVariants({ variant: "gradient" }), "mission-shimmer-btn rounded-xl")}
           >
             Generate Strategy
           </Link>
           <Link
             href="/dashboard/campaigns"
-            className={cn(buttonVariants({ variant: "outline" }), "rounded-xl")}
+            className={cn(buttonVariants({ variant: "outline" }), "mission-shimmer-btn rounded-xl")}
           >
             Launch Campaign
           </Link>
           <Link
             href="/dashboard/agents"
-            className={cn(buttonVariants({ variant: "outline" }), "rounded-xl")}
+            className={cn(buttonVariants({ variant: "outline" }), "mission-shimmer-btn rounded-xl")}
           >
             Ask AI
           </Link>
@@ -260,12 +293,21 @@ export function RevenueForecastCard({ data }: { data: DashboardOverviewData }) {
     { label: "Pipeline value", value: r.pipelineValue },
   ];
   return (
-    <GlassCard title="Revenue Forecast" description="AI-modeled pipeline outlook">
+    <GlassCard
+      title="Revenue Forecast"
+      description="AI-modeled pipeline outlook"
+      headerExtra={
+        <span className="rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-violet-200">
+          {r.confidence}% model confidence
+        </span>
+      }
+    >
+      <p className="mb-4 text-xs leading-relaxed text-muted-foreground">{r.explanation}</p>
       <div className="grid grid-cols-2 gap-3">
         {items.map((item) => (
           <div
             key={item.label}
-            className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-colors hover:border-violet-500/20"
+            className="mission-elevate rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"
           >
             <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
               {item.label}
@@ -273,6 +315,34 @@ export function RevenueForecastCard({ data }: { data: DashboardOverviewData }) {
             <p className="mt-1 text-xl font-semibold tabular-nums">
               <AnimatedMoney value={item.value} />
             </p>
+          </div>
+        ))}
+      </div>
+    </GlassCard>
+  );
+}
+
+const diagnosticStyles = {
+  healthy: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+  warning: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+  critical: "border-rose-500/30 bg-rose-500/10 text-rose-400 animate-pulse",
+};
+
+export function AiDiagnosticsWidget({ data }: { data: DashboardOverviewData }) {
+  return (
+    <GlassCard title="AI Diagnostics" description="Subsystem health at a glance">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        {data.diagnostics.map((d) => (
+          <div
+            key={d.id}
+            className={cn(
+              "mission-elevate rounded-xl border p-3 text-center transition-all",
+              diagnosticStyles[d.status],
+            )}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-wide">{d.label}</p>
+            <p className="mt-1 text-[11px] capitalize opacity-90">{d.status}</p>
+            <p className="mt-1 text-[10px] leading-snug opacity-80">{d.detail}</p>
           </div>
         ))}
       </div>
@@ -515,15 +585,34 @@ export function AgentPerformanceBoard({ data }: { data: DashboardOverviewData })
         <h2 className="text-lg font-semibold tracking-tight">Agent Performance Board</h2>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {data.agentPerformance.map((agent) => (
+        {data.agentPerformance.map((agent) => {
+          const isActive = agent.status === "active";
+          return (
           <motion.div
             key={agent.key}
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.35 }}
+            className={cn(isActive && "rounded-2xl p-[1px] bg-gradient-to-br from-emerald-400/50 via-violet-500/30 to-cyan-400/40")}
           >
-            <GlassCard title={agent.name} contentClassName="space-y-3">
+            <div className={cn(isActive && "agent-active-glow rounded-2xl bg-card/95")}>
+            <GlassCard
+              title={agent.name}
+              contentClassName="space-y-3"
+              className={cn(isActive && "border-emerald-500/20 bg-gradient-to-br from-emerald-950/20 to-card/90")}
+              headerExtra={
+                isActive ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-300">
+                    <span className="relative flex size-2">
+                      <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
+                    </span>
+                    Running
+                  </span>
+                ) : undefined
+              }
+            >
               <div className="flex items-center justify-between gap-2">
                 {agentBadge(agent.status)}
                 <span className="text-xs text-muted-foreground">{agent.lastActivity}</span>
@@ -567,14 +656,16 @@ export function AgentPerformanceBoard({ data }: { data: DashboardOverviewData })
                 href={agent.href}
                 className={cn(
                   buttonVariants({ variant: "outline", size: "sm" }),
-                  "w-full rounded-xl transition-all hover:border-violet-500/30",
+                  "mission-shimmer-btn w-full rounded-xl transition-all hover:border-violet-500/30",
                 )}
               >
                 View Results
               </Link>
             </GlassCard>
+            </div>
           </motion.div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

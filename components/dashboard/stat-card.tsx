@@ -20,6 +20,9 @@ type StatCardProps = {
   formatValue?: (n: number) => string;
   className?: string;
   invertTrend?: boolean;
+  trafficSource?: string;
+  periodLabel?: string;
+  microInsight?: string;
 };
 
 export function StatCard({
@@ -33,6 +36,9 @@ export function StatCard({
   formatValue,
   className,
   invertTrend = false,
+  trafficSource,
+  periodLabel,
+  microInsight,
 }: StatCardProps) {
   const effectiveTrend =
     invertTrend && trend === "up"
@@ -50,32 +56,53 @@ export function StatCard({
 
   return (
     <motion.div
-      className={cn("h-full", className)}
+      className={cn("mission-elevate h-full", className)}
       initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-10%" }}
       transition={easeOutExpo}
-      whileHover={{ y: -2 }}
     >
-      <Card className="group h-full overflow-hidden border-white/[0.06] bg-gradient-to-br from-card/95 to-card/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-violet-500/20 hover:shadow-[0_8px_32px_-12px_rgba(139,92,246,0.25)]">
-        <CardContent className="flex flex-col gap-4 pt-6">
+      <Card className="group h-full overflow-hidden border-white/[0.06] bg-gradient-to-br from-card/95 to-card/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-violet-500/25 hover:shadow-[0_12px_40px_-12px_rgba(139,92,246,0.3)]">
+        <CardContent className="flex flex-col gap-3 pt-6">
           <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
+            <div className="min-w-0 space-y-1">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {label}
               </p>
               <p className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
                 {numericValue != null && formatValue ? (
                   <AnimatedCounter value={numericValue} format={formatValue} />
+                ) : numericValue != null ? (
+                  <AnimatedCounter value={numericValue} />
                 ) : (
                   value
                 )}
               </p>
             </div>
-            <span className="flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-violet-300 shadow-[0_0_24px_-8px_rgba(139,92,246,0.45)] transition-all duration-300 group-hover:border-violet-500/40 group-hover:text-cyan-300 group-hover:shadow-[0_0_28px_-6px_rgba(34,211,238,0.35)]">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-violet-300 shadow-[0_0_24px_-8px_rgba(139,92,246,0.45)] transition-all duration-300 group-hover:border-violet-500/40 group-hover:text-cyan-300 group-hover:shadow-[0_0_28px_-6px_rgba(34,211,238,0.4)]">
               <Icon className="size-5" aria-hidden />
             </span>
           </div>
+
+          {trafficSource || periodLabel ? (
+            <div className="flex flex-wrap gap-1.5 text-[10px]">
+              {periodLabel ? (
+                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-muted-foreground">
+                  {periodLabel}
+                </span>
+              ) : null}
+              {trafficSource ? (
+                <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-violet-200/90">
+                  {trafficSource}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+
+          {microInsight ? (
+            <p className="text-[11px] leading-snug text-cyan-200/70">{microInsight}</p>
+          ) : null}
+
           <div className="flex flex-wrap items-center gap-2">
             {trendPercent != null && trend !== "neutral" ? (
               <span
@@ -91,7 +118,7 @@ export function StatCard({
                 ) : (
                   <TrendingDown className="size-3" />
                 )}
-                {trendPercent}% vs prior period
+                {trendPercent}% vs prior
               </span>
             ) : null}
             {hint ? <p className={cn("text-xs font-medium", trendColor)}>{hint}</p> : null}

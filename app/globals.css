@@ -176,4 +176,49 @@
       radial-gradient(ellipse 60% 45% at 5% 85%, rgba(255, 255, 255, 0.03), transparent),
       linear-gradient(180deg, #000000 0%, #000000 100%);
   }
+
+  .mission-shimmer-btn {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mission-shimmer-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.14) 50%,
+      transparent 60%
+    );
+    transform: translateX(-100%);
+    animation: mission-shimmer 2.8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes mission-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .agent-active-glow {
+    box-shadow:
+      0 0 0 1px rgba(52, 211, 153, 0.4),
+      0 0 36px -8px rgba(52, 211, 153, 0.45),
+      inset 0 0 28px -14px rgba(52, 211, 153, 0.12);
+  }
+
+  .mission-elevate {
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease,
+      border-color 0.3s ease;
+  }
+
+  .mission-elevate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px -16px rgba(139, 92, 246, 0.35);
+  }
 }

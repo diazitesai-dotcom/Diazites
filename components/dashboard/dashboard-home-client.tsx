@@ -17,6 +17,7 @@ import {
   AccountConnectionCenter,
   AgentPerformanceBoard,
   AiCommandBriefing,
+  AiDiagnosticsWidget,
   AiRecommendationsPanel,
   BusinessGoalsWidget,
   FunnelSnapshot,
@@ -48,6 +49,10 @@ function formatMoney(n: number) {
 
 function trendForKey(data: DashboardOverviewData, key: string) {
   return data.kpiTrends.find((t) => t.key === key);
+}
+
+function insightForKey(data: DashboardOverviewData, key: string) {
+  return data.kpiInsights.find((k) => k.key === key);
 }
 
 export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
@@ -148,7 +153,9 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
         <AgentPerformanceBoard data={data} />
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {metricsCards.map((card) => (
+          {metricsCards.map((card) => {
+            const insight = insightForKey(data, card.key);
+            return (
             <StatCard
               key={card.key}
               label={card.label}
@@ -160,9 +167,15 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
               numericValue={"numericValue" in card ? card.numericValue : undefined}
               formatValue={"formatValue" in card ? card.formatValue : undefined}
               invertTrend={"invertTrend" in card ? card.invertTrend : false}
+              trafficSource={insight?.trafficSource}
+              periodLabel={insight?.periodLabel}
+              microInsight={insight?.microInsight}
             />
-          ))}
+          );
+          })}
         </section>
+
+        <AiDiagnosticsWidget data={data} />
 
         <section className="grid gap-6 lg:grid-cols-2">
           <GrowthEngineHealth data={data} />

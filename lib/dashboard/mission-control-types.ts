@@ -21,6 +21,34 @@ export type MissionControlBriefing = {
   aiInsight: string;
   leverageRecommendation: string;
   expectedImpact: string;
+  aiConfidence: number;
+  expectedUplift: string;
+  riskLevel: "low" | "medium" | "high";
+};
+
+export type RevenueForecast = {
+  today: number;
+  sevenDay: number;
+  thirtyDay: number;
+  pipelineValue: number;
+  confidence: number;
+  explanation: string;
+};
+
+export type KpiInsight = {
+  key: string;
+  trafficSource: string;
+  periodLabel: string;
+  microInsight: string;
+};
+
+export type DiagnosticStatus = "healthy" | "warning" | "critical";
+
+export type AiDiagnostic = {
+  id: string;
+  label: string;
+  status: DiagnosticStatus;
+  detail: string;
 };
 
 export type RecommendedNextAction = {
@@ -42,13 +70,6 @@ export type HealthCheck = {
   label: string;
   ok: boolean;
   detail: string;
-};
-
-export type RevenueForecast = {
-  today: number;
-  sevenDay: number;
-  thirtyDay: number;
-  pipelineValue: number;
 };
 
 export type FunnelStage = {

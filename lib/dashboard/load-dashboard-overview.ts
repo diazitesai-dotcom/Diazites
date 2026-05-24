@@ -5,12 +5,14 @@ import type {
   AccountConnection,
   ActivitySeverity,
   AgentPerformance,
+  AiDiagnostic,
   AiRecommendation,
   BusinessGoal,
   CommandCenterItem,
   FunnelDiagnosis,
   FunnelStage,
   HealthCheck,
+  KpiInsight,
   KpiTrend,
   MarketSignal,
   MissionControlBriefing,
@@ -145,6 +147,8 @@ export type DashboardOverviewData = {
   connections: AccountConnection[];
   goals: BusinessGoal[];
   commandCenter: CommandCenterItem[];
+  kpiInsights: KpiInsight[];
+  diagnostics: AiDiagnostic[];
 };
 
 export async function loadDashboardOverview(): Promise<DashboardOverviewData | null> {
