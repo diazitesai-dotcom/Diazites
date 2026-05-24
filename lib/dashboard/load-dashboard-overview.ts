@@ -177,6 +177,8 @@ export type DashboardOverviewData = {
   goalCoaching: GoalCoaching;
   orchestrationTimeline: OrchestrationTimelineEvent[];
   orchestrationFlow: import("@/lib/dashboard/build-orchestration-flow").OrchestrationFlowStep[];
+  stackHealth: import("@/lib/dashboard/mission-control-types").StackHealthItem[];
+  autonomousPolicy: import("@/lib/dashboard/mission-control-types").AutonomousPolicy;
   commandCenter: CommandCenterItem[];
   kpiInsights: KpiInsight[];
   diagnostics: AiDiagnostic[];

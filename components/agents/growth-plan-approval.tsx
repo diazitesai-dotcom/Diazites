@@ -4,7 +4,8 @@ import { Check, Shield, Sparkles, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { GrowthPlan } from "@/lib/agents/build-growth-plan";
-import type { PlanRisk } from "@/lib/dashboard/mission-control-types";
+import type { PlanLifecycleStatus, PlanRisk } from "@/lib/dashboard/mission-control-types";
+import { PlanStatusBadge } from "@/components/dashboard/mission-control/plan-status-badge";
 import { cn } from "@/lib/utils";
 
 const riskStyles: Record<PlanRisk, string> = {
@@ -15,15 +16,24 @@ const riskStyles: Record<PlanRisk, string> = {
 
 type Props = {
   plan: GrowthPlan;
+  planStatus?: PlanLifecycleStatus;
   onApprove: () => void;
   onModify: () => void;
   onReject: () => void;
   pending?: boolean;
 };
 
-export function GrowthPlanApproval({ plan, onApprove, onModify, onReject, pending }: Props) {
+export function GrowthPlanApproval({
+  plan,
+  planStatus = "pending_review",
+  onApprove,
+  onModify,
+  onReject,
+  pending,
+}: Props) {
   return (
     <div className="space-y-5">
+      <PlanStatusBadge status={planStatus} />
       <div className="rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-500/10 via-card/40 to-cyan-500/5 p-4">
         <div className="flex items-center gap-2 text-sm font-semibold text-violet-100">
           <Sparkles className="size-4 text-violet-300" />

@@ -140,6 +140,7 @@ export function AgentDeploymentDrawer({
   const [deployPhase, setDeployPhase] = useState(0);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [deployingTypes, setDeployingTypes] = useState<Set<string>>(new Set());
+  const [planStatus, setPlanStatus] = useState<import("@/lib/dashboard/mission-control-types").PlanLifecycleStatus>("pending_review");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -215,6 +216,7 @@ export function AgentDeploymentDrawer({
 
   function runDeploySequence() {
     const steps = buildDeployProgressSteps(selectedAgents);
+    setPlanStatus("deploying");
     setStep("deploy");
     setDeployPhase(0);
     setError(null);
@@ -256,6 +258,7 @@ export function AgentDeploymentDrawer({
       });
 
       setTimeline(result.timeline);
+      setPlanStatus("live");
       setStep("monitor");
     });
   }
@@ -606,8 +609,12 @@ export function AgentDeploymentDrawer({
                   >
                     <GrowthPlanApproval
                       plan={growthPlan}
+                      planStatus={planStatus}
                       pending={pending}
-                      onApprove={() => setStep("readiness")}
+                      onApprove={() => {
+                        setPlanStatus("approved");
+                        setStep("readiness");
+                      }}
                       onModify={() => setStep("config")}
                       onReject={resetAndClose}
                     />

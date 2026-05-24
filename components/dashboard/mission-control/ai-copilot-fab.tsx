@@ -40,7 +40,7 @@ type CopilotCommand =
 const OPERATOR_COMMANDS: CopilotCommand[] = [
   {
     id: "review-plan",
-    label: "Review my growth plan",
+    label: "Review growth plan",
     description: "Outcome, stack, guardrails, and approval",
     icon: Sparkles,
     kind: "deploy",
@@ -53,7 +53,7 @@ const OPERATOR_COMMANDS: CopilotCommand[] = [
   },
   {
     id: "deploy-lead-stack",
-    label: "Deploy lead stack",
+    label: "Deploy lead engine",
     description: "Landing → qualification → follow-up → CRM",
     icon: Rocket,
     kind: "deploy",
@@ -65,16 +65,29 @@ const OPERATOR_COMMANDS: CopilotCommand[] = [
     },
   },
   {
-    id: "diagnose-tracking",
-    label: "Diagnose tracking issues",
-    description: "Pixel, analytics, and conversion signals",
+    id: "explain-tracking",
+    label: "Explain tracking failure",
+    description: "Pixel, analytics, and conversion signal gaps",
     icon: Radar,
     kind: "brief",
     brief: {
-      title: "Tracking diagnostic",
+      title: "Tracking failure analysis",
       body: "Meta pixel and GA4 events are the most common gaps before deploy. Verify domain verification, purchase/lead events, and CRM webhook handoff.",
       href: "/dashboard/integrations",
       hrefLabel: "Open integrations",
+    },
+  },
+  {
+    id: "diagnose-qualification",
+    label: "Diagnose low qualification",
+    description: "Queue depth, scoring rules, and follow-up SLA",
+    icon: TrendingDown,
+    kind: "brief",
+    brief: {
+      title: "Qualification diagnostic",
+      body: "Check lead queue depth on the live system map, activation status of the Lead Qualification Agent, and same-day follow-up coverage on high-intent leads.",
+      href: "/dashboard/agents",
+      hrefLabel: "Open agents",
     },
   },
   {

@@ -201,6 +201,8 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
         <GrowthOrchestrationTimeline
           events={data.orchestrationTimeline}
           flow={data.orchestrationFlow}
+          stackHealth={data.stackHealth}
+          autonomousPolicy={data.autonomousPolicy}
         />
 
         <section className="grid gap-6 lg:grid-cols-5">

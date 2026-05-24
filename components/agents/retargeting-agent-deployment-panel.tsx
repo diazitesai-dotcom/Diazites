@@ -23,6 +23,10 @@ import {
   type GrowthStackPreviewData,
 } from "@/components/agents/growth-stack-preview-modal";
 import { OrchestrationMap } from "@/components/dashboard/mission-control/orchestration-map";
+import {
+  deriveStackPlanStatus,
+  PlanStatusBadge,
+} from "@/components/dashboard/mission-control/plan-status-badge";
 import { OrchestrationTimelineRow } from "@/components/dashboard/mission-control/orchestration-timeline-row";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
 import { Button } from "@/components/ui/button";
@@ -48,13 +52,20 @@ export function RetargetingAgentDeploymentPanel({ flow }: { flow?: Orchestration
   const [growthPreviewOpen, setGrowthPreviewOpen] = useState(false);
   const growthPreview = useMemo(() => buildGrowthStackPreview(agents), [agents]);
 
+  const planStatus = deriveStackPlanStatus(agents, [
+    preset.agent,
+    "landing_page",
+    "lead_qualification",
+    "ai_follow_up",
+  ]);
+
   function reviewAiPlan() {
     openDeployment({
       preset: "retargeting",
       agent: preset.agent,
       goal: preset.goal,
       mode,
-      step: "readiness",
+      step: "plan",
       source: "opportunity",
     });
   }
@@ -116,6 +127,8 @@ export function RetargetingAgentDeploymentPanel({ flow }: { flow?: Orchestration
               <dd className="mt-0.5 text-sm font-medium">{preset.sequence}</dd>
             </div>
           </dl>
+
+          <PlanStatusBadge status={planStatus} className="mt-4" />
 
           <Button
             type="button"

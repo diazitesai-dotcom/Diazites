@@ -43,7 +43,7 @@ export function DeployableStacksPanel({ flow }: { flow?: OrchestrationFlowStep[]
     openDeployment({
       ...stack.launch,
       source: "quick_action",
-      step: "readiness",
+      step: "plan",
     });
   }
 

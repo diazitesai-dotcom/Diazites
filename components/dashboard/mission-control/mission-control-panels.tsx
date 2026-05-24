@@ -24,6 +24,7 @@ import { useState } from "react";
 
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
 import { OpportunityDeployPreview } from "@/components/dashboard/mission-control/opportunity-deploy-preview";
+import { BusinessOutcomeBlock } from "@/components/dashboard/mission-control/business-outcome-block";
 import { PlanIntelligenceMeta, resolvePlanIntelligence } from "@/components/dashboard/mission-control/plan-intelligence-meta";
 import { AnimatedCounter, AnimatedMoney } from "@/components/dashboard/mission-control/animated-counter";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
@@ -280,6 +281,7 @@ export function RecommendedNextActionCard({ data }: { data: DashboardOverviewDat
           <div className="space-y-2">
             <p className="text-lg font-semibold tracking-tight text-foreground">{action.title}</p>
             <p className="text-sm text-cyan-200/90">{action.impact}</p>
+            <BusinessOutcomeBlock outcome={action.businessOutcome} />
             <PlanIntelligenceMeta
               confidence={action.confidence}
               risk={action.risk}

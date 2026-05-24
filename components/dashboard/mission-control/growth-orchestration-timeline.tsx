@@ -4,11 +4,17 @@ import { motion } from "framer-motion";
 import { Activity, Cpu, FileText, Megaphone, Rocket, Users } from "lucide-react";
 
 import { DeploymentRollbackButton } from "@/components/agents/deployment-rollback-button";
+import { AutonomousPolicyPanel } from "@/components/dashboard/mission-control/autonomous-policy-panel";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
 import { OrchestrationTimelineRow } from "@/components/dashboard/mission-control/orchestration-timeline-row";
 import { OrchestrationMap } from "@/components/dashboard/mission-control/orchestration-map";
+import { StackHealthBar } from "@/components/dashboard/mission-control/stack-health-bar";
 import type { OrchestrationFlowStep } from "@/lib/dashboard/build-orchestration-flow";
-import type { OrchestrationTimelineEvent } from "@/lib/dashboard/mission-control-types";
+import type {
+  AutonomousPolicy,
+  OrchestrationTimelineEvent,
+  StackHealthItem,
+} from "@/lib/dashboard/mission-control-types";
 import { ORCHESTRATION_STATUS_META } from "@/lib/dashboard/orchestration-status";
 import { fadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -25,10 +31,14 @@ export function GrowthOrchestrationTimeline({
   events,
   showMap = true,
   flow,
+  stackHealth,
+  autonomousPolicy,
 }: {
   events: OrchestrationTimelineEvent[];
   showMap?: boolean;
   flow?: OrchestrationFlowStep[];
+  stackHealth?: StackHealthItem[];
+  autonomousPolicy?: AutonomousPolicy;
 }) {
   return (
     <motion.div variants={fadeItem} initial="hidden" animate="show">
@@ -72,6 +82,7 @@ export function GrowthOrchestrationTimeline({
                     durationSeconds: ev.durationSeconds,
                     system: ev.system,
                     rollbackStatus: ev.rollbackStatus,
+                    details: ev.details,
                   }}
                 />
               </motion.li>
@@ -80,8 +91,12 @@ export function GrowthOrchestrationTimeline({
         </ol>
 
         {showMap ? (
-          <div className="mt-5 border-t border-white/[0.06] pt-5">
+          <div className="mt-5 grid gap-5 border-t border-white/[0.06] pt-5 lg:grid-cols-2">
             <OrchestrationMap embedded flow={flow} />
+            <div className="space-y-4">
+              {stackHealth?.length ? <StackHealthBar items={stackHealth} /> : null}
+              {autonomousPolicy ? <AutonomousPolicyPanel policy={autonomousPolicy} /> : null}
+            </div>
           </div>
         ) : null}
 

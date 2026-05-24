@@ -67,12 +67,40 @@ export type PlanIntelligence = {
   deployEtaSeconds: number;
 };
 
+export type BusinessOutcomeProjection = {
+  leadsPerMonth: string;
+  pipelineValue: string;
+};
+
 export type RecommendedNextAction = {
   title: string;
   impact: string;
   href: string;
   cta: string;
+  businessOutcome: BusinessOutcomeProjection;
 } & PlanIntelligence;
+
+export type PlanLifecycleStatus = "pending_review" | "approved" | "deploying" | "live";
+
+export type StackHealthStatus = "healthy" | "warning" | "degraded" | "active";
+
+export type StackHealthItem = {
+  id: string;
+  label: string;
+  status: StackHealthStatus;
+};
+
+export type AutonomousPolicy = {
+  spendCap: string;
+  approvalRequired: boolean;
+  optimizationMode: "auto-approved" | "manual" | "guided";
+  rollbackEnabled: boolean;
+};
+
+export type OrchestrationTimelineDetail = {
+  label: string;
+  value: string;
+};
 
 export type FunnelDiagnosis = {
   summary: string;
@@ -166,6 +194,7 @@ export type OrchestrationTimelineEvent = {
   durationSeconds?: number;
   system?: string;
   rollbackStatus?: "available" | "unavailable" | "used";
+  details?: OrchestrationTimelineDetail[];
 };
 
 export type MarketSignal = {

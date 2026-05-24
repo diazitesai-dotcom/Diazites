@@ -10,7 +10,11 @@ export type OrchestrationFlowStatus =
 export type OrchestrationFlowStep = {
   id: string;
   label: string;
-  /** Inline counter or state label (e.g. "132 visits", "synced") */
+  /** Primary throughput (e.g. "24 visits", "2 converts") */
+  throughput: string;
+  /** Secondary runtime metric (CVR, queue, latency label) */
+  secondaryMetric?: string;
+  /** @deprecated use throughput — kept for backward compat */
   metric: string;
   status: OrchestrationFlowStatus;
   statusLabel: string;
@@ -22,6 +26,18 @@ export type OrchestrationFlowStep = {
 
 function formatCount(n: number, unit: string): string {
   return `${n.toLocaleString("en-US")} ${unit}`;
+}
+
+function formatCvr(numerator: number, denominator: number): string | undefined {
+  if (denominator <= 0) return undefined;
+  const pct = (numerator / denominator) * 100;
+  return `${pct.toFixed(1)}% CVR`;
+}
+
+function flowStep(
+  step: Omit<OrchestrationFlowStep, "metric"> & { metric?: string },
+): OrchestrationFlowStep {
+  return { ...step, metric: step.metric ?? step.throughput };
 }
 
 function agentFlowStatus(
@@ -65,13 +81,15 @@ export function buildOrchestrationFlow(input: {
   else if (leads > 0 && qualified < leads) qualifyStatus = "running";
 
   const followAgent = agentFlowStatus(input.agents, "ai_follow_up");
-  const sequenceCount = followAgent !== "inactive" ? Math.max(booked, Math.min(qualified, 3)) : 0;
+  const pendingFollowUp = Math.max(0, qualified - booked);
   const followupStatus: OrchestrationFlowStatus =
-    followAgent === "active" && sequenceCount > 0
+    followAgent === "active" && pendingFollowUp > 0
       ? "healthy"
       : followAgent === "running"
         ? "running"
         : followAgent;
+
+  const qualQueue = Math.max(0, leads - qualified);
 
   const crmStatus: OrchestrationFlowStatus = crmConnected && (qualified > 0 || booked > 0)
     ? "connected"
@@ -100,18 +118,20 @@ export function buildOrchestrationFlow(input: {
     : undefined;
 
   return [
-    {
+    flowStep({
       id: "traffic",
       label: "Traffic",
-      metric: formatCount(visitors, "visits"),
+      throughput: formatCount(visitors, "visits"),
+      secondaryMetric: hasTraffic ? "Direct + organic" : undefined,
       status: hasTraffic ? "live" : "inactive",
       statusLabel: hasTraffic ? "LIVE" : "IDLE",
       signal: trafficSignal,
-    },
-    {
+    }),
+    flowStep({
       id: "landing",
       label: "Landing Agent",
-      metric: formatCount(leads, "converts"),
+      throughput: formatCount(leads, leads === 1 ? "convert" : "converts"),
+      secondaryMetric: formatCvr(leads, visitors),
       status: landingStatus,
       statusLabel:
         landingStatus === "live"
@@ -123,11 +143,12 @@ export function buildOrchestrationFlow(input: {
               : landingStatus === "processing"
                 ? "PROCESSING"
                 : "IDLE",
-    },
-    {
+    }),
+    flowStep({
       id: "qualify",
       label: "Lead Qualification",
-      metric: formatCount(qualified, "scored"),
+      throughput: formatCount(qualified, "scored"),
+      secondaryMetric: qualQueue > 0 ? `Queue: ${qualQueue}` : leads > 0 ? "Latency: ~4m" : undefined,
       status: qualifyStatus,
       statusLabel:
         qualifyStatus === "running"
@@ -137,11 +158,12 @@ export function buildOrchestrationFlow(input: {
             : qualifyStatus === "processing"
               ? "PROCESSING"
               : "IDLE",
-    },
-    {
+    }),
+    flowStep({
       id: "followup",
       label: "Follow-Up",
-      metric: formatCount(sequenceCount, "sequences"),
+      throughput: formatCount(pendingFollowUp, pendingFollowUp === 1 ? "pending" : "pending"),
+      secondaryMetric: followAgent !== "inactive" ? "Latency: ~12m" : undefined,
       status: followupStatus,
       statusLabel:
         followupStatus === "healthy"
@@ -151,11 +173,12 @@ export function buildOrchestrationFlow(input: {
             : followupStatus === "active"
               ? "ACTIVE"
               : "IDLE",
-    },
-    {
+    }),
+    flowStep({
       id: "crm",
       label: "CRM",
-      metric: crmConnected ? "synced" : "pending",
+      throughput: crmConnected ? `${booked} synced` : "0 synced",
+      secondaryMetric: crmConnected ? "Latency: ~2m" : "Not connected",
       status: crmStatus,
       statusLabel:
         crmStatus === "connected"
@@ -163,11 +186,12 @@ export function buildOrchestrationFlow(input: {
           : crmStatus === "processing"
             ? "PROCESSING"
             : "IDLE",
-    },
-    {
+    }),
+    flowStep({
       id: "optimize",
       label: "Optimization Loop",
-      metric: optimizationStatus !== "inactive" ? "tuning" : "idle",
+      throughput: optimizationStatus !== "inactive" ? "Active tuning" : "Idle",
+      secondaryMetric: optimizationStatus !== "inactive" ? "Latency: ~18m" : undefined,
       status: optimizationStatus,
       statusLabel:
         optimizationStatus === "processing"
@@ -175,6 +199,6 @@ export function buildOrchestrationFlow(input: {
           : optimizationStatus === "running"
             ? "RUNNING"
             : "IDLE",
-    },
+    }),
   ];
 }

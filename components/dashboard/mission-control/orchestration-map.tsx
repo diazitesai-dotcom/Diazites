@@ -74,23 +74,26 @@ function OrchestrationMapFlow({ steps }: { steps: OrchestrationFlowStep[] }) {
           viewport={{ once: true }}
           transition={{ delay: i * 0.05 }}
         >
-          <motion.div
-            className={cn(
-              "rounded-xl border px-3 py-2.5 sm:px-4 sm:py-3",
-              NODE_BORDER[step.status],
-            )}
-            whileHover={{ scale: 1.01 }}
-            transition={{ type: "spring", stiffness: 400, damping: 28 }}
-          >
             <motion.div
-              className="grid grid-cols-[1fr_auto_auto] items-center gap-3"
+              className={cn(
+                "rounded-xl border px-3 py-2.5 sm:px-4 sm:py-3",
+                NODE_BORDER[step.status],
+              )}
+              whileHover={{ scale: 1.01 }}
+              transition={{ type: "spring", stiffness: 400, damping: 28 }}
             >
-              <p className="min-w-0 truncate text-sm font-semibold">{step.label}</p>
-              <span className="text-right text-[11px] font-medium tabular-nums text-cyan-300/90 sm:text-xs">
-                {step.metric}
-              </span>
+              <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 sm:grid-cols-[1fr_auto_auto]">
+              <p className="min-w-0 text-sm font-semibold">{step.label}</p>
+              <div className="text-right">
+                <p className="text-[11px] font-medium tabular-nums text-cyan-300/90 sm:text-xs">
+                  {step.throughput}
+                </p>
+                {step.secondaryMetric ? (
+                  <p className="text-[10px] tabular-nums text-muted-foreground">{step.secondaryMetric}</p>
+                ) : null}
+              </div>
               <FlowStatusBadge label={step.statusLabel} status={step.status} />
-            </motion.div>
+              </div>
             {step.signal ? (
               <div className="mt-2.5 rounded-lg border border-cyan-500/25 bg-cyan-500/8 px-2.5 py-2 text-[11px] leading-relaxed">
                 <p className="font-semibold text-cyan-100">{step.signal.headline}</p>
@@ -100,7 +103,7 @@ function OrchestrationMapFlow({ steps }: { steps: OrchestrationFlowStep[] }) {
                 </p>
               </div>
             ) : null}
-          </motion.div>
+            </motion.div>
           {i < steps.length - 1 ? <FlowConnector /> : null}
         </motion.div>
       ))}

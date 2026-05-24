@@ -3,11 +3,13 @@ import {
   enrichBusinessGoals,
 } from "@/lib/dashboard/build-goal-diagnostics";
 import { buildOrchestrationFlow } from "@/lib/dashboard/build-orchestration-flow";
+import { buildStackHealth } from "@/lib/dashboard/build-stack-health";
 import type {
   AccountConnection,
   AgentPerformance,
   AiRecommendation,
   AiDiagnostic,
+  AutonomousPolicy,
   CommandCenterItem,
   FunnelDiagnosis,
   FunnelStage,
@@ -19,6 +21,7 @@ import type {
   OrchestrationTimelineEvent,
   RecommendedNextAction,
   RevenueForecast,
+  StackHealthItem,
 } from "@/lib/dashboard/mission-control-types";
 import { AGENTS } from "@/utils/constants";
 
@@ -252,6 +255,10 @@ export function buildMissionControlPayload(input: {
         confidence: 88,
         risk: "low",
         deployEtaSeconds: 300,
+        businessOutcome: {
+          leadsPerMonth: "+18–32 leads/month",
+          pipelineValue: "+$8.4k–14.2k modeled pipeline",
+        },
       }
     : activeCampaigns === 0
       ? {
@@ -262,6 +269,10 @@ export function buildMissionControlPayload(input: {
           confidence: 91,
           risk: "low",
           deployEtaSeconds: 180,
+          businessOutcome: {
+            leadsPerMonth: "+24–40 leads/month",
+            pipelineValue: "+$11k–18k modeled pipeline",
+          },
         }
       : qualAgent?.status !== "active"
         ? {
@@ -272,6 +283,10 @@ export function buildMissionControlPayload(input: {
             confidence: 86,
             risk: "low",
             deployEtaSeconds: 120,
+            businessOutcome: {
+              leadsPerMonth: "+12–22 qualified leads/month",
+              pipelineValue: "+$6.2k–11.5k modeled pipeline",
+            },
           }
         : {
             title: "Apply top optimization recommendation",
@@ -281,6 +296,10 @@ export function buildMissionControlPayload(input: {
             confidence: 82,
             risk: "low",
             deployEtaSeconds: 120,
+            businessOutcome: {
+              leadsPerMonth: "+8–14% efficiency gain",
+              pipelineValue: "+$4.8k–9.1k modeled pipeline",
+            },
           };
 
   const recommendations: AiRecommendation[] = [
@@ -573,6 +592,11 @@ export function buildMissionControlPayload(input: {
       durationSeconds: 38,
       system: "Landing Stack",
       rollbackStatus: "available",
+      details: [
+        { label: "Creative", value: "2 generated" },
+        { label: "Duration", value: "38 sec" },
+        { label: "Rollback", value: "Available" },
+      ],
     },
     {
       id: "o2",
@@ -583,6 +607,13 @@ export function buildMissionControlPayload(input: {
       durationSeconds: 42,
       system: "Paid Ads Stack",
       rollbackStatus: "available",
+      details: [
+        { label: "Budget", value: "$5/day" },
+        { label: "Creative", value: "2 generated" },
+        { label: "Targeting", value: "Recent visitors" },
+        { label: "Duration", value: "42 sec" },
+        { label: "Rollback", value: "Available" },
+      ],
     },
     {
       id: "o3",
@@ -756,6 +787,20 @@ export function buildMissionControlPayload(input: {
     hasPaidAds,
   });
 
+  const stackHealth = buildStackHealth({
+    agents: agents.map((a) => ({ agent_type: a.key, status: a.status })),
+    hasMeta,
+    hasGoogle,
+    crmConnected,
+  });
+
+  const autonomousPolicy: AutonomousPolicy = {
+    spendCap: "$25/day",
+    approvalRequired: true,
+    optimizationMode: "guided",
+    rollbackEnabled: true,
+  };
+
   return {
     briefing,
     nextAction,
@@ -773,6 +818,8 @@ export function buildMissionControlPayload(input: {
     goalCoaching,
     orchestrationTimeline,
     orchestrationFlow,
+    stackHealth,
+    autonomousPolicy,
     commandCenter,
     kpiInsights,
     diagnostics,
