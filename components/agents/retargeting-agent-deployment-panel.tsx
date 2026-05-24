@@ -22,7 +22,6 @@ import {
   GrowthStackPreviewModal,
   type GrowthStackPreviewData,
 } from "@/components/agents/growth-stack-preview-modal";
-import { OrchestrationMap } from "@/components/dashboard/mission-control/orchestration-map";
 import {
   deriveStackPlanStatus,
   PlanStatusBadge,
@@ -34,7 +33,6 @@ import { buildGrowthStackPreview } from "@/lib/agents/stack-deployment-catalog";
 import { RETARGETING_DEPLOYMENT_PRESET } from "@/lib/agents/deployment-presets";
 import { fadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import type { OrchestrationFlowStep } from "@/lib/dashboard/build-orchestration-flow";
 import type { AutonomousMode } from "@/types/agent-deployment";
 
 const TIMELINE_ICONS = {
@@ -45,7 +43,7 @@ const TIMELINE_ICONS = {
   deployment: Rocket,
 } as const;
 
-export function RetargetingAgentDeploymentPanel({ flow }: { flow?: OrchestrationFlowStep[] }) {
+export function RetargetingAgentDeploymentPanel() {
   const { openDeployment, agents } = useAgentDeployment();
   const preset = RETARGETING_DEPLOYMENT_PRESET;
   const [mode, setMode] = useState<AutonomousMode>(preset.defaultMode);
@@ -211,9 +209,6 @@ export function RetargetingAgentDeploymentPanel({ flow }: { flow?: Orchestration
               );
             })}
           </ol>
-          <div className="mt-4 border-t border-white/[0.06] pt-4">
-            <OrchestrationMap embedded flow={flow} />
-          </div>
         </div>
 
         <AiModeSelector mode={mode} onChange={setMode} className="mt-5" />

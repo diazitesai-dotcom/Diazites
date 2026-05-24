@@ -35,6 +35,7 @@ import {
   ZeroSpendEmpty,
 } from "@/components/dashboard/mission-control/mission-empty-states";
 import { GrowthOrchestrationTimeline } from "@/components/dashboard/mission-control/growth-orchestration-timeline";
+import { RuntimeOverview } from "@/components/dashboard/mission-control/runtime-overview";
 import { InboundVelocityChart } from "@/components/dashboard/mission-control/inbound-velocity-chart";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { PageHeader } from "@/components/layout/page-header";
@@ -138,12 +139,14 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
           actions={<CommandCenterBell items={data.commandCenter} />}
         />
 
+        <RuntimeOverview flow={data.orchestrationFlow} stackHealth={data.stackHealth} />
+
         <AiCommandBriefing data={data} />
         <RecommendedNextActionCard data={data} />
 
-        <RetargetingAgentDeploymentPanel flow={data.orchestrationFlow} />
+        <RetargetingAgentDeploymentPanel />
 
-        <DeployableStacksPanel flow={data.orchestrationFlow} />
+        <DeployableStacksPanel />
 
         <QuickActionsRow />
 
@@ -200,8 +203,6 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
 
         <GrowthOrchestrationTimeline
           events={data.orchestrationTimeline}
-          flow={data.orchestrationFlow}
-          stackHealth={data.stackHealth}
           autonomousPolicy={data.autonomousPolicy}
         />
 

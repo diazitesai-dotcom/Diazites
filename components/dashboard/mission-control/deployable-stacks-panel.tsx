@@ -7,7 +7,6 @@ import { Eye, Layers, Rocket } from "lucide-react";
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
 import { GrowthStackPreviewModal, type GrowthStackPreviewData } from "@/components/agents/growth-stack-preview-modal";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
-import { OrchestrationMap } from "@/components/dashboard/mission-control/orchestration-map";
 import { Button } from "@/components/ui/button";
 import {
   HEALTH_BADGE,
@@ -15,7 +14,6 @@ import {
   componentIcon,
   type DeployableStackDefinition,
 } from "@/lib/agents/stack-deployment-catalog";
-import type { OrchestrationFlowStep } from "@/lib/dashboard/build-orchestration-flow";
 import { fadeItem } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +31,7 @@ function stackPreviewFromDefinition(stack: DeployableStackDefinition): GrowthSta
   };
 }
 
-export function DeployableStacksPanel({ flow }: { flow?: OrchestrationFlowStep[] }) {
+export function DeployableStacksPanel() {
   const { openDeployment, agents } = useAgentDeployment();
   const stacks = useMemo(() => buildDeployableStacks(agents), [agents]);
   const [preview, setPreview] = useState<GrowthStackPreviewData | null>(null);
@@ -134,9 +132,6 @@ export function DeployableStacksPanel({ flow }: { flow?: OrchestrationFlowStep[]
           })}
         </div>
 
-        <div className="mt-5 border-t border-white/[0.06] pt-5">
-          <OrchestrationMap embedded flow={flow} />
-        </div>
       </GlassCard>
 
       <GrowthStackPreviewModal
