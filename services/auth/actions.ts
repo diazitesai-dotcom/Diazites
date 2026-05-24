@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createUserProfile } from "@/lib/auth/user-profile";
@@ -55,7 +56,7 @@ export async function loginAction(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(msg)}`);
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -64,6 +65,16 @@ export async function loginAction(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
+  if (!data.session) {
+    redirect(
+      `/login?error=${encodeURIComponent("Could not create a session. Try again or reset your password.")}`,
+    );
+  }
+
+  await supabase.auth.getUser();
+
+  revalidatePath("/", "layout");
+  revalidatePath("/dashboard", "layout");
   redirect("/dashboard");
 }
 

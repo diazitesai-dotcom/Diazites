@@ -9,6 +9,7 @@ export default function ForgotPasswordPage() {
       <AuthCard
         title="Reset your password"
         submitText="Send reset link"
+        pendingText="Sending…"
         action={forgotPasswordAction}
         footerHref="/login"
         footerText="Remember your password?"

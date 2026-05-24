@@ -45,8 +45,9 @@ export default async function LoginPage({
           </p>
         ) : null}
         <AuthCard
-          title="Login to Diazites AI"
-          submitText="Login"
+          title="Sign in to Diazites"
+          submitText="Sign in"
+          pendingText="Signing in…"
           action={loginAction}
           footerHref="/signup"
           footerText="Need an account?"

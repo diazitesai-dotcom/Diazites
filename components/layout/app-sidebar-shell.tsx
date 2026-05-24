@@ -50,13 +50,13 @@ const DASHBOARD_NAV: NavItem[] = [
   { href: "/dashboard/agents", label: "Agent Manager", icon: Bot },
   { href: "/dashboard/leads", label: "Leads CRM", icon: Users },
   { href: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone },
+  { href: "/dashboard/funnel", label: "Funnel Builder", icon: Funnel },
   { href: "/dashboard/automations", label: "Automations", icon: Webhook },
   { href: "/dashboard/approvals", label: "Approvals", icon: ShieldAlert },
   { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
   { href: "/dashboard/team", label: "Team", icon: UserCog },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
-  { href: "/funnel", label: "Funnel Builder", icon: Funnel },
 ];
 
 const ADMIN_NAV: NavItem[] = [

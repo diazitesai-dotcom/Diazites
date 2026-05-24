@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { AuthSubmitButton } from "@/components/auth/auth-submit-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 interface AuthCardProps {
   title: string;
   submitText: string;
+  pendingText?: string;
   action: (formData: FormData) => Promise<void>;
   footerHref: string;
   footerText: string;
@@ -20,6 +21,7 @@ interface AuthCardProps {
 export function AuthCard({
   title,
   submitText,
+  pendingText = "Please wait…",
   action,
   footerHref,
   footerText,
@@ -30,7 +32,9 @@ export function AuthCard({
     <Card className="w-full max-w-md border-white/[0.08] shadow-[0_24px_80px_-48px_rgba(99,102,241,0.45)]">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl tracking-tight">{title}</CardTitle>
-        <CardDescription>Secure access to your Diazites workspace.</CardDescription>
+        <CardDescription>
+          Secure sign-in. Your session syncs across the app via Supabase.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form className="space-y-4" action={action}>
@@ -50,9 +54,7 @@ export function AuthCard({
               />
             </div>
           ) : null}
-          <Button type="submit" variant="gradient" className="mt-2 w-full rounded-xl">
-            {submitText}
-          </Button>
+          <AuthSubmitButton label={submitText} pendingLabel={pendingText} />
         </form>
         <p className="mt-4 text-sm text-muted-foreground">
           {footerText}{" "}

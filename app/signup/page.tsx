@@ -10,6 +10,7 @@ export default function SignupPage() {
       <AuthCard
         title="Create your Diazites AI account"
         submitText="Create account"
+        pendingText="Creating account…"
         action={signupAction}
         footerHref="/login"
         footerText="Already have an account?"

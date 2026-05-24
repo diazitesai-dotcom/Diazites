@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { fadeUp, staggerContainer } from "@/lib/motion";
 
 const stats = [
-  { label: "Leads orchestrated", value: "12k+" },
+  { label: "Leads captured", value: "12k+" },
   { label: "Avg. CPL improvement", value: "38%" },
   { label: "Markets live", value: "40+" },
 ];
@@ -40,10 +40,10 @@ export function HomeHero() {
             className="mt-8 text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-6xl md:text-7xl"
           >
             <span className="block text-gradient-strong">
-              Diazites,
+              Turn attention into revenue
             </span>
             <span className="block text-foreground">
-              orchestrated by AI.
+              with AI that works 24/7.
             </span>
           </motion.h1>
 

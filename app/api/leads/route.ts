@@ -78,18 +78,40 @@ export async function POST(request: Request) {
   const result = await createLead(supabase, {
     businessId,
     campaignId: body.campaignId ?? null,
+    landingPageId: body.landingPageId ?? null,
+    landingPageVersionId: body.landingPageVersionId ?? null,
     name: body.name.trim(),
     phone: body.phone?.trim() || null,
     email,
     address: body.address?.trim() || null,
     roofingNeed: body.roofingNeed?.trim() || null,
     timeline: body.timeline?.trim() || null,
+    budget: body.budget?.trim() || null,
     notes: body.notes?.trim() || null,
     source: resolvedSource,
+    customFields: body.customFields,
+    utmSource: body.utmSource?.trim() || null,
+    utmMedium: body.utmMedium?.trim() || null,
+    utmCampaign: body.utmCampaign?.trim() || null,
   });
 
   if (!result.success) {
     return NextResponse.json({ success: false, error: result.error }, { status: 400 });
+  }
+
+  if (body.landingPageId) {
+    try {
+      const { recordLandingPageSubmission } = await import(
+        "@/services/landing/landing-page-submission.service"
+      );
+      await recordLandingPageSubmission(supabase, {
+        businessId,
+        landingPageId: body.landingPageId,
+        versionId: body.landingPageVersionId ?? null,
+      });
+    } catch {
+      // analytics table may not exist until migration applied
+    }
   }
 
   return NextResponse.json({

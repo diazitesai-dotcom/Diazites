@@ -14,6 +14,16 @@ export const EVENT_TYPES = {
   ENGINE_LAUNCHED: "ENGINE_LAUNCHED",
   ENGINE_QA_FAILED: "ENGINE_QA_FAILED",
   AD_CAMPAIGN_PUSHED: "AD_CAMPAIGN_PUSHED",
+  LANDING_PAGE_PUBLISHED: "LANDING_PAGE_PUBLISHED",
+  LANDING_PAGE_SUBMISSION: "LANDING_PAGE_SUBMISSION",
+  AD_ACCOUNT_CONNECTED: "AD_ACCOUNT_CONNECTED",
+  AD_ACCOUNT_SYNCED: "AD_ACCOUNT_SYNCED",
+  APPROVAL_REQUESTED: "APPROVAL_REQUESTED",
+  APPROVAL_DECIDED: "APPROVAL_DECIDED",
+  OPTIMIZATION_RECOMMENDED: "OPTIMIZATION_RECOMMENDED",
+  OPTIMIZATION_APPLIED: "OPTIMIZATION_APPLIED",
+  GROWTH_ENGINE_STAGE_CHANGED: "GROWTH_ENGINE_STAGE_CHANGED",
+  AUDIT_ACTION: "AUDIT_ACTION",
 } as const;
 
 export type SystemEventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES];
@@ -31,14 +41,21 @@ export type OnboardingStageDb =
 export interface LeadCreateInput {
   businessId: string;
   campaignId?: string | null;
+  landingPageId?: string | null;
+  landingPageVersionId?: string | null;
   name: string;
   phone?: string | null;
   email?: string | null;
   address?: string | null;
   roofingNeed?: string | null;
   timeline?: string | null;
+  budget?: string | null;
   notes?: string | null;
   source?: string | null;
+  customFields?: Record<string, unknown>;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
 }
 
 export interface LeadUpdateInput {

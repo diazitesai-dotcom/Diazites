@@ -11,14 +11,21 @@ export function createLeadRepository(client: SupabaseClient) {
         .insert({
           business_id: input.businessId,
           campaign_id: input.campaignId ?? null,
+          landing_page_id: input.landingPageId ?? null,
+          landing_page_version_id: input.landingPageVersionId ?? null,
           name: input.name,
           phone: input.phone ?? null,
           email: input.email ?? null,
           address: input.address ?? null,
           roofing_need: input.roofingNeed ?? null,
           timeline: input.timeline ?? null,
+          budget: input.budget ?? null,
           notes: input.notes ?? null,
           source: input.source ?? "web",
+          custom_fields: input.customFields ?? {},
+          utm_source: input.utmSource ?? null,
+          utm_medium: input.utmMedium ?? null,
+          utm_campaign: input.utmCampaign ?? null,
         })
         .select("*")
         .single();

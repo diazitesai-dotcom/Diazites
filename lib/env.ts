@@ -44,6 +44,8 @@ export const env = {
   /** Optional: AgentMail HTTP API (set base URL + key from their docs) */
   AGENTMAIL_API_URL: getEnv("AGENTMAIL_API_URL"),
   AGENTMAIL_API_KEY: getEnv("AGENTMAIL_API_KEY"),
+  /** AES key for ad account credentials (32+ chars recommended) */
+  CREDENTIALS_ENCRYPTION_KEY: getEnv("CREDENTIALS_ENCRYPTION_KEY"),
 };
 
 export function assertRequiredEnv(names: string[]) {

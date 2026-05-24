@@ -163,4 +163,17 @@
   .focus-glow:focus-visible {
     @apply border-violet-400/50 ring-2 ring-violet-500/30;
   }
+
+  /* Marketing homepage — editorial display font set via next/font variable on wrapper */
+  .font-display {
+    font-family: var(--font-display), ui-serif, Georgia, "Times New Roman", serif;
+  }
+
+  .marketing-void {
+    background:
+      radial-gradient(ellipse 120% 90% at 50% -30%, rgba(255, 255, 255, 0.08), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 95% 15%, rgba(255, 255, 255, 0.04), transparent),
+      radial-gradient(ellipse 60% 45% at 5% 85%, rgba(255, 255, 255, 0.03), transparent),
+      linear-gradient(180deg, #000000 0%, #000000 100%);
+  }
 }

@@ -4,6 +4,7 @@ import { ok, fail, type ServiceResult } from "@/lib/result";
 import { scoreLead, type LeadScoreBucket } from "@/lib/lead-scoring";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { createLeadRepository } from "@/repositories/lead.repository";
+import { createLeadEventRepository } from "@/repositories/marketing-os.repository";
 import type { LeadCreateInput, LeadUpdateInput } from "@/types/backend";
 import { EVENT_TYPES } from "@/types/backend";
 import type { PipelineStatus } from "@/types/domain";
@@ -26,11 +27,13 @@ export async function createLead(
     type: EVENT_TYPES.LEAD_CREATED,
     businessId: input.businessId,
     leadId: data.id,
-    payload: { source: input.source ?? "web", campaignId: input.campaignId },
+    payload: {
+      source: input.source ?? "web",
+      campaignId: input.campaignId,
+      landingPageId: input.landingPageId,
+    },
   });
 
-  // Best-effort notification to the business owner. Telemetry failures must
-  // never block lead creation.
   try {
     const { createBusinessRepository } = await import("@/repositories/business.repository");
     const { createNotificationRepository } = await import(
@@ -52,6 +55,19 @@ export async function createLead(
     }
   } catch {
     // swallow
+  }
+
+  try {
+    const events = createLeadEventRepository(client);
+    await events.insert({
+      businessId: input.businessId,
+      leadId: data.id,
+      eventType: "form_submitted",
+      actorType: "system",
+      payload: { source: input.source ?? "web" },
+    });
+  } catch {
+    // lead_events table may not exist until migration applied
   }
 
   return ok({ id: data.id });
