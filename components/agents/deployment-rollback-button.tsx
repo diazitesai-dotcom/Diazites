@@ -56,7 +56,7 @@ export function DeploymentRollbackButton({
         onClick={rollback}
       >
         <RotateCcw className="mr-1.5 size-3.5" />
-        {pending ? "Rolling back…" : "Rollback deployment"}
+        {pending ? "Rolling back…" : "Rollback growth stack"}
       </Button>
       {message ? <p className="mt-2 text-[11px] text-emerald-300/90">{message}</p> : null}
     </div>

@@ -23,6 +23,7 @@ export type AgentDeploymentPreset = {
     status: OrchestrationRunStatus;
     durationSeconds?: number;
     system?: string;
+    rollbackStatus?: "available" | "unavailable" | "used";
   }[];
   aiActionsToday: {
     automationsExecuted: number;
@@ -62,6 +63,7 @@ export const RETARGETING_DEPLOYMENT_PRESET: AgentDeploymentPreset = {
       status: "completed",
       durationSeconds: 38,
       system: "Landing Stack",
+      rollbackStatus: "available",
     },
     {
       time: "09:04",
@@ -70,6 +72,7 @@ export const RETARGETING_DEPLOYMENT_PRESET: AgentDeploymentPreset = {
       status: "running",
       durationSeconds: 42,
       system: "Paid Ads Stack",
+      rollbackStatus: "available",
     },
     {
       time: "09:06",
@@ -78,6 +81,7 @@ export const RETARGETING_DEPLOYMENT_PRESET: AgentDeploymentPreset = {
       status: "failed",
       durationSeconds: 12,
       system: "Paid Ads Stack",
+      rollbackStatus: "used",
     },
     {
       time: "09:10",
@@ -86,6 +90,7 @@ export const RETARGETING_DEPLOYMENT_PRESET: AgentDeploymentPreset = {
       status: "completed",
       durationSeconds: 6,
       system: "Lead Recovery Stack",
+      rollbackStatus: "available",
     },
     {
       time: "09:14",
@@ -94,6 +99,7 @@ export const RETARGETING_DEPLOYMENT_PRESET: AgentDeploymentPreset = {
       status: "processing",
       durationSeconds: 24,
       system: "Optimization Loop",
+      rollbackStatus: "available",
     },
   ],
   aiActionsToday: {

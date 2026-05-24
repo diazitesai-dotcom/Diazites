@@ -146,6 +146,7 @@ export type OrchestrationTimelineEvent = {
   status: OrchestrationRunStatus;
   durationSeconds?: number;
   system?: string;
+  rollbackStatus?: "available" | "unavailable" | "used";
 };
 
 export type MarketSignal = {

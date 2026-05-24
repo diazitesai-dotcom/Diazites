@@ -209,7 +209,7 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
                 })
               }
             >
-              Review Plan
+              Review AI Plan
             </Button>
           </div>
         </div>

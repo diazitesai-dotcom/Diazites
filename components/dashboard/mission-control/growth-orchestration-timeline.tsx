@@ -68,6 +68,7 @@ export function GrowthOrchestrationTimeline({
                     status: ev.status,
                     durationSeconds: ev.durationSeconds,
                     system: ev.system,
+                    rollbackStatus: ev.rollbackStatus,
                   }}
                 />
               </motion.li>

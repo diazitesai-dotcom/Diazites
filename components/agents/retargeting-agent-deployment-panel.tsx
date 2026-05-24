@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Activity,
@@ -18,13 +18,18 @@ import {
 
 import { AiModeSelector } from "@/components/agents/ai-mode-selector";
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
+import {
+  GrowthStackPreviewModal,
+  type GrowthStackPreviewData,
+} from "@/components/agents/growth-stack-preview-modal";
 import { OrchestrationMap } from "@/components/dashboard/mission-control/orchestration-map";
 import { OrchestrationTimelineRow } from "@/components/dashboard/mission-control/orchestration-timeline-row";
-import { StackLaunchPills } from "@/components/dashboard/mission-control/stack-launch-pills";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
 import { Button } from "@/components/ui/button";
+import { buildGrowthStackPreview } from "@/lib/agents/stack-deployment-catalog";
 import { RETARGETING_DEPLOYMENT_PRESET } from "@/lib/agents/deployment-presets";
 import { fadeItem } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 import type { AutonomousMode } from "@/types/agent-deployment";
 
 const TIMELINE_ICONS = {
@@ -36,11 +41,13 @@ const TIMELINE_ICONS = {
 } as const;
 
 export function RetargetingAgentDeploymentPanel() {
-  const { openDeployment } = useAgentDeployment();
+  const { openDeployment, agents } = useAgentDeployment();
   const preset = RETARGETING_DEPLOYMENT_PRESET;
   const [mode, setMode] = useState<AutonomousMode>(preset.defaultMode);
+  const [growthPreviewOpen, setGrowthPreviewOpen] = useState(false);
+  const growthPreview = useMemo(() => buildGrowthStackPreview(agents), [agents]);
 
-  function reviewPlan() {
+  function reviewAiPlan() {
     openDeployment({
       preset: "retargeting",
       agent: preset.agent,
@@ -57,6 +64,7 @@ export function RetargetingAgentDeploymentPanel() {
       stack: "growth_engine",
       mode,
       source: "growth_engine",
+      step: "readiness",
     });
   }
 
@@ -112,9 +120,9 @@ export function RetargetingAgentDeploymentPanel() {
             type="button"
             variant="outline"
             className="mt-4 w-full rounded-xl border-white/10"
-            onClick={reviewPlan}
+            onClick={reviewAiPlan}
           >
-            Review Plan
+            Review AI Plan
           </Button>
         </motion.div>
 
@@ -178,7 +186,12 @@ export function RetargetingAgentDeploymentPanel() {
               const Icon = TIMELINE_ICONS[row.kind] ?? Bot;
               return (
                 <li key={row.label} className="relative pb-3 last:pb-0">
-                  <span className="absolute -left-[15px] top-1 size-2 rounded-full bg-cyan-400/80 ring-2 ring-card" />
+                  <span
+                    className={cn(
+                      "absolute -left-[15px] top-1 size-2 rounded-full ring-2 ring-card",
+                      row.status === "running" ? "mission-timeline-dot-pulse bg-amber-400/90" : "bg-cyan-400/80",
+                    )}
+                  />
                   <OrchestrationTimelineRow icon={Icon} row={row} />
                 </li>
               );
@@ -191,19 +204,24 @@ export function RetargetingAgentDeploymentPanel() {
 
         <AiModeSelector mode={mode} onChange={setMode} className="mt-5" />
 
-        <StackLaunchPills className="mt-4" />
-
         <Button
           type="button"
           variant="gradient"
           size="lg"
           className="mission-shimmer-btn mt-5 w-full rounded-xl py-6 text-base shadow-[0_12px_40px_-12px_rgba(99,102,241,0.55)]"
-          onClick={deployFullEngine}
+          onClick={() => setGrowthPreviewOpen(true)}
         >
           <Rocket className="mr-2 size-5" />
           Deploy Full Growth Engine
         </Button>
       </GlassCard>
+
+      <GrowthStackPreviewModal
+        open={growthPreviewOpen}
+        preview={growthPreview}
+        onClose={() => setGrowthPreviewOpen(false)}
+        onDeploy={deployFullEngine}
+      />
     </motion.div>
   );
 }

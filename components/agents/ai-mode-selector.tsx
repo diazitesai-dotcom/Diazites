@@ -1,7 +1,10 @@
 "use client";
 
+import { Check, X } from "lucide-react";
+
 import { AiModeCallout } from "@/components/agents/ai-mode-callout";
 import { AI_MODE_BEHAVIOR } from "@/lib/agents/ai-mode-behavior";
+import { MODE_GUARDRAILS } from "@/lib/agents/stack-deployment-catalog";
 import { cn } from "@/lib/utils";
 import type { AutonomousMode } from "@/types/agent-deployment";
 
@@ -15,7 +18,13 @@ export function AiModeSelector({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-xl border border-white/10 bg-white/[0.02] p-3", className)}>
+    <div
+      className={cn(
+        "rounded-xl border border-white/10 bg-white/[0.02] p-3",
+        mode === "autonomous" && "mission-autonomous-glow border-violet-500/30",
+        className,
+      )}
+    >
       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         AI Mode
       </p>
@@ -48,6 +57,27 @@ export function AiModeSelector({
         <span className="font-medium text-foreground/90">{AI_MODE_BEHAVIOR[mode].label}:</span>{" "}
         {AI_MODE_BEHAVIOR[mode].helper}
       </p>
+
+      <div className="mt-3 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Guardrails
+        </p>
+        <ul className="mt-2 space-y-1.5">
+          {MODE_GUARDRAILS[mode].map((g) => (
+            <li key={g.label} className="flex items-center gap-2 text-[11px]">
+              {g.enabled ? (
+                <Check className="size-3 shrink-0 text-emerald-400" />
+              ) : (
+                <X className="size-3 shrink-0 text-muted-foreground/60" />
+              )}
+              <span className={g.enabled ? "text-foreground/90" : "text-muted-foreground"}>
+                {g.label}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <AiModeCallout mode={mode} className="mt-2" />
     </div>
   );

@@ -705,7 +705,7 @@ export function AgentDeploymentDrawer({
                     key="deploy"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex flex-col items-center justify-center py-12 text-center"
+                    className="mission-deploy-progress flex flex-col items-center justify-center py-12 text-center"
                   >
                     <div className="relative size-24">
                       <motion.div
@@ -723,7 +723,7 @@ export function AgentDeploymentDrawer({
                       </span>
                     </div>
                     <p className="mt-8 text-lg font-semibold">Launching Growth Engine…</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mission-eta-tick mt-1 text-xs text-muted-foreground">
                       ETA: ~{deployEtaSeconds} sec · {mode} mode
                     </p>
                     <ul className="mt-6 w-full max-w-sm space-y-2 text-left text-sm text-muted-foreground">

@@ -515,6 +515,7 @@ export function buildMissionControlPayload(input: {
       status: "completed",
       durationSeconds: 38,
       system: "Landing Stack",
+      rollbackStatus: "available",
     },
     {
       id: "o2",
@@ -524,6 +525,7 @@ export function buildMissionControlPayload(input: {
       status: "running",
       durationSeconds: 42,
       system: "Paid Ads Stack",
+      rollbackStatus: "available",
     },
     {
       id: "o3",
@@ -533,6 +535,7 @@ export function buildMissionControlPayload(input: {
       status: "failed",
       durationSeconds: 12,
       system: "Paid Ads Stack",
+      rollbackStatus: "used",
     },
     {
       id: "o4",
@@ -542,6 +545,7 @@ export function buildMissionControlPayload(input: {
       status: "completed",
       durationSeconds: 6,
       system: "Lead Engine Stack",
+      rollbackStatus: "available",
     },
     {
       id: "o5",
@@ -551,6 +555,7 @@ export function buildMissionControlPayload(input: {
       status: "completed",
       durationSeconds: 1,
       system: "CRM",
+      rollbackStatus: "unavailable",
     },
     {
       id: "o6",
@@ -560,6 +565,7 @@ export function buildMissionControlPayload(input: {
       status: "processing",
       durationSeconds: 24,
       system: "Optimization Loop",
+      rollbackStatus: "available",
     },
   ];
 

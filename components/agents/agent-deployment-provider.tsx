@@ -26,6 +26,7 @@ type DeploymentContextValue = {
   openDeployment: (params?: DeploymentLaunchParams) => void;
   closeDeployment: () => void;
   isOpen: boolean;
+  agents: AgentRow[];
 };
 
 const DeploymentContext = createContext<DeploymentContextValue | null>(null);
@@ -132,7 +133,7 @@ export function AgentDeploymentProvider({
   }, [open, searchParams, stripDeployParams]);
 
   return (
-    <DeploymentContext.Provider value={{ openDeployment, closeDeployment, isOpen: open }}>
+    <DeploymentContext.Provider value={{ openDeployment, closeDeployment, isOpen: open, agents }}>
       {children}
       <AgentDeploymentDrawer
         open={open}

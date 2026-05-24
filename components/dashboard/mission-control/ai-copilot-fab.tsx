@@ -20,68 +20,45 @@ type CopilotAction =
 
 const COPILOT_ACTIONS: CopilotAction[] = [
   {
-    label: "Deploy lead stack",
+    label: "Deploy lead engine",
     description: "Landing → qualification → follow-up → CRM",
     kind: "deploy",
     launch: { stack: "lead_engine", goal: "generate_leads", source: "quick_action" },
   },
   {
-    label: "Launch paid ads stack",
+    label: "Launch ads stack",
     description: "Meta, search, retargeting, analytics",
     kind: "deploy",
     launch: { stack: "paid_ads", goal: "launch_ads", source: "quick_action" },
   },
   {
-    label: "Deploy retargeting agent",
-    description: "High-intent visitor recovery",
-    kind: "deploy",
-    launch: {
-      preset: "retargeting",
-      agent: "retargeting",
-      goal: "improve_conversion",
-      mode: "autonomous",
-      step: "readiness",
-      source: "opportunity",
-    },
-  },
-  {
-    label: "Deploy full growth engine",
-    description: "One-click full stack onboarding",
-    kind: "deploy",
-    launch: {
-      goal: "deploy_full_growth_engine",
-      stack: "growth_engine",
-      mode: "guided",
-      source: "growth_engine",
-    },
-  },
-  {
     label: "Launch growth engine",
-    description: "Full stack — primary onboarding path",
+    description: "Full-stack deployment — primary onboarding",
     kind: "deploy",
     launch: {
       goal: "deploy_full_growth_engine",
       stack: "growth_engine",
       source: "growth_engine",
+      step: "readiness",
     },
   },
   {
-    label: "Why are leads low?",
-    description: "AI diagnostic on funnel and velocity",
+    label: "Diagnose account",
+    description: "Executive briefing and health checks",
+    kind: "link",
+    href: "/dashboard",
+  },
+  {
+    label: "Explain performance drop",
+    description: "Funnel, leads, and velocity signals",
     kind: "link",
     href: "/dashboard/leads",
   },
   {
-    label: "Optimize campaigns",
-    description: "CPL, budget, and creative tuning",
+    label: "Optimize CPL",
+    description: "Campaign and budget optimization",
     kind: "link",
     href: "/dashboard/optimization",
-  },
-  {
-    label: "Diagnose performance",
-    description: "Mission control diagnostics view",
-    kind: "link",
-    href: "/dashboard",
   },
 ];
 
@@ -135,7 +112,7 @@ export function AiCopilotFab() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold">Ask Diazites AI</p>
-                  <p className="text-[11px] text-muted-foreground">Control plane</p>
+                  <p className="text-[11px] text-muted-foreground">Autonomous control plane</p>
                 </div>
               </div>
               <Button
@@ -152,7 +129,7 @@ export function AiCopilotFab() {
 
             <div className="flex-1 overflow-y-auto p-5">
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Run orchestration commands — deploy stacks, launch campaigns, or open diagnostics.
+                Run orchestration commands — deploy stacks, diagnose the account, or optimize spend.
               </p>
               <ul className="mt-5 space-y-2">
                 {COPILOT_ACTIONS.map((action, i) => (
@@ -215,7 +192,7 @@ export function AiCopilotFab() {
             variant="gradient"
             size="lg"
             className={cn(
-              "relative rounded-full px-5 shadow-[0_12px_40px_-8px_rgba(99,102,241,0.55)]",
+              "mission-shimmer-btn relative rounded-full px-5 shadow-[0_12px_40px_-8px_rgba(99,102,241,0.55)]",
               open && "ring-2 ring-cyan-400/40",
             )}
             onClick={() => setOpen((v) => !v)}

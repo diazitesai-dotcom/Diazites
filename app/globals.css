@@ -221,4 +221,79 @@
     transform: translateY(-2px);
     box-shadow: 0 12px 40px -16px rgba(139, 92, 246, 0.35);
   }
+
+  .mission-stack-card {
+    transition:
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.35s ease,
+      border-color 0.35s ease;
+  }
+
+  .mission-stack-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(139, 92, 246, 0.35);
+    box-shadow: 0 16px 48px -20px rgba(139, 92, 246, 0.45);
+  }
+
+  .mission-autonomous-glow {
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.25),
+      0 0 32px -8px rgba(139, 92, 246, 0.4);
+  }
+
+  .mission-timeline-pulse {
+    animation: mission-timeline-text-pulse 2s ease-in-out infinite;
+  }
+
+  .mission-timeline-dot-pulse {
+    animation: mission-dot-pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes mission-timeline-text-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.65;
+    }
+  }
+
+  @keyframes mission-dot-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 0 6px rgba(251, 191, 36, 0);
+    }
+  }
+
+  .mission-eta-tick {
+    animation: mission-eta-fade 2.4s ease-in-out infinite;
+  }
+
+  @keyframes mission-eta-fade {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.72;
+    }
+  }
+
+  .mission-deploy-progress {
+    animation: mission-deploy-breathe 2s ease-in-out infinite;
+  }
+
+  @keyframes mission-deploy-breathe {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
 }
