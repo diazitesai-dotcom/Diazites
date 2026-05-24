@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { ServiceResult } from "@/lib/result";
 import { fail, ok } from "@/lib/result";
+import { encodeAdsOAuthState } from "@/lib/ads-oauth-state";
 import { getAdsConfig, isAdsConfigured } from "@/lib/ads-env";
 import {
   createAdAccountRepository,
@@ -55,10 +56,7 @@ export async function buildMetaAuthLink(args: {
       "Meta isn't configured. Set META_APP_ID, META_APP_SECRET, META_REDIRECT_URL in your env first.",
     );
   }
-  const state = Buffer.from(JSON.stringify({
-    b: args.businessId,
-    t: Date.now(),
-  })).toString("base64url");
+  const state = encodeAdsOAuthState(args.businessId, "meta");
   const u = new URL(config.authUrl);
   u.searchParams.set("client_id", config.appId);
   u.searchParams.set("redirect_uri", config.redirectUrl);

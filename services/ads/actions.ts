@@ -9,6 +9,11 @@ import { fail, ok, type ServiceResult } from "@/lib/result";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createBusinessRepository } from "@/repositories/business.repository";
 
+import type { AdsPlatform } from "@/lib/ads-env";
+import {
+  buildGoogleAuthLink,
+  disconnectGoogle,
+} from "@/services/ads/google.service";
 import {
   buildMetaAuthLink,
   disconnectMeta,
@@ -32,26 +37,52 @@ async function resolveBusinessId(): Promise<{ businessId: string; userId: string
 }
 
 export async function startMetaConnectAction(): Promise<ServiceResult<{ url: string }>> {
+  return startAdsConnectAction("meta");
+}
+
+export async function startGoogleConnectAction(): Promise<ServiceResult<{ url: string }>> {
+  return startAdsConnectAction("google");
+}
+
+export async function startAdsConnectAction(
+  platform: Extract<AdsPlatform, "meta" | "google">,
+): Promise<ServiceResult<{ url: string }>> {
   const ctx = await resolveBusinessId();
   if (!ctx) redirect("/onboarding?error=Complete+onboarding+first");
 
-  const link = await buildMetaAuthLink({ businessId: ctx.businessId });
+  const link =
+    platform === "google"
+      ? await buildGoogleAuthLink({ businessId: ctx.businessId })
+      : await buildMetaAuthLink({ businessId: ctx.businessId });
   if (!link.success) return fail(link.error);
   return ok({ url: link.data.url });
 }
 
 export async function disconnectMetaAction(): Promise<ServiceResult<{ ok: true }>> {
+  return disconnectAdsPlatformAction("meta");
+}
+
+export async function disconnectGoogleAction(): Promise<ServiceResult<{ ok: true }>> {
+  return disconnectAdsPlatformAction("google");
+}
+
+export async function disconnectAdsPlatformAction(
+  platform: Extract<AdsPlatform, "meta" | "google">,
+): Promise<ServiceResult<{ ok: true }>> {
   const ctx = await resolveBusinessId();
   if (!ctx) return fail("No business found");
 
   const supabase = await createServerSupabaseClient();
-  const result = await disconnectMeta(supabase, { businessId: ctx.businessId });
+  const result =
+    platform === "google"
+      ? await disconnectGoogle(supabase, { businessId: ctx.businessId })
+      : await disconnectMeta(supabase, { businessId: ctx.businessId });
   if (!result.success) return fail(result.error);
 
   await logAudit(supabase, {
     businessId: ctx.businessId,
     actorUserId: ctx.userId,
-    action: "ads.meta.disconnect",
+    action: platform === "google" ? "ads.google.disconnect" : "ads.meta.disconnect",
     targetKind: "ad_account",
   });
 

@@ -4,14 +4,25 @@ import { useTransition } from "react";
 import { CheckCircle2, ExternalLink, Loader2, XCircle } from "lucide-react";
 
 import {
-  disconnectMetaAction,
-  startMetaConnectAction,
+  disconnectAdsPlatformAction,
+  startAdsConnectAction,
 } from "@/services/ads/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+type AdsPlatformId = "meta" | "google" | "tiktok" | "microsoft";
+
+const ENV_HINTS: Record<AdsPlatformId, string> = {
+  meta: "META_APP_ID, META_APP_SECRET, META_REDIRECT_URL",
+  google: "GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET, GOOGLE_ADS_REDIRECT_URL",
+  tiktok: "TIKTOK_APP_ID, TIKTOK_APP_SECRET, TIKTOK_REDIRECT_URL",
+  microsoft: "MICROSOFT_ADS_CLIENT_ID, MICROSOFT_ADS_CLIENT_SECRET, MICROSOFT_ADS_REDIRECT_URL",
+};
+
+const CONNECTABLE: AdsPlatformId[] = ["meta", "google"];
+
 type PlatformCardProps = {
-  platform: "meta" | "google" | "tiktok" | "microsoft";
+  platform: AdsPlatformId;
   label: string;
   description: string;
   configured: boolean;
@@ -28,11 +39,12 @@ export function PlatformCard({
   accent,
 }: PlatformCardProps) {
   const [isPending, startTransition] = useTransition();
+  const canConnect = CONNECTABLE.includes(platform);
 
   function handleConnect() {
-    if (platform !== "meta") return;
+    if (!canConnect) return;
     startTransition(async () => {
-      const result = await startMetaConnectAction();
+      const result = await startAdsConnectAction(platform as "meta" | "google");
       if (result.success && typeof window !== "undefined") {
         window.location.href = result.data.url;
       }
@@ -40,9 +52,9 @@ export function PlatformCard({
   }
 
   function handleDisconnect() {
-    if (platform !== "meta") return;
+    if (!canConnect) return;
     startTransition(async () => {
-      await disconnectMetaAction();
+      await disconnectAdsPlatformAction(platform as "meta" | "google");
     });
   }
 
@@ -60,7 +72,8 @@ export function PlatformCard({
           </span>
           {isConnected ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-300">
-              <CheckCircle2 className="size-3" aria-hidden /> {status === "pending" ? "Pending" : "Connected"}
+              <CheckCircle2 className="size-3" aria-hidden />{" "}
+              {status === "pending" ? "Pending" : "Connected"}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
@@ -73,13 +86,16 @@ export function PlatformCard({
       </CardHeader>
       <CardContent className="space-y-3">
         {!configured ? (
-          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
-            Not configured — set the {platform.toUpperCase()}_* env vars to enable OAuth.
+          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-200">
+            Not configured — set{" "}
+            <span className="font-mono text-amber-100/90">{ENV_HINTS[platform]}</span> to enable
+            OAuth. Redirect URI must be{" "}
+            <span className="font-mono text-amber-100/90">/api/ads/oauth/callback</span>.
           </p>
         ) : null}
-        {platform !== "meta" ? (
+        {!canConnect ? (
           <p className="rounded-lg border border-white/5 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-            Coming soon — Meta is the MVP connector.
+            Coming soon — Meta and Google connectors are live first.
           </p>
         ) : isConnected ? (
           <Button

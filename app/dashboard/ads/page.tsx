@@ -1,6 +1,8 @@
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
+import { Suspense } from "react";
 
+import { AdsOAuthBanner } from "@/components/ads/ads-oauth-banner";
 import { PlatformCard } from "@/components/ads/platform-card";
 import { PushWinnerForm } from "@/components/ads/push-winner-form";
 import { ZapierConnector } from "@/components/integrations/zapier-connector";
@@ -44,7 +46,7 @@ const PLATFORMS: Array<{
   {
     id: "google",
     label: "Google",
-    description: "Search + Display + YouTube. Coming after Meta — same connector shape.",
+    description: "Search + Display + YouTube. OAuth connector — same flow as Meta.",
     accent: "linear-gradient(135deg, #4285F4, #34A853)",
   },
   {
@@ -135,6 +137,10 @@ export default async function AdsPage() {
         title="Platforms & live campaigns"
         description="Connect ad accounts and push the engine's winning ad creative live. Spend and lead metrics flow back automatically."
       />
+
+      <Suspense fallback={null}>
+        <AdsOAuthBanner />
+      </Suspense>
 
       {/* Rollup */}
       <section className="grid gap-3 sm:grid-cols-4">
