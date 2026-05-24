@@ -1,5 +1,17 @@
 import { formatDistanceToNow } from "date-fns";
 
+import { buildMissionControlPayload } from "@/lib/dashboard/build-mission-control";
+import type {
+  AccountConnection,
+  AgentPerformance,
+  AiRecommendation,
+  BusinessGoal,
+  FunnelStage,
+  HealthCheck,
+  MissionControlBriefing,
+  OpportunityItem,
+  RevenueForecast,
+} from "@/lib/dashboard/mission-control-types";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAgentRepository } from "@/repositories/agent.repository";
@@ -76,6 +88,16 @@ export type DashboardOverviewData = {
   sparkSeries: { d: string; v: number }[];
   agents: { key: string; name: string; status: string }[];
   activity: { id: string; title: string; detail: string; time: string }[];
+  briefing: MissionControlBriefing;
+  healthScore: number;
+  healthChecks: HealthCheck[];
+  revenue: RevenueForecast;
+  funnel: FunnelStage[];
+  recommendations: AiRecommendation[];
+  opportunities: OpportunityItem[];
+  agentPerformance: AgentPerformance[];
+  connections: AccountConnection[];
+  goals: BusinessGoal[];
 };
 
 export async function loadDashboardOverview(): Promise<DashboardOverviewData | null> {
@@ -130,6 +152,60 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     time: formatDistanceToNow(new Date(ev.created_at), { addSuffix: true }),
   }));
 
+  const { data: statusRows } = await supabase
+    .from("leads")
+    .select("status")
+    .eq("business_id", business.id);
+
+  let qualified = 0;
+  let booked = 0;
+  let won = 0;
+  let leadCount = 0;
+  for (const row of statusRows ?? []) {
+    leadCount++;
+    const s = row.status as string;
+    if (s === "qualified") qualified++;
+    if (s === "booked") booked++;
+    if (s === "won") won++;
+  }
+
+  const { data: adAccounts } = await supabase
+    .from("ad_accounts")
+    .select("platform, status")
+    .eq("business_id", business.id);
+
+  const connectedPlatforms = new Set<string>();
+  for (const acc of adAccounts ?? []) {
+    if (acc.status === "connected" || acc.status === "active") {
+      connectedPlatforms.add(String(acc.platform).toLowerCase());
+    }
+  }
+
+  const { data: billingRow } = await supabase
+    .from("billing")
+    .select("payment_status")
+    .eq("business_id", business.id)
+    .maybeSingle();
+
+  const billingActive =
+    billingRow?.payment_status === "active" || billingRow?.payment_status === "trialing";
+
+  const mission = buildMissionControlPayload({
+    metrics,
+    bookedOrWonCount: bookedOrWonCount ?? 0,
+    agents,
+    funnelCounts: {
+      visitors: Math.max(leadCount * 12, metrics?.totalLeads ? metrics.totalLeads * 10 : 0),
+      leads: metrics?.totalLeads ?? leadCount,
+      qualified,
+      booked,
+      won,
+    },
+    connectedPlatforms,
+    billingActive,
+    crmConnected: true,
+  });
+
   return {
     businessId: business.id,
     metrics,
@@ -137,5 +213,6 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     sparkSeries,
     agents,
     activity,
+    ...mission,
   };
 }
