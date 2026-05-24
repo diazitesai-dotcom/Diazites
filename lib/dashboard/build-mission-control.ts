@@ -275,6 +275,15 @@ export function buildMissionControlPayload(input: {
 
   const opportunities: OpportunityItem[] = [
     {
+      id: "retargeting",
+      title: "Retargeting Agent Deployment",
+      detail: "Recent visitors returned multiple times — no follow-up automation",
+      impact: "+12–18% recovered leads",
+      priority: "high",
+      cta: "Deploy Now",
+      href: "/dashboard?deploy=retargeting",
+    },
+    {
       id: "1",
       title: "High-intent visitor pattern",
       detail: "Lead opened landing page 3× in 24h — prioritize follow-up",

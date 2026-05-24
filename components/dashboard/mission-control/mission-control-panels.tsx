@@ -624,10 +624,21 @@ export function OpportunityFeed({ data }: { data: DashboardOverviewData }) {
                 size="sm"
                 className="shrink-0 rounded-xl"
                 onClick={() =>
-                  openDeployment({
-                    goal: inferGoalFromHref(item.href),
-                    source: "opportunity",
-                  })
+                  openDeployment(
+                    item.id === "retargeting"
+                      ? {
+                          preset: "retargeting",
+                          agent: "retargeting",
+                          goal: "improve_conversion",
+                          mode: "autonomous",
+                          step: "readiness",
+                          source: "opportunity",
+                        }
+                      : {
+                          goal: inferGoalFromHref(item.href),
+                          source: "opportunity",
+                        },
+                  )
                 }
               >
                 {item.cta}

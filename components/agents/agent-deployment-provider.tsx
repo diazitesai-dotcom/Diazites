@@ -69,6 +69,20 @@ export function AgentDeploymentProvider({
 
   useEffect(() => {
     const deploy = searchParams.get("deploy");
+    if (deploy === "retargeting") {
+      openDeployment({
+        preset: "retargeting",
+        agent: "retargeting",
+        goal: "improve_conversion",
+        mode: "autonomous",
+        step: "readiness",
+        source: "opportunity",
+      });
+      const url = new URL(window.location.href);
+      url.searchParams.delete("deploy");
+      router.replace(url.pathname + url.search, { scroll: false });
+      return;
+    }
     if (deploy !== "1" && deploy !== "true") return;
 
     const goal = normalizeDeploymentGoalId(searchParams.get("goal") ?? undefined);
@@ -109,8 +123,10 @@ export function AgentDeploymentProvider({
         initialStack={launch.stack}
         initialAgent={launch.agent}
         initialStep={launch.step}
+        initialPreset={launch.preset}
+        initialMode={launch.mode}
         launchSource={launch.source}
-        key={`${open}-${launch.goal ?? ""}-${launch.stack ?? ""}-${launch.agent ?? ""}`}
+        key={`${open}-${launch.goal ?? ""}-${launch.stack ?? ""}-${launch.agent ?? ""}-${launch.preset ?? ""}`}
       />
     </DeploymentContext.Provider>
   );

@@ -105,6 +105,8 @@ export type DeploymentLaunchParams = {
   goal?: DeploymentGoalId;
   stack?: AgentStackId;
   agent?: AgentType;
+  preset?: import("@/lib/agents/deployment-presets").AgentDeploymentPresetId;
+  mode?: AutonomousMode;
   source?: DeploymentLaunchSource;
   step?: "goal" | "stack" | "config" | "readiness";
 };

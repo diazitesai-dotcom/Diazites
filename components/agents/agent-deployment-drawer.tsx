@@ -35,6 +35,8 @@ import {
   mapDbStatusToLifecycle,
   recommendAgentsForGoal,
 } from "@/lib/agents/deployment-catalog";
+import { getDeploymentPreset } from "@/lib/agents/deployment-presets";
+import type { AgentDeploymentPresetId } from "@/lib/agents/deployment-presets";
 import { cn } from "@/lib/utils";
 import {
   AGENT_STACKS,
@@ -81,6 +83,8 @@ type Props = {
   initialStack?: AgentStackId;
   initialAgent?: AgentType;
   initialStep?: StepId;
+  initialPreset?: AgentDeploymentPresetId;
+  initialMode?: AutonomousMode;
   launchSource?: DeploymentLaunchSource;
 };
 
@@ -93,30 +97,42 @@ export function AgentDeploymentDrawer({
   initialStack,
   initialAgent,
   initialStep,
+  initialPreset,
+  initialMode,
   launchSource,
 }: Props) {
-  const defaultConfig = context?.prefill ?? {
-    budget: "50",
-    platform: "meta_google",
-    audience: "Homeowners · 25mi radius",
-    offer: "Free roof inspection",
-    cta: "Book Your Inspection",
-    brandVoice: "Professional, trustworthy, local expert",
-  };
+  const presetBundle = initialPreset ? getDeploymentPreset(initialPreset) : null;
+  const resolvedGoal: DeploymentGoalId =
+    initialGoal ?? presetBundle?.goal ?? "generate_leads";
+
+  const defaultConfig = {
+    ...(context?.prefill ?? {
+      budget: "50",
+      platform: "meta_google",
+      audience: "Homeowners · 25mi radius",
+      offer: "Free roof inspection",
+      cta: "Book Your Inspection",
+      brandVoice: "Professional, trustworthy, local expert",
+    }),
+    ...(presetBundle?.config ?? {}),
+  } satisfies DeploymentConfig;
 
   const [step, setStep] = useState<StepId>(initialStep ?? "goal");
-  const [goalId, setGoalId] = useState<DeploymentGoalId>(initialGoal ?? "generate_leads");
-  const [selectedAgents, setSelectedAgents] = useState<AgentType[]>(() =>
-    initialAgent
-      ? [initialAgent]
-      : initialStack
-        ? [...(AGENT_STACKS.find((s) => s.id === initialStack)?.agents ?? [])]
-        : recommendAgentsForGoal(initialGoal ?? "generate_leads"),
-  );
+  const [goalId, setGoalId] = useState<DeploymentGoalId>(resolvedGoal);
+  const [selectedAgents, setSelectedAgents] = useState<AgentType[]>(() => {
+    if (initialAgent) return [initialAgent];
+    if (presetBundle) return [presetBundle.agent];
+    if (initialStack) {
+      return [...(AGENT_STACKS.find((s) => s.id === initialStack)?.agents ?? [])];
+    }
+    return recommendAgentsForGoal(resolvedGoal);
+  });
   const [customizeStack, setCustomizeStack] = useState(false);
   const [config, setConfig] = useState<DeploymentConfig>(defaultConfig);
   const [skippedReadiness, setSkippedReadiness] = useState<Set<ReadinessCheckId>>(new Set());
-  const [mode, setMode] = useState<AutonomousMode>("guided");
+  const [mode, setMode] = useState<AutonomousMode>(
+    initialMode ?? presetBundle?.defaultMode ?? "guided",
+  );
   const [deployPhase, setDeployPhase] = useState(0);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [deployingTypes, setDeployingTypes] = useState<Set<string>>(new Set());
@@ -151,6 +167,13 @@ export function AgentDeploymentDrawer({
 
   useEffect(() => {
     if (!open) return;
+    if (initialPreset) {
+      const p = getDeploymentPreset(initialPreset);
+      setGoalId(p.goal);
+      setSelectedAgents([p.agent]);
+      setConfig({ ...defaultConfig, ...p.config });
+      setMode(initialMode ?? p.defaultMode);
+    }
     if (initialGoal) setGoalId(initialGoal);
     if (initialStack) {
       const stack = AGENT_STACKS.find((s) => s.id === initialStack);
@@ -162,8 +185,9 @@ export function AgentDeploymentDrawer({
     } else if (initialStep) {
       setStep(initialStep);
     }
-    if (context?.prefill) setConfig(context.prefill);
-  }, [open, initialGoal, initialStack, initialAgent, initialStep, context?.prefill]);
+    if (initialMode) setMode(initialMode);
+    if (!initialPreset && context?.prefill) setConfig({ ...defaultConfig, ...context.prefill });
+  }, [open, initialGoal, initialStack, initialAgent, initialStep, initialPreset, initialMode, context?.prefill]);
 
   function selectGoal(id: DeploymentGoalId) {
     setGoalId(id);

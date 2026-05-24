@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { RetargetingAgentDeploymentPanel } from "@/components/agents/retargeting-agent-deployment-panel";
 import { AiCopilotFab } from "@/components/dashboard/mission-control/ai-copilot-fab";
 import { CommandCenterBell } from "@/components/dashboard/mission-control/command-center-bell";
 import {
@@ -138,6 +139,8 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
 
         <AiCommandBriefing data={data} />
         <RecommendedNextActionCard data={data} />
+
+        <RetargetingAgentDeploymentPanel />
 
         <QuickActionsRow />
 
