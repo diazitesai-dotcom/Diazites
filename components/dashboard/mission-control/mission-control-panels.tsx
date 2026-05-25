@@ -164,8 +164,8 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
   return (
     <motion.div variants={fadeItem} initial="hidden" animate="show">
       <GlassCard
-        title="AI Command Briefing"
-        description="Executive snapshot — what matters right now"
+        title="Executive briefing"
+        description="Deep context behind the CEO Cockpit summary"
         className="border-violet-500/15 shadow-[0_12px_48px_-20px_rgba(139,92,246,0.35)]"
         headerExtra={
           <div className="flex flex-wrap items-center gap-1.5">
@@ -826,7 +826,7 @@ export function AgentPerformanceBoard({ data }: { data: DashboardOverviewData })
                   "mission-shimmer-btn w-full rounded-xl transition-all hover:border-violet-500/30",
                 )}
               >
-                View Results
+                Open workspace
               </Link>
             </GlassCard>
             </div>

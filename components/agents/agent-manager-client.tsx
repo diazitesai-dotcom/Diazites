@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 import { useTransition } from "react";
 import { Bot, CheckCircle2, Clock, Layers, Rocket } from "lucide-react";
 
@@ -9,6 +10,7 @@ import { useAgentDeployment } from "@/components/agents/agent-deployment-provide
 import { AgentLifecycleBadge } from "@/components/agents/agent-lifecycle-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { agentWorkspacePath } from "@/lib/agents/agent-workspace-catalog";
 import { mapDbStatusToLifecycle } from "@/lib/agents/deployment-catalog";
 import { AGENT_PLAYBOOKS } from "@/services/agents/agent-playbooks";
 import { deactivateAgentAction } from "@/services/agents/actions";
@@ -114,6 +116,13 @@ export function AgentManagerClient({ agents }: { agents: AgentRow[] }) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
+                <Link
+                  href={agentWorkspacePath(agent.key)}
+                  className="flex w-full items-center justify-center gap-1 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-sm font-medium text-violet-100 transition-colors hover:bg-violet-500/15"
+                >
+                  Open workspace
+                  <ArrowRight className="size-3.5" />
+                </Link>
                 {isActive ? (
                   <>
                     <p className="text-xs text-muted-foreground">

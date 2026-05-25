@@ -19,7 +19,7 @@ import {
 import { useEffect, useState } from "react";
 
 import {
-  DASHBOARD_NAV_GROUPS,
+  DASHBOARD_NAV,
   PRODUCT_TAGLINE,
   ROUTES,
   type DashboardNavItem,
@@ -142,31 +142,18 @@ export function AppSidebarShell({
     }
 
     return (
-      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-2 py-3">
-        {DASHBOARD_NAV_GROUPS.map((group) => (
-          <div key={group.id}>
-            {!iconOnly ? (
-              <p className="mb-1.5 px-2.5 text-[9px] font-bold uppercase tracking-[0.22em] text-violet-400/70">
-                {group.label}
-              </p>
-            ) : (
-              <div className="mx-auto mb-1 h-px w-8 bg-white/10" aria-hidden />
-            )}
-            <div className="flex flex-col gap-0.5">
-              {group.items.map((item) =>
-                renderNavLink(
-                  {
-                    href: item.href,
-                    label: item.label,
-                    icon: item.icon,
-                    description: item.description,
-                  },
-                  iconOnly,
-                ),
-              )}
-            </div>
-          </div>
-        ))}
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-3">
+        {DASHBOARD_NAV.map((item) =>
+          renderNavLink(
+            {
+              href: item.href,
+              label: item.label,
+              icon: item.icon,
+              description: iconOnly ? undefined : item.description,
+            },
+            iconOnly,
+          ),
+        )}
       </nav>
     );
   };

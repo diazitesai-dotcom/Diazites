@@ -64,126 +64,102 @@ export type DashboardNavGroup = {
   items: DashboardNavItem[];
 };
 
-/** Sidebar groups — operational flow of the Growth OS. */
-export const DASHBOARD_NAV_GROUPS: DashboardNavGroup[] = [
+/** Primary sidebar order — matches Growth OS operational flow. */
+export const DASHBOARD_NAV: DashboardNavItem[] = [
   {
-    id: "operate",
-    label: "Operate",
-    items: [
-      {
-        id: "mission_control",
-        href: ROUTES.missionControl,
-        label: "Mission Control",
-        description: "Global live command center",
-        icon: LayoutDashboard,
-      },
-      {
-        id: "campaign_ops",
-        href: ROUTES.campaignOps,
-        label: "Campaign Ops",
-        description: "Live paid media & platforms",
-        icon: Radar,
-      },
-      {
-        id: "leads_os",
-        href: ROUTES.leadsOs,
-        label: "Leads OS",
-        description: "CRM, pipeline & follow-up",
-        icon: Users,
-      },
-    ],
+    id: "mission_control",
+    href: ROUTES.missionControl,
+    label: "Mission Control",
+    description: "Global live command center",
+    icon: LayoutDashboard,
   },
   {
-    id: "build",
-    label: "Build",
-    items: [
-      {
-        id: "growth_engine",
-        href: ROUTES.growthEngine,
-        label: "Growth Engine",
-        description: "Research → launch pipeline",
-        icon: Sparkles,
-      },
-      {
-        id: "funnel_studio",
-        href: ROUTES.funnelStudio,
-        label: "Funnel Studio",
-        description: "Pages, forms & conversion",
-        icon: Funnel,
-      },
-    ],
+    id: "campaign_ops",
+    href: ROUTES.campaignOps,
+    label: "Campaign Ops",
+    description: "Live paid media & platforms",
+    icon: Radar,
   },
   {
-    id: "autonomous",
-    label: "Autonomous",
-    items: [
-      {
-        id: "agents",
-        href: ROUTES.agents,
-        label: "Agents",
-        description: "Execution, tasks & rollback",
-        icon: Bot,
-      },
-      {
-        id: "optimization_lab",
-        href: ROUTES.optimizationLab,
-        label: "Optimization Lab",
-        description: "Continuous AI tuning",
-        icon: FlaskConical,
-      },
-    ],
+    id: "leads_os",
+    href: ROUTES.leadsOs,
+    label: "Leads OS",
+    description: "CRM, pipeline & follow-up",
+    icon: Users,
   },
   {
-    id: "connect",
-    label: "Connect",
-    items: [
-      {
-        id: "integrations_hub",
-        href: ROUTES.integrationsHub,
-        label: "Integrations Hub",
-        description: "OAuth, APIs & sync",
-        icon: Plug,
-      },
-      {
-        id: "automation_center",
-        href: ROUTES.automationCenter,
-        label: "Automation Center",
-        description: "Workflows & triggers",
-        icon: Webhook,
-      },
-      {
-        id: "approval_center",
-        href: ROUTES.approvalCenter,
-        label: "Approval Center",
-        description: "Oversight & policy",
-        icon: ShieldAlert,
-      },
-    ],
+    id: "growth_engine",
+    href: ROUTES.growthEngine,
+    label: "Growth Engine",
+    description: "Research → launch pipeline",
+    icon: Sparkles,
   },
   {
-    id: "admin",
-    label: "Intelligence",
-    items: [
-      {
-        id: "reports_intelligence",
-        href: ROUTES.reportsIntelligence,
-        label: "Reports & Intelligence",
-        description: "ROAS, pipeline & forecasts",
-        icon: BarChart3,
-      },
-      {
-        id: "organization",
-        href: ROUTES.organization,
-        label: "Organization",
-        description: "Team, billing & security",
-        icon: Building2,
-      },
-    ],
+    id: "funnel_studio",
+    href: ROUTES.funnelStudio,
+    label: "Funnel Studio",
+    description: "Pages, forms & conversion",
+    icon: Funnel,
+  },
+  {
+    id: "agents",
+    href: ROUTES.agents,
+    label: "Agents",
+    description: "Execution, tasks & rollback",
+    icon: Bot,
+  },
+  {
+    id: "optimization_lab",
+    href: ROUTES.optimizationLab,
+    label: "Optimization Lab",
+    description: "Continuous AI tuning",
+    icon: FlaskConical,
+  },
+  {
+    id: "integrations_hub",
+    href: ROUTES.integrationsHub,
+    label: "Integrations Hub",
+    description: "OAuth, APIs & sync",
+    icon: Plug,
+  },
+  {
+    id: "automation_center",
+    href: ROUTES.automationCenter,
+    label: "Automation Center",
+    description: "Workflows & triggers",
+    icon: Webhook,
+  },
+  {
+    id: "approval_center",
+    href: ROUTES.approvalCenter,
+    label: "Approval Center",
+    description: "Oversight & policy",
+    icon: ShieldAlert,
+  },
+  {
+    id: "reports_intelligence",
+    href: ROUTES.reportsIntelligence,
+    label: "Reports & Intelligence",
+    description: "ROAS, pipeline & forecasts",
+    icon: BarChart3,
+  },
+  {
+    id: "organization",
+    href: ROUTES.organization,
+    label: "Organization",
+    description: "Team, billing & security",
+    icon: Building2,
   },
 ];
 
-/** Flat list (legacy consumers). */
-export const DASHBOARD_NAV: DashboardNavItem[] = DASHBOARD_NAV_GROUPS.flatMap((g) => g.items);
+/** Optional grouped view for docs / palettes. */
+export const DASHBOARD_NAV_GROUPS: DashboardNavGroup[] = [
+  { id: "operate", label: "Operate", items: DASHBOARD_NAV.slice(0, 3) },
+  { id: "build", label: "Build", items: DASHBOARD_NAV.slice(3, 5) },
+  { id: "autonomous", label: "Autonomous", items: DASHBOARD_NAV.slice(5, 7) },
+  { id: "connect", label: "Connect", items: DASHBOARD_NAV.slice(7, 10) },
+  { id: "admin", label: "Intelligence", items: DASHBOARD_NAV.slice(10, 12) },
+];
 
 /** Agent roles surfaced across Mission Control and Agents module. */
 export const PLATFORM_AGENT_ROSTER = [

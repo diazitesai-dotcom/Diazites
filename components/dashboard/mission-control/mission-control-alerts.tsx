@@ -29,7 +29,7 @@ function buildAlerts(data: DashboardOverviewData): Alert[] {
     alerts.push({
       id: "ads",
       message: "Ad accounts not connected — estimated 18–32% more leads left on table.",
-      href: "/dashboard/integrations",
+      href: "/dashboard/campaign-ops",
       tone: "amber",
       icon: Plug,
     });

@@ -13,7 +13,7 @@ import {
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { RetargetingAgentDeploymentPanel } from "@/components/agents/retargeting-agent-deployment-panel";
 import { DeployableStacksPanel } from "@/components/dashboard/mission-control/deployable-stacks-panel";
-import { CommandCenterBell } from "@/components/dashboard/mission-control/command-center-bell";
+import { CeoCockpitHero } from "@/components/dashboard/mission-control/ceo-cockpit-hero";
 import {
   AccountConnectionCenter,
   AgentPerformanceBoard,
@@ -42,7 +42,6 @@ import { MissionControlAlerts } from "@/components/dashboard/mission-control/mis
 import { RuntimeOverview } from "@/components/dashboard/mission-control/runtime-overview";
 import { InboundVelocityChart } from "@/components/dashboard/mission-control/inbound-velocity-chart";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { PageHeader } from "@/components/layout/page-header";
 import type { DashboardOverviewData } from "@/lib/dashboard/load-dashboard-overview";
 import type { SystemModuleContext } from "@/lib/dashboard/system-module-types";
 import { fadeItem } from "@/lib/motion";
@@ -168,22 +167,17 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
   return (
     <>
       <div className="relative mx-auto max-w-7xl space-y-10 pb-24">
+        <CeoCockpitHero data={data} />
+
+        <MissionControlAlerts data={data} />
+
         <RuntimeOverview
           flow={data.orchestrationFlow}
           stackHealth={data.stackHealth}
           moduleContext={buildModuleContext(data)}
         />
 
-        <MissionControlAlerts data={data} />
-
         <AgentPerformanceBoard data={data} />
-
-        <PageHeader
-          eyebrow="Mission Control"
-          title="Global live command center"
-          description="Everything happening right now — system map, KPIs, agent activity, campaign health, lead velocity, approvals, and AI recommendations."
-          actions={<CommandCenterBell items={data.commandCenter} />}
-        />
 
         <AiCommandBriefing data={data} />
         <RevenueCommandCenterRow data={data.revenueCommandCenter} />

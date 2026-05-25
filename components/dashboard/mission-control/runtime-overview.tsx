@@ -44,9 +44,9 @@ export function RuntimeOverview({
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">Live system map</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Operations map</h2>
             <p className="text-sm text-muted-foreground">
-              Interactive AI operations graph — click any node for the System Inspector.
+              Live AI growth stack — click any node to inspect metrics, logs, and agent reasoning.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

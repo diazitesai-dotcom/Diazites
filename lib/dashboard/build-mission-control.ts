@@ -528,7 +528,7 @@ export function buildMissionControlPayload(input: {
       resultMetric:
         status === "active" ? `${count} ${meta.metric}` : "Not deployed",
       lastActivity: status === "active" ? "Just now" : status === "pending" ? "Provisioning" : "—",
-      href: "/dashboard/agents",
+      href: `/dashboard/agents/${def.key}`,
       executionCount: status === "active" ? Math.max(count, 1) * 3 + 2 : 0,
       resultRate:
         status === "active"

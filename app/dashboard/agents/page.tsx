@@ -45,7 +45,7 @@ export default async function AgentManagerPage() {
       <PageHeader
         eyebrow="Agents"
         title="Autonomous execution layer"
-        description="Active agents, task queues, AI reasoning, execution logs, permissions, memory, rollback, and approval states — the core of your growth operating system."
+        description="Each agent opens a drill-down workspace — queue, logs, AI reasoning, campaign ownership, scoring, and approvals — not just summary cards."
       />
       <ModulePurpose
         title="Agent operations"
