@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { CinematicVideo } from "@/components/CinematicVideo";
 import { MarketingNavbar } from "@/components/layout/marketing-navbar";
 import { HomeHero } from "@/components/marketing/home-hero";
 import {
@@ -13,6 +14,7 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <MarketingNavbar />
       <HomeHero />
+      <CinematicVideo />
       <MarketingPlatformSection />
       <MarketingModulesSection />
 

@@ -17,11 +17,11 @@ const stats = [
 
 export function HomeHero() {
   return (
-    <section className="relative overflow-hidden border-b border-white/[0.06]">
+    <section className="relative min-h-[min(92vh,880px)] overflow-hidden border-b border-white/[0.06]">
       <HeroBackgroundVideo />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(139,92,246,0.22),transparent)] dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(139,92,246,0.28),transparent)]" />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.65] dark:surface-grid dark:opacity-100" />
-      <div className="pointer-events-none absolute inset-0 opacity-40 dark:opacity-60 surface-grid-light dark:hidden" />
+      <div className="pointer-events-none absolute inset-0 opacity-30 dark:surface-grid dark:opacity-50" />
+      <div className="pointer-events-none absolute inset-0 opacity-20 dark:opacity-35 surface-grid-light dark:hidden" />
 
       <div className="relative mx-auto flex max-w-6xl flex-col gap-16 px-4 pb-24 pt-16 sm:px-6 md:pb-32 md:pt-24">
         <motion.div
