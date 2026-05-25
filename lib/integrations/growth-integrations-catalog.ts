@@ -72,6 +72,8 @@ const PLATFORMS: PlatformDef[] = [
   { id: "angi", name: "Angi Ads", categoryId: "local_smb", agentType: "paid_ads" },
   { id: "alignable", name: "Alignable", categoryId: "local_smb", agentType: "paid_ads" },
   { id: "yellowpages", name: "Yellow Pages Digital", categoryId: "local_smb", agentType: "paid_ads" },
+  { id: "facebook_marketplace", name: "Facebook Marketplace", categoryId: "local_smb", agentType: "paid_ads", subchannels: ["Listings", "Local leads", "Messaging"] },
+  { id: "craigslist", name: "Craigslist", categoryId: "local_smb", agentType: "paid_ads", subchannels: ["Classifieds", "Local reach"] },
   { id: "hubspot", name: "HubSpot", categoryId: "crm", agentType: "crm" },
   { id: "ghl", name: "GoHighLevel", categoryId: "crm", agentType: "crm" },
   { id: "salesforce", name: "Salesforce", categoryId: "crm", agentType: "crm" },

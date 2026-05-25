@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { sanitizeDashboardWebsitePreset } from "@/lib/dashboard/sanitize-preset-url";
 import { requireAuth } from "@/lib/auth/session";
 import { fail, ok, type ServiceResult } from "@/lib/result";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -50,7 +51,10 @@ export async function startEngineRunAction(
   }
 
   const input: EngineInputPayload = {
-    websiteUrl: pickString(formData.get("website_url")) ?? business.website ?? undefined,
+    websiteUrl:
+      sanitizeDashboardWebsitePreset(pickString(formData.get("website_url"))) ||
+      sanitizeDashboardWebsitePreset(business.website) ||
+      undefined,
     businessName: pickString(formData.get("business_name")) ?? business.name ?? undefined,
     niche: pickString(formData.get("niche")) ?? undefined,
     goal: pickString(formData.get("goal")) ?? undefined,

@@ -37,7 +37,13 @@ export function BusinessIntakeForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field name="website_url" label="Website URL" defaultValue={intake.websiteUrl} required />
+        <Field
+          name="website_url"
+          label="Website URL"
+          defaultValue={intake.websiteUrl}
+          placeholder="https://yourbusiness.com"
+          required
+        />
         <Field name="business_name" label="Business name" defaultValue={intake.businessName} />
         <Field name="niche" label="Industry / niche" defaultValue={intake.niche} />
         <Field name="location" label="Location" defaultValue={intake.location} />
@@ -45,7 +51,12 @@ export function BusinessIntakeForm() {
         <Field name="goal" label="Goal / offer" defaultValue={intake.goal} />
         <Field name="target_audience" label="Target audience" defaultValue={intake.targetAudience} />
         <Field name="revenue_target" label="Revenue target" defaultValue={intake.revenueTarget} />
-        <Field name="traffic_source" label="Preferred traffic sources" defaultValue={intake.trafficSources} />
+        <Field
+          name="traffic_source"
+          label="Preferred traffic sources"
+          defaultValue={intake.trafficSources}
+          placeholder="Meta Ads, Google Ads, Facebook Marketplace, Craigslist"
+        />
         <Field name="crm_destination" label="CRM destination" defaultValue={intake.crmDestination} />
         <Field name="landing_style" label="Landing page style" defaultValue={intake.landingStyle} />
         <Field name="brand_tone" label="Brand tone" defaultValue={intake.brandTone} />
@@ -74,12 +85,14 @@ function Field({
   name,
   label,
   defaultValue,
+  placeholder,
   type = "text",
   required,
 }: {
   name: string;
   label: string;
   defaultValue?: string | number;
+  placeholder?: string;
   type?: string;
   required?: boolean;
 }) {
@@ -87,7 +100,14 @@ function Field({
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} name={name} type={type} defaultValue={defaultValue} required={required} />
+      <Input
+        id={id}
+        name={name}
+        type={type}
+        defaultValue={defaultValue}
+        placeholder={placeholder}
+        required={required}
+      />
     </div>
   );
 }

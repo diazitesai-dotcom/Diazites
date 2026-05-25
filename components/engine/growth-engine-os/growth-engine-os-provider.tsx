@@ -20,7 +20,11 @@ import type {
   GrowthEngineOsConfig,
   PipelineStageView,
 } from "@/lib/engine/growth-engine-os-types";
+import { sanitizeDashboardWebsitePreset } from "@/lib/dashboard/sanitize-preset-url";
 import { DEFAULT_OS_CONFIG } from "@/lib/engine/growth-engine-os-types";
+
+const DEFAULT_TRAFFIC_SOURCES =
+  "Meta Ads, Google Ads, Facebook Marketplace, Craigslist";
 import type { CostForecast } from "@/lib/engine/growth-engine-os-types";
 import type { EngineDeploymentTarget } from "@/lib/engine/growth-engine-os-types";
 
@@ -53,7 +57,7 @@ export function GrowthEngineOsProvider({
 }) {
   const [config, setConfig] = useState<GrowthEngineOsConfig>(DEFAULT_OS_CONFIG);
   const [intake, setIntakeState] = useState<BusinessIntakeFields>({
-    websiteUrl: defaults.websiteUrl ?? "",
+    websiteUrl: sanitizeDashboardWebsitePreset(defaults.websiteUrl),
     businessName: defaults.businessName ?? "",
     niche: defaults.niche ?? "",
     location: defaults.location ?? "",
@@ -61,7 +65,7 @@ export function GrowthEngineOsProvider({
     goal: defaults.goal ?? "",
     targetAudience: defaults.targetAudience ?? "",
     revenueTarget: defaults.revenueTarget ?? "",
-    trafficSources: defaults.trafficSources ?? "",
+    trafficSources: defaults.trafficSources ?? DEFAULT_TRAFFIC_SOURCES,
     competitors: defaults.competitors ?? "",
     painPoints: defaults.painPoints ?? "",
     usp: defaults.usp ?? "",

@@ -35,7 +35,12 @@ export type EngineAgentKey =
   | "retargeting"
   | "compliance";
 
-export type DeploymentGroupId = "paid_ads" | "crm" | "analytics" | "ecommerce";
+export type DeploymentGroupId =
+  | "paid_ads"
+  | "marketplaces"
+  | "crm"
+  | "analytics"
+  | "ecommerce";
 
 export type EngineDeploymentTarget = {
   id: string;
@@ -186,7 +191,7 @@ export const DEFAULT_OS_CONFIG: GrowthEngineOsConfig = {
     "analytics",
     "optimization",
   ],
-  selectedPlatforms: ["meta", "google_ads", "ga4", "hubspot"],
+  selectedPlatforms: ["meta", "google_ads", "facebook_marketplace", "craigslist", "ga4", "hubspot"],
   policy: {
     dailySpendCap: 25,
     campaignSpendCap: 150,

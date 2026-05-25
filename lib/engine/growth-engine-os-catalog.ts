@@ -6,6 +6,7 @@ import type {
 
 export const ENGINE_DEPLOYMENT_GROUPS: { id: DeploymentGroupId; label: string }[] = [
   { id: "paid_ads", label: "Paid Ads" },
+  { id: "marketplaces", label: "Marketplaces & Listings" },
   { id: "crm", label: "CRM" },
   { id: "analytics", label: "Tracking / Analytics" },
   { id: "ecommerce", label: "Ecommerce / Payments" },
@@ -28,6 +29,18 @@ const TARGET_DEFS: Omit<EngineDeploymentTarget, "status" | "lastSync">[] = [
   { id: "hulu_ads", name: "Hulu Ads", groupId: "paid_ads", permissions: ["ctv", "streaming"] },
   { id: "taboola", name: "Taboola", groupId: "paid_ads", permissions: ["native", "publishers"] },
   { id: "outbrain", name: "Outbrain", groupId: "paid_ads", permissions: ["native", "content"] },
+  {
+    id: "facebook_marketplace",
+    name: "Facebook Marketplace",
+    groupId: "marketplaces",
+    permissions: ["listings", "local_leads", "messaging"],
+  },
+  {
+    id: "craigslist",
+    name: "Craigslist",
+    groupId: "marketplaces",
+    permissions: ["classified_posts", "local_reach", "lead_replies"],
+  },
   { id: "ghl", name: "GoHighLevel", groupId: "crm", permissions: ["contacts", "pipelines", "workflows"] },
   { id: "hubspot", name: "HubSpot", groupId: "crm", permissions: ["deals", "contacts", "forms"] },
   { id: "salesforce", name: "Salesforce", groupId: "crm", permissions: ["leads", "opportunities"] },
@@ -57,7 +70,7 @@ export const ENGINE_AGENTS: EngineAgentDefinition[] = [
   { key: "offer", label: "Offer Agent", purpose: "Positioning, offer structure, and CTA strategy", tools: ["Research DB"], defaultEnabled: true, estimatedCostUsd: 0.35, riskLevel: "low" },
   { key: "funnel", label: "Funnel Agent", purpose: "Blueprint traffic → capture → nurture flows", tools: ["Funnel Builder"], defaultEnabled: true, estimatedCostUsd: 0.4, riskLevel: "low" },
   { key: "landing", label: "Landing Page Agent", purpose: "Generate, test, and deploy landing variants", tools: ["Landing Stack"], defaultEnabled: true, estimatedCostUsd: 0.55, riskLevel: "medium" },
-  { key: "ads", label: "Ads Agent", purpose: "Campaign structure, budgets, and channel launch", tools: ["Meta", "Google", "TikTok"], defaultEnabled: true, estimatedCostUsd: 0.5, riskLevel: "high" },
+  { key: "ads", label: "Ads Agent", purpose: "Campaign structure, budgets, and channel launch", tools: ["Meta", "Google", "Marketplace", "Craigslist"], defaultEnabled: true, estimatedCostUsd: 0.5, riskLevel: "high" },
   { key: "creative", label: "Creative Agent", purpose: "Ad copy, images, hooks, and variant generation", tools: ["Creative Suite"], defaultEnabled: true, estimatedCostUsd: 0.6, riskLevel: "medium" },
   { key: "crm", label: "CRM Agent", purpose: "Lead sync, scoring, pipeline updates", tools: ["HubSpot", "GHL"], defaultEnabled: true, estimatedCostUsd: 0.25, riskLevel: "medium" },
   { key: "followup", label: "Follow-Up Agent", purpose: "Email/SMS sequences and nurture timing", tools: ["Klaviyo", "Twilio"], defaultEnabled: true, estimatedCostUsd: 0.3, riskLevel: "medium" },

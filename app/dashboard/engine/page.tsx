@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
+import { sanitizeDashboardWebsitePreset } from "@/lib/dashboard/sanitize-preset-url";
 import { cn } from "@/lib/utils";
 import {
   getActiveEngineRun,
@@ -80,7 +81,7 @@ export default async function EnginePage() {
     <GrowthEngineOsClient
       businessName={business.name}
       businessDefaults={{
-        websiteUrl: business.website,
+        websiteUrl: sanitizeDashboardWebsitePreset(business.website),
         location: business.city_state,
         niche: business.services,
         budget: business.monthly_budget,

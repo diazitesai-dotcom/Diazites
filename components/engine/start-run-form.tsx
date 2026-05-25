@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { sanitizeDashboardWebsitePreset } from "@/lib/dashboard/sanitize-preset-url";
 import { startEngineRunAction } from "@/services/engine/actions";
 
 type StartRunFormProps = {
@@ -41,7 +42,7 @@ export function StartRunForm({ defaults }: StartRunFormProps) {
           name="website_url"
           label="Website URL"
           placeholder="https://example.com"
-          defaultValue={defaults?.websiteUrl ?? ""}
+          defaultValue={sanitizeDashboardWebsitePreset(defaults?.websiteUrl)}
         />
         <Field
           name="niche"
@@ -76,7 +77,7 @@ export function StartRunForm({ defaults }: StartRunFormProps) {
       <Field
         name="traffic_source"
         label="Primary traffic source"
-        placeholder="Meta Ads, Google Ads, TikTok…"
+        placeholder="Meta Ads, Google Ads, Facebook Marketplace, Craigslist…"
       />
 
       {error ? (

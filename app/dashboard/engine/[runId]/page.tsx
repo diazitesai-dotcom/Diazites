@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { createEngineRepository, type AssetRow } from "@/repositories/engine.repository";
+import { sanitizeDashboardWebsitePreset } from "@/lib/dashboard/sanitize-preset-url";
 import { getEngineRunForOwner } from "@/services/engine/run-management.service";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,10 @@ export default async function EngineRunDetailPage({ params }: PageProps) {
   return (
     <GrowthEngineOsProvider
       connectedIds={connectedIds}
-      defaults={{ businessName: business.name, websiteUrl: business.website ?? "" }}
+      defaults={{
+        businessName: business.name,
+        websiteUrl: sanitizeDashboardWebsitePreset(business.website),
+      }}
     >
       <EngineWorkspaceClient run={run} assets={assets} businessName={business.name} />
     </GrowthEngineOsProvider>

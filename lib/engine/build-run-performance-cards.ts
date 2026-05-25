@@ -1,3 +1,4 @@
+import { sanitizeDashboardWebsitePreset } from "@/lib/dashboard/sanitize-preset-url";
 import { runStageProgressPercent } from "@/lib/engine/build-pipeline-stages";
 import type { RunPerformanceCard } from "@/lib/engine/growth-engine-os-types";
 import type { EngineRunRow } from "@/repositories/engine.repository";
@@ -20,7 +21,7 @@ export function buildRunPerformanceCards(
     return {
       id: run.id,
       businessName,
-      websiteUrl: input.websiteUrl ?? null,
+      websiteUrl: sanitizeDashboardWebsitePreset(input.websiteUrl) || null,
       status: run.status,
       currentStep: run.current_step,
       stageProgress: runStageProgressPercent(run),
