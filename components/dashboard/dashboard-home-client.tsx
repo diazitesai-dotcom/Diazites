@@ -40,6 +40,12 @@ import { GrowthOrchestrationTimeline } from "@/components/dashboard/mission-cont
 import { CredentialVaultPanel } from "@/components/dashboard/mission-control/credential-vault-panel";
 import { LandingStackManager } from "@/components/dashboard/mission-control/landing-stack-manager";
 import { RevenueCommandCenterRow } from "@/components/dashboard/mission-control/revenue-command-center";
+import { AgentRevenueCards } from "@/components/revenue/agent-revenue-cards";
+import { RevenueAttributionProvider } from "@/components/revenue/revenue-attribution-context";
+import { RevenueBreakdownDrawer } from "@/components/revenue/revenue-breakdown-drawer";
+import { RevenueRecommendations } from "@/components/revenue/revenue-recommendations";
+import { RevenueSourcesWidget } from "@/components/revenue/revenue-sources-widget";
+import { RevenueTimeline } from "@/components/revenue/revenue-timeline";
 import { MissionControlAlerts } from "@/components/dashboard/mission-control/mission-control-alerts";
 import { RuntimeOverview } from "@/components/dashboard/mission-control/runtime-overview";
 import { InboundVelocityChart } from "@/components/dashboard/mission-control/inbound-velocity-chart";
@@ -167,7 +173,8 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
   };
 
   return (
-    <>
+    <RevenueAttributionProvider attribution={data.revenueAttribution}>
+      <RevenueBreakdownDrawer />
       <div className="relative mx-auto max-w-7xl space-y-10 pb-24">
         <CeoCockpitHero data={data} />
 
@@ -189,6 +196,12 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
 
         <AiCommandBriefing data={data} />
         <RevenueCommandCenterRow data={data.revenueCommandCenter} />
+        <section className="grid gap-6 lg:grid-cols-2">
+          <RevenueSourcesWidget />
+          <RevenueTimeline />
+        </section>
+        <AgentRevenueCards />
+        <RevenueRecommendations />
         <RecommendedNextActionCard data={data} />
 
         <RetargetingAgentDeploymentPanel />
@@ -286,6 +299,6 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
           <AccountConnectionCenter data={data} />
         </section>
       </div>
-    </>
+    </RevenueAttributionProvider>
   );
 }

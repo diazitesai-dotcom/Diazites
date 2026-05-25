@@ -12,11 +12,13 @@ import {
 import { StatCard } from "@/components/dashboard/stat-card";
 import { PageHeader } from "@/components/layout/page-header";
 import { PerformanceChart } from "@/components/reports/performance-chart";
+import { RevenueIntelligenceSection } from "@/components/reports/revenue-intelligence-section";
 import type { DashboardMetrics } from "@/types/backend";
 import type {
   ReportChartPoint,
   ReportsExtraMetrics,
 } from "@/lib/dashboard/load-reports-page";
+import type { RevenueAttributionSnapshot } from "@/types/revenue-attribution";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -35,10 +37,12 @@ export function ReportsPageClient({
   metrics,
   extra,
   chartSeries,
+  revenueAttribution,
 }: {
   metrics: DashboardMetrics | null;
   extra: ReportsExtraMetrics;
   chartSeries: ReportChartPoint[];
+  revenueAttribution: RevenueAttributionSnapshot | null;
 }) {
   // Derive a true "Conversion Rate" preferring visitors / leads when we have
   // visitor data; fall back to the reporting service's existing conversionRate
@@ -107,6 +111,8 @@ export function ReportsPageClient({
           <StatCard key={k.label} {...k} />
         ))}
       </section>
+
+      {revenueAttribution ? <RevenueIntelligenceSection attribution={revenueAttribution} /> : null}
 
       <PerformanceChart data={chartSeries} />
     </div>

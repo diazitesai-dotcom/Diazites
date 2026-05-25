@@ -4,6 +4,8 @@ import { Suspense } from "react";
 
 import { AdsCommandCenterClient } from "@/components/ads/adops/ads-command-center-client";
 import { CampaignsTable } from "@/components/dashboard/campaigns-table";
+import { AttributedCampaignsTable } from "@/components/revenue/attributed-campaigns-table";
+import type { CampaignAttributionRow } from "@/types/revenue-attribution";
 import { ModulePurpose } from "@/components/layout/module-purpose";
 import { PageHeader } from "@/components/layout/page-header";
 import type { AdopsPagePayload } from "@/lib/ads/adops-types";
@@ -12,6 +14,7 @@ import type { CampaignRow } from "@/lib/dashboard/load-campaigns-page";
 type CampaignOpsClientProps = {
   payload: AdopsPagePayload;
   registryCampaigns: CampaignRow[];
+  attributedCampaigns: CampaignAttributionRow[];
   zapierEvents: { type: string; label: string; description: string }[];
   zapierRules: { id: string; name: string; triggerEvent: string; url: string; enabled: boolean }[];
   zernioConfigured: boolean;
@@ -20,6 +23,7 @@ type CampaignOpsClientProps = {
 export function CampaignOpsClient({
   payload,
   registryCampaigns,
+  attributedCampaigns,
   zapierEvents,
   zapierRules,
   zernioConfigured,
@@ -45,6 +49,16 @@ export function CampaignOpsClient({
         zernioConfigured={zernioConfigured}
         embedded
       />
+
+      <section className="mx-auto max-w-7xl space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          Revenue by campaign
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Spend, funnel, closed deals, profit, and return on ad spend — trace every dollar to a campaign.
+        </p>
+        <AttributedCampaignsTable campaigns={attributedCampaigns} />
+      </section>
 
       <section className="mx-auto max-w-7xl space-y-3 pb-16">
         <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">

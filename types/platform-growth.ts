@@ -56,7 +56,14 @@ export type CrmPipelineStageId =
 export type TaskStatus = "pending" | "in_progress" | "completed" | "overdue";
 export type TaskPriority = "low" | "medium" | "high";
 
+import type { AttributionModel } from "@/types/revenue-attribution";
+
 export type BusinessProfile = {
+  attributionModel?: AttributionModel;
+  /** Shopify store domain, e.g. my-store.myshopify.com */
+  shopifyShopDomain?: string;
+  /** Per-store webhook signing secret from Shopify admin */
+  shopifyWebhookSecret?: string;
   industry?: string;
   businessType?: string;
   businessEmail?: string;

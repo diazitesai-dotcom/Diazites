@@ -41,13 +41,24 @@ const KPI_CONFIG: {
   },
   {
     key: "roas",
-    label: "ROAS",
+    label: "Return on ad spend",
     icon: LineChart,
     format: (r) => (r.roas != null ? `${r.roas.toFixed(1)}×` : "—"),
     accent: "text-cyan-200",
   },
-  { key: "revenue", label: "Revenue", icon: DollarSign, format: (r) => formatMoney(r.revenue), accent: "text-emerald-300" },
-  { key: "pipeline", label: "Pipeline", icon: LineChart, format: (r) => formatMoney(r.pipeline) },
+  {
+    key: "revenue",
+    label: "Money generated",
+    icon: DollarSign,
+    format: (r) => formatMoney(r.revenue),
+    accent: "text-emerald-300",
+  },
+  {
+    key: "pipeline",
+    label: "Potential sales",
+    icon: LineChart,
+    format: (r) => formatMoney(r.pipeline),
+  },
   { key: "appointments", label: "Appointments", icon: CalendarCheck, format: (r) => String(r.appointments) },
   { key: "closedDeals", label: "Closed deals", icon: Handshake, format: (r) => String(r.closedDeals) },
 ];
@@ -57,7 +68,7 @@ export function RevenueCommandCenterRow({ data }: { data: RevenueCommandCenter }
     <motion.div variants={fadeItem} initial="hidden" animate="show">
       <GlassCard
         title="Revenue Command Center"
-        description="Money-first KPIs — what buyers care about"
+        description="Money generated from tracked leads and closed deals — spend, profit, and return on ad spend"
         headerExtra={
           <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-200">
             Live

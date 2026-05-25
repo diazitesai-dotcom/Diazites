@@ -12,10 +12,10 @@ import {
   Target,
   TrendingDown,
   TrendingUp,
-  Wallet,
   Zap,
 } from "lucide-react";
 
+import { CeoRevenueKpi } from "@/components/revenue/ceo-revenue-kpi";
 import { CommandCenterBell } from "@/components/dashboard/mission-control/command-center-bell";
 import { ApprovalStateBadge } from "@/components/dashboard/mission-control/approval-state-badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -80,7 +80,7 @@ type TopKpi = {
   value: string;
   sub: string;
   href: string;
-  icon: typeof Wallet;
+  icon: typeof LineChart;
   accent?: string;
   trend?: "up" | "down" | "neutral";
   trendPercent?: number;
@@ -146,17 +146,9 @@ export function CeoCockpitHero({ data }: { data: DashboardOverviewData }) {
 
   const topKpis: TopKpi[] = [
     {
-      label: "Revenue",
-      value: formatMoney(rev.revenue),
-      sub: "Attributed",
-      href: ROUTES.reportsIntelligence,
-      icon: Wallet,
-      accent: "text-emerald-300",
-    },
-    {
       label: "Pipeline",
       value: formatMoney(rev.pipeline),
-      sub: `${rev.appointments} appts · ${rev.closedDeals} closed`,
+      sub: "Potential sales value from leads not closed yet",
       href: ROUTES.leadsOs,
       icon: LineChart,
       accent: "text-cyan-300",
@@ -253,9 +245,12 @@ export function CeoCockpitHero({ data }: { data: DashboardOverviewData }) {
           Top KPIs
         </p>
         <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 scrollbar-thin md:grid md:grid-cols-7 md:overflow-visible">
+          <div className="shrink-0 md:shrink md:min-w-0">
+            <CeoRevenueKpi index={0} />
+          </div>
           {topKpis.map((kpi, i) => (
             <div key={kpi.label} className="shrink-0 md:shrink md:min-w-0">
-              <TopKpiCard kpi={kpi} index={i} />
+              <TopKpiCard kpi={kpi} index={i + 1} />
             </div>
           ))}
         </div>

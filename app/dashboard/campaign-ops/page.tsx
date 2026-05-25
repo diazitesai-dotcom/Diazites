@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildAdopsPayload } from "@/lib/ads/build-adops-payload";
 import { loadCampaignsPageData } from "@/lib/dashboard/load-campaigns-page";
+import { loadRevenueAttribution } from "@/lib/revenue/load-revenue-attribution";
 import { isZernioConfigured } from "@/lib/zernio";
 import { cn } from "@/lib/utils";
 import { requireAuth } from "@/lib/auth/session";
@@ -63,13 +64,15 @@ export default async function CampaignOpsPage() {
   const campaignsRepo = createAdCampaignRepository(supabase);
   const engineRepo = createEngineRepository(supabase);
 
-  const [accountsRes, campaignsRes, activeRunRes, zapierRulesRes, registry] = await Promise.all([
-    accountsRepo.listByBusiness(business.id),
-    campaignsRepo.listByBusiness(business.id, 50),
-    getActiveEngineRun(supabase, business.id),
-    listZapierRulesForBusiness(supabase, business.id),
-    loadCampaignsPageData(),
-  ]);
+  const [accountsRes, campaignsRes, activeRunRes, zapierRulesRes, registry, revenueAttribution] =
+    await Promise.all([
+      accountsRepo.listByBusiness(business.id),
+      campaignsRepo.listByBusiness(business.id, 50),
+      getActiveEngineRun(supabase, business.id),
+      listZapierRulesForBusiness(supabase, business.id),
+      loadCampaignsPageData(),
+      loadRevenueAttribution(supabase, user.id, business.id),
+    ]);
 
   const accounts = (accountsRes.data ?? []) as AdAccountRow[];
   const campaigns = (campaignsRes.data ?? []) as AdCampaignRow[];
@@ -101,6 +104,7 @@ export default async function CampaignOpsPage() {
     <CampaignOpsClient
       payload={payload}
       registryCampaigns={registry.campaigns}
+      attributedCampaigns={revenueAttribution.campaigns}
       zapierEvents={ZAPIER_SUBSCRIBABLE_EVENTS.map((e) => ({
         type: e.type as string,
         label: e.label,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { env } from "@/lib/env";
+import { handleStripeRevenueEvent } from "@/lib/revenue/stripe-revenue-events";
 import { requireStripe } from "@/lib/stripe";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
@@ -45,11 +46,20 @@ export async function POST(request: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as import("stripe").Stripe.Checkout.Session;
-        if (session.mode !== "subscription") break;
-        const subId = session.subscription;
-        if (typeof subId !== "string") break;
-        const subscription = await stripe.subscriptions.retrieve(subId);
-        await syncSubscriptionToBilling(supabase, subscription, session.metadata);
+        if (session.mode === "subscription") {
+          const subId = session.subscription;
+          if (typeof subId === "string") {
+            const subscription = await stripe.subscriptions.retrieve(subId);
+            await syncSubscriptionToBilling(supabase, subscription, session.metadata);
+          }
+        } else {
+          await handleStripeRevenueEvent(supabase, event);
+        }
+        break;
+      }
+      case "payment_intent.succeeded":
+      case "invoice.paid": {
+        await handleStripeRevenueEvent(supabase, event);
         break;
       }
       case "customer.subscription.created":

@@ -37,6 +37,8 @@ export const env = {
   STRIPE_PRICE_STARTER: getEnv("STRIPE_PRICE_STARTER"),
   STRIPE_PRICE_GROWTH: getEnv("STRIPE_PRICE_GROWTH"),
   STRIPE_PRICE_DOMINATION: getEnv("STRIPE_PRICE_DOMINATION"),
+  /** Optional global Shopify webhook secret (per-store secret can live in business profile) */
+  SHOPIFY_WEBHOOK_SECRET: getEnv("SHOPIFY_WEBHOOK_SECRET"),
   /** SMS — Twilio primary */
   TWILIO_ACCOUNT_SID: getEnv("TWILIO_ACCOUNT_SID"),
   TWILIO_AUTH_TOKEN: getEnv("TWILIO_AUTH_TOKEN"),

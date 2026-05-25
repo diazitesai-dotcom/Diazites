@@ -36,6 +36,7 @@ export default async function ReportsPage() {
       metrics={loaded.metrics}
       extra={loaded.extra}
       chartSeries={loaded.chartSeries}
+      revenueAttribution={loaded.revenueAttribution}
     />
   );
 }

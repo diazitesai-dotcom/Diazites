@@ -4,8 +4,10 @@ import { createBusinessRepository } from "@/repositories/business.repository";
 import { createEngineEventRepository } from "@/repositories/engine-telemetry.repository";
 import { createLeadRepository } from "@/repositories/lead.repository";
 import { createReportRepository } from "@/repositories/report.repository";
+import { loadRevenueAttribution } from "@/lib/revenue/load-revenue-attribution";
 import { getDashboardMetrics } from "@/services/reporting/reporting.service";
 import type { DashboardMetrics } from "@/types/backend";
+import type { RevenueAttributionSnapshot } from "@/types/revenue-attribution";
 
 export type ReportChartPoint = {
   month: string;
@@ -25,6 +27,7 @@ export async function loadReportsPageData(): Promise<{
   metrics: DashboardMetrics | null;
   extra: ReportsExtraMetrics;
   chartSeries: ReportChartPoint[];
+  revenueAttribution: RevenueAttributionSnapshot | null;
   hasBusiness: boolean;
 } | null> {
   const user = await requireAuth();
@@ -32,7 +35,13 @@ export async function loadReportsPageData(): Promise<{
   const businesses = createBusinessRepository(supabase);
   const { data: business } = await businesses.getByOwnerUserId(user.id);
   if (!business) {
-    return { hasBusiness: false, metrics: null, extra: { visitors: 0, bookedCalls: 0 }, chartSeries: [] };
+    return {
+      hasBusiness: false,
+      metrics: null,
+      extra: { visitors: 0, bookedCalls: 0 },
+      chartSeries: [],
+      revenueAttribution: null,
+    };
   }
 
   const metricsResult = await getDashboardMetrics(supabase, user.id, business.id, 30);
@@ -95,5 +104,7 @@ export async function loadReportsPageData(): Promise<{
     });
   }
 
-  return { hasBusiness: true, metrics, extra: { visitors, bookedCalls }, chartSeries };
+  const revenueAttribution = await loadRevenueAttribution(supabase, user.id, business.id);
+
+  return { hasBusiness: true, metrics, extra: { visitors, bookedCalls }, chartSeries, revenueAttribution };
 }

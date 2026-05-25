@@ -10,7 +10,9 @@ import { OrganizationShell, type OrganizationTab } from "@/components/organizati
 import { TeamManager } from "@/components/team/team-manager";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPublicAppUrl } from "@/lib/env";
 import { cn } from "@/lib/utils";
+import type { BusinessProfile } from "@/types/platform-growth";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createBusinessRepository } from "@/repositories/business.repository";
@@ -115,7 +117,13 @@ export default async function OrganizationPage({
               notice={notice}
             />
           ) : null}
-          {tab === "settings" ? <OrganizationSettingsPanel /> : null}
+          {tab === "settings" ? (
+            <OrganizationSettingsPanel
+              businessId={business.id}
+              profile={(business.profile ?? {}) as BusinessProfile}
+              appUrl={getPublicAppUrl()}
+            />
+          ) : null}
           {tab === "security" ? (
             <OrganizationPlaceholderPanel
               title="Security"

@@ -33,8 +33,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAgentRepository } from "@/repositories/agent.repository";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { createSystemEventRepository } from "@/repositories/system-event.repository";
+import { loadRevenueAttribution } from "@/lib/revenue/load-revenue-attribution";
 import { getDashboardMetrics } from "@/services/reporting/reporting.service";
 import { EVENT_TYPES } from "@/types/backend";
+import type { RevenueAttributionSnapshot } from "@/types/revenue-attribution";
 import { AGENTS } from "@/utils/constants";
 
 function humanizeEventType(eventType: string): string {
@@ -186,6 +188,7 @@ export type DashboardOverviewData = {
   commandCenter: CommandCenterItem[];
   kpiInsights: KpiInsight[];
   diagnostics: AiDiagnostic[];
+  revenueAttribution: RevenueAttributionSnapshot;
 };
 
 export async function loadDashboardOverview(): Promise<DashboardOverviewData | null> {
@@ -331,6 +334,8 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
   const billingActive =
     billingRow?.payment_status === "active" || billingRow?.payment_status === "trialing";
 
+  const revenueAttribution = await loadRevenueAttribution(supabase, user.id, business.id);
+
   const mission = buildMissionControlPayload({
     metrics,
     bookedOrWonCount: bookedOrWonCount ?? 0,
@@ -347,6 +352,20 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     crmConnected: true,
   });
 
+  mission.revenueCommandCenter = {
+    spend: revenueAttribution.totals.spend,
+    leads: revenueAttribution.totals.leads,
+    cpl:
+      revenueAttribution.totals.leads > 0
+        ? revenueAttribution.totals.spend / revenueAttribution.totals.leads
+        : metrics?.costPerLead ?? null,
+    roas: revenueAttribution.totals.roas ?? metrics?.roi ?? null,
+    revenue: revenueAttribution.totals.revenue,
+    pipeline: revenueAttribution.totals.pipelineValue,
+    appointments: booked,
+    closedDeals: revenueAttribution.totals.closedDeals,
+  };
+
   const hasPaidAds =
     connectedPlatforms.has("meta") ||
     connectedPlatforms.has("facebook") ||
@@ -362,5 +381,6 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     activity,
     kpiTrends,
     ...mission,
+    revenueAttribution,
   };
 }
