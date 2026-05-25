@@ -12,7 +12,7 @@ import {
 
 const rows = [
   {
-    client: "EverPeak Roofing",
+    client: "Summit Home Services",
     stage: "Build",
     profileComplete: true,
     agentsAssigned: true,

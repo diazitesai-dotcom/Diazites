@@ -21,10 +21,10 @@ begin
   insert into businesses (user_id, name, website, service_area, city_state, monthly_budget)
   values (
     v_user_id,
-    'EverPeak Roofing',
-    'https://everpeakroofing.com',
-    'Greater Tampa Bay',
-    'Tampa, FL',
+    'Diazites Demo Co',
+    'https://example.com',
+    'Greater Metro Area',
+    'Austin, TX',
     5000
   )
   on conflict do nothing;
