@@ -9,7 +9,7 @@ import { MARKETING_VIDEO_ID } from "@/lib/marketing-video";
  * wide canvas, edge-to-edge embed, soft gradients into page chrome.
  */
 export function CinematicVideo() {
-  const src = `https://www.youtube.com/embed/${MARKETING_VIDEO_ID}?rel=0&modestbranding=1&playsinline=1`;
+  const src = `https://www.youtube.com/embed/${MARKETING_VIDEO_ID}?rel=0&modestbranding=1&playsinline=1&autoplay=0`;
 
   return (
     <section

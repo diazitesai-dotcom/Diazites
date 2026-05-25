@@ -1,70 +1,58 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   DEFAULT_HERO_VIDEO_MP4,
   HERO_BACKGROUND_VIDEO_URL,
+  parseYoutubeVideoId,
+  resolveHeroYoutubeId,
+  youtubeEmbedUrl,
 } from "@/lib/marketing-video";
 
-const FALLBACK_MP4 = DEFAULT_HERO_VIDEO_MP4;
-
 /**
- * Full-bleed muted loop behind the marketing hero.
- * Uses play() on mount and falls back if the env URL is invalid (e.g. dead Coverr link).
+ * Full-bleed hero background — YouTube embed (muted, looped) or MP4 when env is a direct file.
  */
 export function HeroBackgroundVideo() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [src, setSrc] = useState(HERO_BACKGROUND_VIDEO_URL);
-  const [failed, setFailed] = useState(false);
-
-  const tryPlay = useCallback(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    void el.play().catch(() => {
-      /* autoplay blocked — still show first frame */
-    });
+  const youtubeId = useMemo(() => resolveHeroYoutubeId(), []);
+  const mp4FromEnv = useMemo(() => {
+    const url = HERO_BACKGROUND_VIDEO_URL.trim();
+    if (!url || parseYoutubeVideoId(url)) return null;
+    return url;
   }, []);
 
-  useEffect(() => {
-    tryPlay();
-  }, [src, tryPlay]);
+  const [useMp4Fallback, setUseMp4Fallback] = useState(false);
+  const mp4Src = mp4FromEnv ?? DEFAULT_HERO_VIDEO_MP4;
 
-  function handleError() {
-    if (src !== FALLBACK_MP4) {
-      setSrc(FALLBACK_MP4);
-      return;
-    }
-    setFailed(true);
-  }
-
-  if (failed) {
-    return (
-      <div
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-        aria-hidden
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(139,92,246,0.35),transparent_60%)]" />
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-violet-950/40 via-background to-cyan-950/30" />
-      </div>
-    );
-  }
+  const embedSrc = useMemo(
+    () => youtubeEmbedUrl(youtubeId, { background: true }),
+    [youtubeId],
+  );
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-      <video
-        ref={videoRef}
-        key={src}
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        className="absolute inset-0 h-full w-full min-h-[480px] scale-105 object-cover opacity-[0.55] dark:opacity-[0.62]"
-        src={src}
-        onLoadedData={tryPlay}
-        onError={handleError}
-      />
+      {!useMp4Fallback ? (
+        <div className="absolute inset-0 opacity-[0.58] dark:opacity-[0.65]">
+          <iframe
+            title="Homepage hero background"
+            src={embedSrc}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            className="absolute left-1/2 top-1/2 h-[120%] w-[300%] max-w-none -translate-x-1/2 -translate-y-1/2 border-0"
+            style={{ minWidth: "100vw", minHeight: "100%" }}
+            onError={() => setUseMp4Fallback(true)}
+          />
+        </div>
+      ) : (
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          className="absolute inset-0 h-full w-full min-h-[480px] scale-105 object-cover opacity-[0.55] dark:opacity-[0.62]"
+          src={mp4Src}
+        />
+      )}
       <div className="absolute inset-0 bg-gradient-to-b from-background/55 via-background/35 to-background" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_20%,rgba(139,92,246,0.22),transparent_55%)]" />
     </div>
