@@ -18,7 +18,12 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { DASHBOARD_NAV, PRODUCT_TAGLINE, ROUTES } from "@/lib/navigation/platform-nav";
+import {
+  DASHBOARD_NAV_GROUPS,
+  PRODUCT_TAGLINE,
+  ROUTES,
+  type DashboardNavItem,
+} from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils";
 
 import { NotificationBell } from "./notification-bell";
@@ -26,16 +31,9 @@ import { NotificationBell } from "./notification-bell";
 type NavItem = {
   href: string;
   label: string;
-  icon: typeof DASHBOARD_NAV[number]["icon"];
+  icon: DashboardNavItem["icon"];
   description?: string;
 };
-
-const DASHBOARD_NAV_ITEMS: NavItem[] = DASHBOARD_NAV.map((item) => ({
-  href: item.href,
-  label: item.label,
-  icon: item.icon,
-  description: item.description,
-}));
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: Shield },
@@ -46,12 +44,32 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/onboarding", label: "Onboarding", icon: UserCircle2 },
 ];
 
+function isNavItemActive(pathname: string, href: string): boolean {
+  if (href === "/admin") return pathname === "/admin";
+  if (href === ROUTES.missionControl) return pathname === ROUTES.missionControl;
+  if (href === ROUTES.campaignOps) {
+    return (
+      pathname === ROUTES.campaignOps ||
+      pathname.startsWith("/dashboard/ads") ||
+      pathname.startsWith("/dashboard/campaigns")
+    );
+  }
+  if (href === ROUTES.organization) {
+    return (
+      pathname === ROUTES.organization ||
+      pathname.startsWith("/dashboard/team") ||
+      pathname.startsWith("/dashboard/billing") ||
+      pathname.startsWith("/dashboard/settings")
+    );
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 type AppSidebarShellProps = {
   children: React.ReactNode;
   variant: "dashboard" | "admin";
   brandHref: string;
   brandTitle: string;
-  /** Link shown at bottom (e.g. back to main app or admin) */
   footerLink?: { href: string; label: string };
 };
 
@@ -62,7 +80,6 @@ export function AppSidebarShell({
   brandTitle,
   footerLink,
 }: AppSidebarShellProps) {
-  const navItems = variant === "dashboard" ? DASHBOARD_NAV_ITEMS : ADMIN_NAV;
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -71,77 +88,102 @@ export function AppSidebarShell({
     setMobileOpen(false);
   }, [pathname]);
 
-  const NavBody = ({ iconOnly }: { iconOnly: boolean }) => (
-    <nav className="flex flex-1 flex-col gap-1 px-2 py-3">
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const active = (() => {
-          if (item.href === "/admin") return pathname === "/admin";
-          if (item.href === ROUTES.missionControl) return pathname === ROUTES.missionControl;
-          if (item.href === ROUTES.campaignOps) {
-            return (
-              pathname === ROUTES.campaignOps ||
-              pathname.startsWith("/dashboard/ads") ||
-              pathname.startsWith("/dashboard/campaigns")
-            );
-          }
-          if (item.href === ROUTES.organization) {
-            return (
-              pathname === ROUTES.organization ||
-              pathname.startsWith("/dashboard/team") ||
-              pathname.startsWith("/dashboard/billing") ||
-              pathname.startsWith("/dashboard/settings")
-            );
-          }
-          return pathname === item.href || pathname.startsWith(`${item.href}/`);
-        })();
+  const renderNavLink = (item: NavItem, iconOnly: boolean) => {
+    const Icon = item.icon;
+    const active = isNavItemActive(pathname, item.href);
 
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-              active
-                ? "bg-white/[0.08] text-foreground shadow-[inset_0_0_0_1px_rgba(167,139,250,0.25)]"
-                : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
-              iconOnly && "justify-center px-2",
-            )}
-          >
-            {active ? (
-              <span
-                className="absolute inset-y-1 left-0 w-1 rounded-full bg-gradient-to-b from-violet-400 to-cyan-400 shadow-[0_0_12px_rgba(167,139,250,0.8)]"
-                aria-hidden
-              />
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        title={iconOnly ? item.label : undefined}
+        className={cn(
+          "group relative flex rounded-xl transition-colors",
+          iconOnly ? "justify-center px-2 py-2.5" : "gap-2.5 px-2.5 py-2",
+          active
+            ? "bg-gradient-to-r from-violet-500/20 to-cyan-500/10 text-foreground shadow-[inset_0_0_0_1px_rgba(167,139,250,0.35)]"
+            : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
+        )}
+      >
+        {active ? (
+          <span
+            className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-gradient-to-b from-violet-400 to-cyan-400"
+            aria-hidden
+          />
+        ) : null}
+        <Icon
+          className={cn(
+            "size-[18px] shrink-0",
+            active ? "text-violet-300" : "text-muted-foreground group-hover:text-foreground",
+          )}
+          aria-hidden
+        />
+        {!iconOnly ? (
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-medium leading-tight">{item.label}</span>
+            {item.description ? (
+              <span className="block truncate text-[10px] leading-tight text-muted-foreground/80 group-hover:text-muted-foreground">
+                {item.description}
+              </span>
             ) : null}
-            <Icon
-              className={cn(
-                "size-[18px] shrink-0 transition-colors",
-                active ? "text-violet-300" : "text-muted-foreground group-hover:text-foreground",
+          </span>
+        ) : null}
+      </Link>
+    );
+  };
+
+  const NavBody = ({ iconOnly }: { iconOnly: boolean }) => {
+    if (variant === "admin") {
+      return (
+        <nav className="flex flex-1 flex-col gap-1 px-2 py-3">
+          {ADMIN_NAV.map((item) => renderNavLink(item, iconOnly))}
+        </nav>
+      );
+    }
+
+    return (
+      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-2 py-3">
+        {DASHBOARD_NAV_GROUPS.map((group) => (
+          <div key={group.id}>
+            {!iconOnly ? (
+              <p className="mb-1.5 px-2.5 text-[9px] font-bold uppercase tracking-[0.22em] text-violet-400/70">
+                {group.label}
+              </p>
+            ) : (
+              <div className="mx-auto mb-1 h-px w-8 bg-white/10" aria-hidden />
+            )}
+            <div className="flex flex-col gap-0.5">
+              {group.items.map((item) =>
+                renderNavLink(
+                  {
+                    href: item.href,
+                    label: item.label,
+                    icon: item.icon,
+                    description: item.description,
+                  },
+                  iconOnly,
+                ),
               )}
-              aria-hidden
-            />
-            {!iconOnly ? <span className="truncate">{item.label}</span> : null}
-          </Link>
-        );
-      })}
-    </nav>
-  );
+            </div>
+          </div>
+        ))}
+      </nav>
+    );
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Desktop sidebar */}
       <aside
         className={cn(
-          "relative z-30 hidden shrink-0 border-r border-border/80 bg-sidebar/90 backdrop-blur-xl md:flex md:flex-col",
-          collapsed ? "w-[76px]" : "w-60",
+          "relative z-30 hidden shrink-0 border-r border-border/80 bg-sidebar/95 backdrop-blur-xl md:flex md:flex-col",
+          collapsed ? "w-[76px]" : "w-[248px]",
         )}
       >
         <div className="flex h-14 items-center justify-between gap-2 border-b border-border/60 px-3">
           <Link
             href={brandHref}
             className={cn(
-              "flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 font-semibold tracking-tight transition-opacity hover:opacity-90",
+              "flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 transition-opacity hover:opacity-90",
               collapsed && "justify-center",
             )}
           >
@@ -149,7 +191,12 @@ export function AppSidebarShell({
               D
             </span>
             {!collapsed ? (
-              <span className="truncate text-sm">{brandTitle}</span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold tracking-tight">{brandTitle}</span>
+                <span className="block truncate text-[10px] font-medium text-violet-300/90">
+                  {variant === "dashboard" ? "Growth OS" : "Admin"}
+                </span>
+              </span>
             ) : null}
           </Link>
           <button
@@ -163,7 +210,9 @@ export function AppSidebarShell({
         </div>
 
         {!collapsed && variant === "dashboard" ? (
-          <p className="px-4 pb-2 text-[10px] leading-snug text-muted-foreground/80">{PRODUCT_TAGLINE}</p>
+          <p className="border-b border-white/[0.06] px-4 py-2.5 text-[10px] leading-snug text-muted-foreground">
+            {PRODUCT_TAGLINE}
+          </p>
         ) : null}
 
         <NavBody iconOnly={collapsed} />
@@ -184,7 +233,6 @@ export function AppSidebarShell({
         ) : null}
       </aside>
 
-      {/* Top bar: notification bell on the right for dashboard variant */}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border/80 bg-background/80 px-4 backdrop-blur-xl md:px-8">
           <div className="flex items-center gap-2 md:hidden">
@@ -196,12 +244,14 @@ export function AppSidebarShell({
             >
               <Menu className="size-5" />
             </button>
-            <Link
-              href={brandHref}
-              className="text-sm font-semibold tracking-tight"
-            >
-              {brandTitle}
-            </Link>
+            <div className="min-w-0">
+              <Link href={brandHref} className="block truncate text-sm font-semibold tracking-tight">
+                {brandTitle}
+              </Link>
+              {variant === "dashboard" ? (
+                <p className="truncate text-[10px] text-violet-300/90">{PRODUCT_TAGLINE}</p>
+              ) : null}
+            </div>
           </div>
           <span className="hidden md:block" aria-hidden />
           <div className="flex items-center gap-2">
@@ -212,7 +262,6 @@ export function AppSidebarShell({
         <main className="flex-1 px-4 py-8 md:px-8 md:py-10">{children}</main>
       </div>
 
-      {/* Mobile drawer */}
       <AnimatePresence>
         {mobileOpen ? (
           <>
@@ -230,10 +279,15 @@ export function AppSidebarShell({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
-              className="fixed inset-y-0 left-0 z-50 flex w-[min(280px,88vw)] flex-col border-r border-border/80 bg-sidebar shadow-2xl md:hidden"
+              className="fixed inset-y-0 left-0 z-50 flex w-[min(300px,92vw)] flex-col border-r border-border/80 bg-sidebar shadow-2xl md:hidden"
             >
               <div className="flex h-14 items-center justify-between border-b border-border/60 px-4">
-                <span className="text-sm font-semibold">{brandTitle}</span>
+                <div>
+                  <span className="text-sm font-semibold">{brandTitle}</span>
+                  {variant === "dashboard" ? (
+                    <p className="text-[10px] text-violet-300/90">{PRODUCT_TAGLINE}</p>
+                  ) : null}
+                </div>
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}

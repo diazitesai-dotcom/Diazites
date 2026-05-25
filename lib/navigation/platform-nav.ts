@@ -5,7 +5,6 @@ import {
   Building2,
   FlaskConical,
   Funnel,
-  Gauge,
   LayoutDashboard,
   Plug,
   Radar,
@@ -59,92 +58,132 @@ export type DashboardNavItem = {
   icon: LucideIcon;
 };
 
-export const DASHBOARD_NAV: DashboardNavItem[] = [
+export type DashboardNavGroup = {
+  id: string;
+  label: string;
+  items: DashboardNavItem[];
+};
+
+/** Sidebar groups — operational flow of the Growth OS. */
+export const DASHBOARD_NAV_GROUPS: DashboardNavGroup[] = [
   {
-    id: "mission_control",
-    href: ROUTES.missionControl,
-    label: "Mission Control",
-    description: "Global live command center — KPIs, system map, agents, alerts, and opportunities.",
-    icon: LayoutDashboard,
+    id: "operate",
+    label: "Operate",
+    items: [
+      {
+        id: "mission_control",
+        href: ROUTES.missionControl,
+        label: "Mission Control",
+        description: "Global live command center",
+        icon: LayoutDashboard,
+      },
+      {
+        id: "campaign_ops",
+        href: ROUTES.campaignOps,
+        label: "Campaign Ops",
+        description: "Live paid media & platforms",
+        icon: Radar,
+      },
+      {
+        id: "leads_os",
+        href: ROUTES.leadsOs,
+        label: "Leads OS",
+        description: "CRM, pipeline & follow-up",
+        icon: Users,
+      },
+    ],
   },
   {
-    id: "growth_engine",
-    href: ROUTES.growthEngine,
-    label: "Growth Engine",
-    description: "AI business launcher — research through launch with agent stack and run workspaces.",
-    icon: Sparkles,
+    id: "build",
+    label: "Build",
+    items: [
+      {
+        id: "growth_engine",
+        href: ROUTES.growthEngine,
+        label: "Growth Engine",
+        description: "Research → launch pipeline",
+        icon: Sparkles,
+      },
+      {
+        id: "funnel_studio",
+        href: ROUTES.funnelStudio,
+        label: "Funnel Studio",
+        description: "Pages, forms & conversion",
+        icon: Funnel,
+      },
+    ],
   },
   {
-    id: "campaign_ops",
-    href: ROUTES.campaignOps,
-    label: "Campaign Ops",
-    description: "Live paid media operations — platforms, campaigns, budgets, tracking, and agent actions.",
-    icon: Radar,
+    id: "autonomous",
+    label: "Autonomous",
+    items: [
+      {
+        id: "agents",
+        href: ROUTES.agents,
+        label: "Agents",
+        description: "Execution, tasks & rollback",
+        icon: Bot,
+      },
+      {
+        id: "optimization_lab",
+        href: ROUTES.optimizationLab,
+        label: "Optimization Lab",
+        description: "Continuous AI tuning",
+        icon: FlaskConical,
+      },
+    ],
   },
   {
-    id: "leads_os",
-    href: ROUTES.leadsOs,
-    label: "Leads OS",
-    description: "Post-capture revenue ops — CRM, pipelines, conversations, follow-up, and attribution.",
-    icon: Users,
+    id: "connect",
+    label: "Connect",
+    items: [
+      {
+        id: "integrations_hub",
+        href: ROUTES.integrationsHub,
+        label: "Integrations Hub",
+        description: "OAuth, APIs & sync",
+        icon: Plug,
+      },
+      {
+        id: "automation_center",
+        href: ROUTES.automationCenter,
+        label: "Automation Center",
+        description: "Workflows & triggers",
+        icon: Webhook,
+      },
+      {
+        id: "approval_center",
+        href: ROUTES.approvalCenter,
+        label: "Approval Center",
+        description: "Oversight & policy",
+        icon: ShieldAlert,
+      },
+    ],
   },
   {
-    id: "funnel_studio",
-    href: ROUTES.funnelStudio,
-    label: "Funnel Studio",
-    description: "Conversion systems — landing pages, forms, variants, and funnel analytics.",
-    icon: Funnel,
-  },
-  {
-    id: "agents",
-    href: ROUTES.agents,
-    label: "Agents",
-    description: "Autonomous execution layer — stacks, tasks, reasoning, permissions, and rollback.",
-    icon: Bot,
-  },
-  {
-    id: "optimization_lab",
-    href: ROUTES.optimizationLab,
-    label: "Optimization Lab",
-    description: "Continuous AI tuning — budget, creative, funnel, audience, and scaling experiments.",
-    icon: FlaskConical,
-  },
-  {
-    id: "integrations_hub",
-    href: ROUTES.integrationsHub,
-    label: "Integrations Hub",
-    description: "OAuth, APIs, webhooks, sync health, and credential vault for external systems.",
-    icon: Plug,
-  },
-  {
-    id: "automation_center",
-    href: ROUTES.automationCenter,
-    label: "Automation Center",
-    description: "Workflow orchestration — triggers, multi-step flows, and agent-driven routing.",
-    icon: Webhook,
-  },
-  {
-    id: "approval_center",
-    href: ROUTES.approvalCenter,
-    label: "Approval Center",
-    description: "Human oversight — launches, budgets, agent actions, policy, and audit history.",
-    icon: ShieldAlert,
-  },
-  {
-    id: "reports_intelligence",
-    href: ROUTES.reportsIntelligence,
-    label: "Reports & Intelligence",
-    description: "Executive analytics — ROAS, pipeline, attribution, forecasts, and AI summaries.",
-    icon: BarChart3,
-  },
-  {
-    id: "organization",
-    href: ROUTES.organization,
-    label: "Organization",
-    description: "Workspace admin — team, billing, security, API access, and settings.",
-    icon: Building2,
+    id: "admin",
+    label: "Intelligence",
+    items: [
+      {
+        id: "reports_intelligence",
+        href: ROUTES.reportsIntelligence,
+        label: "Reports & Intelligence",
+        description: "ROAS, pipeline & forecasts",
+        icon: BarChart3,
+      },
+      {
+        id: "organization",
+        href: ROUTES.organization,
+        label: "Organization",
+        description: "Team, billing & security",
+        icon: Building2,
+      },
+    ],
   },
 ];
+
+/** Flat list (legacy consumers). */
+export const DASHBOARD_NAV: DashboardNavItem[] = DASHBOARD_NAV_GROUPS.flatMap((g) => g.items);
 
 /** Agent roles surfaced across Mission Control and Agents module. */
 export const PLATFORM_AGENT_ROSTER = [
