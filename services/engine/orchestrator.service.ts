@@ -57,12 +57,26 @@ export function isLaunchReadyStep(step: EngineStep): boolean {
 
 export type EngineInputPayload = {
   websiteUrl?: string;
+  businessName?: string;
   niche?: string;
   goal?: string;
   targetAudience?: string;
   location?: string;
   budget?: number;
   trafficSource?: string;
+  revenueTarget?: string;
+  competitors?: string;
+  painPoints?: string;
+  usp?: string;
+  brandTone?: string;
+  servicesProducts?: string;
+  testimonials?: string;
+  complianceRestrictions?: string;
+  contactInfo?: string;
+  crmDestination?: string;
+  landingStyle?: string;
+  osConfig?: Record<string, unknown>;
+  clonePreset?: string;
 };
 
 /**

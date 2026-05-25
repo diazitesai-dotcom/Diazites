@@ -2,10 +2,7 @@ import { Check, CircleDot, Lock } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import {
-  ENGINE_STEPS,
-  stepIndex,
-} from "@/services/engine/orchestrator.service";
+import { ENGINE_STEPS, stepIndex } from "@/lib/engine-steps";
 import type { EngineStep } from "@/repositories/engine.repository";
 
 type EngineStepperProps = {

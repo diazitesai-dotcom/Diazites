@@ -39,15 +39,38 @@ export async function startEngineRunAction(
       ? Number(numericBudgetRaw)
       : undefined;
 
+  const osConfigRaw = formData.get("os_config");
+  let osConfig: Record<string, unknown> | undefined;
+  if (typeof osConfigRaw === "string" && osConfigRaw.trim()) {
+    try {
+      osConfig = JSON.parse(osConfigRaw) as Record<string, unknown>;
+    } catch {
+      /* ignore invalid JSON */
+    }
+  }
+
   const input: EngineInputPayload = {
     websiteUrl: pickString(formData.get("website_url")) ?? business.website ?? undefined,
+    businessName: pickString(formData.get("business_name")) ?? business.name ?? undefined,
     niche: pickString(formData.get("niche")) ?? undefined,
     goal: pickString(formData.get("goal")) ?? undefined,
     targetAudience: pickString(formData.get("target_audience")) ?? undefined,
-    location:
-      pickString(formData.get("location")) ?? business.city_state ?? undefined,
+    location: pickString(formData.get("location")) ?? business.city_state ?? undefined,
     budget: Number.isFinite(numericBudget) ? numericBudget : undefined,
-    trafficSource: pickString(formData.get("traffic_source")) ?? undefined,
+    trafficSource:
+      pickString(formData.get("traffic_source")) ?? pickString(formData.get("traffic_sources")) ?? undefined,
+    revenueTarget: pickString(formData.get("revenue_target")) ?? undefined,
+    competitors: pickString(formData.get("competitors")) ?? undefined,
+    painPoints: pickString(formData.get("pain_points")) ?? undefined,
+    usp: pickString(formData.get("usp")) ?? undefined,
+    brandTone: pickString(formData.get("brand_tone")) ?? undefined,
+    servicesProducts: pickString(formData.get("services_products")) ?? undefined,
+    testimonials: pickString(formData.get("testimonials")) ?? undefined,
+    complianceRestrictions: pickString(formData.get("compliance_restrictions")) ?? undefined,
+    contactInfo: pickString(formData.get("contact_info")) ?? undefined,
+    crmDestination: pickString(formData.get("crm_destination")) ?? undefined,
+    landingStyle: pickString(formData.get("landing_style")) ?? undefined,
+    osConfig,
   };
 
   const result = await startEngineRun(supabase, {

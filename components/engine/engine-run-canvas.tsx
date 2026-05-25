@@ -19,7 +19,7 @@ import { VariantGallery } from "@/components/engine/variant-gallery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { AssetRow, EngineRunRow, EngineStep } from "@/repositories/engine.repository";
-import { ENGINE_STEPS, stepIndex } from "@/services/engine/orchestrator.service";
+import { ENGINE_STEPS, stepIndex } from "@/lib/engine-steps";
 
 type EngineRunCanvasProps = {
   run: EngineRunRow;

@@ -1,43 +1,19 @@
-import { formatDistanceToNow } from "date-fns";
-import Link from "next/link";
-import { Activity, Rocket, Sparkles } from "lucide-react";
-
-import { AdvanceRunButton } from "@/components/engine/advance-run-button";
-import { EngineDeployAgentsButton } from "@/components/engine/engine-deploy-agents-button";
-import { EngineRunCanvas } from "@/components/engine/engine-run-canvas";
-import { RunFullEngineButton } from "@/components/engine/run-full-engine-button";
-import { EngineRunHistory } from "@/components/engine/engine-run-history";
-import { EngineStepper } from "@/components/engine/engine-stepper";
-import { SeedTestLaunchButton } from "@/components/engine/seed-test-launch-button";
-import { StartRunForm } from "@/components/engine/start-run-form";
+import { requireAuth } from "@/lib/auth/session";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createBusinessRepository } from "@/repositories/business.repository";
+import { GrowthEngineOsClient } from "@/components/engine/growth-engine-os/growth-engine-os-client";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
-import { requireAuth } from "@/lib/auth/session";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { createBusinessRepository } from "@/repositories/business.repository";
-import {
-  createEngineRepository,
-  type AssetRow,
-  type EngineStep,
-} from "@/repositories/engine.repository";
-import { ENGINE_STEPS, isLaunchReadyStep } from "@/lib/engine-steps";
 import {
   getActiveEngineRun,
   listEngineRuns,
-  stepIndex,
 } from "@/services/engine/orchestrator.service";
+import { createEngineRepository, type AssetRow } from "@/repositories/engine.repository";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<string, string> = {
-  running: "In progress",
-  needs_approval: "Needs approval",
-  launched: "Launched",
-  failed: "Failed",
-  archived: "Archived",
-};
 
 export default async function EnginePage() {
   const user = await requireAuth();
@@ -62,10 +38,7 @@ export default async function EnginePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link
-              href="/onboarding"
-              className={cn(buttonVariants({ variant: "default" }), "rounded-xl")}
-            >
+            <Link href="/onboarding" className={cn(buttonVariants({ variant: "default" }), "rounded-xl")}>
               Go to onboarding
             </Link>
           </CardContent>
@@ -74,14 +47,24 @@ export default async function EnginePage() {
     );
   }
 
-  const [activeResult, historyResult] = await Promise.all([
+  const [activeResult, historyResult, adAccountsResult] = await Promise.all([
     getActiveEngineRun(supabase, business.id),
-    listEngineRuns(supabase, business.id, 10),
+    listEngineRuns(supabase, business.id, 12),
+    supabase.from("ad_accounts").select("platform, status").eq("business_id", business.id),
   ]);
 
   const activeRun = activeResult.success ? activeResult.data : null;
   const history = historyResult.success ? historyResult.data : [];
-  const isDev = process.env.NODE_ENV !== "production";
+
+  const connectedIds: string[] = [];
+  for (const acc of adAccountsResult.data ?? []) {
+    const p = String(acc.platform).toLowerCase();
+    if (acc.status === "connected" || acc.status === "active") {
+      if (p.includes("meta") || p.includes("facebook")) connectedIds.push("meta");
+      if (p.includes("google")) connectedIds.push("google_ads");
+      if (p.includes("tiktok")) connectedIds.push("tiktok_ads");
+    }
+  }
 
   let assets: AssetRow[] = [];
   if (activeRun) {
@@ -90,139 +73,30 @@ export default async function EnginePage() {
     assets = (assetRows ?? []) as AssetRow[];
   }
 
+  const hasMeta = connectedIds.includes("meta");
+  const hasGoogle = connectedIds.includes("google_ads");
+
   return (
-    <div className="mx-auto max-w-6xl space-y-10">
-      <PageHeader
-        eyebrow="Growth Engine"
-        title="AI Marketing Operating System"
-        description="Input → Research → Strategy → Funnel → Generation → Variants → Scoring → Launch. The same 8-stage pipeline shown on the AIWORKERS map, applied to your business."
-        actions={
-          <EngineDeployAgentsButton className="mission-shimmer-btn rounded-xl" />
-        }
-      />
-
-      {activeRun ? (
-        <>
-          <section className="space-y-4">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                  Active run
-                </p>
-                <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                  Stage {stepIndex(activeRun.current_step) + 1} of {ENGINE_STEPS.length}
-                  <span className="ml-2 text-muted-foreground">
-                    · {labelForStep(activeRun.current_step)}
-                  </span>
-                </h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Started {formatDistanceToNow(new Date(activeRun.created_at), { addSuffix: true })}
-                  {" · "}
-                  Status: {STATUS_LABEL[activeRun.status] ?? activeRun.status}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-3">
-                {activeRun.status === "running" ? (
-                  <RunFullEngineButton runId={activeRun.id} />
-                ) : null}
-                <AdvanceRunButton
-                  runId={activeRun.id}
-                  launchReady={isLaunchReadyStep(activeRun.current_step)}
-                />
-                {isDev ? <SeedTestLaunchButton /> : null}
-              </div>
-            </div>
-            <EngineStepper
-              currentStep={activeRun.current_step}
-              status={activeRun.status}
-            />
-          </section>
-
-          <EngineRunCanvas
-            run={activeRun}
-            assets={assets}
-            businessName={business.name}
-          />
-        </>
-      ) : (
-        <section className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-          <Card className="border-white/[0.06]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Sparkles className="size-4 text-violet-300" aria-hidden />
-                Start a new Growth Engine run
-              </CardTitle>
-              <CardDescription>
-                We&apos;ll walk through the 8 stages — Phase 1 ships the scaffold; Phase 2+ wires real AI generation into each step.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <StartRunForm
-                defaults={{
-                  websiteUrl: business.website,
-                  location: business.city_state,
-                  budget: business.monthly_budget ?? null,
-                }}
-              />
-              {isDev ? (
-                <div className="rounded-xl border border-dashed border-white/[0.08] bg-white/[0.02] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    Dev shortcut
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Skip to Stage 7 with a hand-crafted winner so you can test
-                    the Launch System without running the full AI pipeline.
-                  </p>
-                  <div className="mt-3">
-                    <SeedTestLaunchButton />
-                  </div>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          <Card className="border-white/[0.06]">
-            <CardHeader>
-              <CardTitle className="text-lg">What the engine does</CardTitle>
-              <CardDescription>
-                Mirrors the AIWORKERS map: from raw business input to a launched, scored, optimized campaign.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3 text-sm">
-                {ENGINE_STEPS.map((stage) => (
-                  <li key={stage.key} className="flex items-start gap-3">
-                    <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-[11px] font-semibold text-violet-200">
-                      {stage.index}
-                    </span>
-                    <div>
-                      <p className="font-medium text-foreground">{stage.title}</p>
-                      <p className="text-xs text-muted-foreground">{stage.subtitle}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </section>
-      )}
-
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Recent runs
-          </h3>
-          {history.length > 0 ? (
-            <span className="text-xs text-muted-foreground">{history.length} total</span>
-          ) : null}
-        </div>
-                <EngineRunHistory runs={history} />
-
-      </section>
-    </div>
+    <GrowthEngineOsClient
+      businessName={business.name}
+      businessDefaults={{
+        websiteUrl: business.website,
+        location: business.city_state,
+        niche: business.services,
+        budget: business.monthly_budget,
+      }}
+      connectedIds={connectedIds}
+      activeRun={activeRun}
+      history={history}
+      assets={assets}
+      missionFlags={{
+        hasMeta,
+        hasGoogle,
+        trackingOk: hasMeta || hasGoogle,
+        crmConnected: true,
+        visitorsForRetargeting: 24,
+      }}
+      isDev={process.env.NODE_ENV !== "production"}
+    />
   );
-}
-
-function labelForStep(step: EngineStep): string {
-  return ENGINE_STEPS.find((s) => s.key === step)?.title ?? step;
 }

@@ -1,15 +1,11 @@
 import { notFound } from "next/navigation";
 
-import { EngineRunCanvas } from "@/components/engine/engine-run-canvas";
-import { EngineRunSaveForm } from "@/components/engine/engine-run-save-form";
-import { EngineRunToolbar } from "@/components/engine/engine-run-toolbar";
-import { EngineStepper } from "@/components/engine/engine-stepper";
-import { PageHeader } from "@/components/layout/page-header";
+import { EngineWorkspaceClient } from "@/components/engine/growth-engine-os/engine-workspace-client";
+import { GrowthEngineOsProvider } from "@/components/engine/growth-engine-os/growth-engine-os-provider";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { createEngineRepository, type AssetRow } from "@/repositories/engine.repository";
-import { ENGINE_STEPS, stepIndex } from "@/services/engine/orchestrator.service";
 import { getEngineRunForOwner } from "@/services/engine/run-management.service";
 
 export const dynamic = "force-dynamic";
@@ -32,24 +28,27 @@ export default async function EngineRunDetailPage({ params }: PageProps) {
   const engineRepo = createEngineRepository(supabase);
   const { data: assetRows } = await engineRepo.listAssetsForRun(run.id);
   const assets = (assetRows ?? []) as AssetRow[];
-  const input = run.input_payload as Record<string, unknown>;
+
+  const { data: adAccounts } = await supabase
+    .from("ad_accounts")
+    .select("platform, status")
+    .eq("business_id", business.id);
+
+  const connectedIds: string[] = [];
+  for (const acc of adAccounts ?? []) {
+    const p = String(acc.platform).toLowerCase();
+    if (acc.status === "connected" || acc.status === "active") {
+      if (p.includes("meta") || p.includes("facebook")) connectedIds.push("meta");
+      if (p.includes("google")) connectedIds.push("google_ads");
+    }
+  }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-10">
-      <PageHeader
-        eyebrow="Growth Engine"
-        title={ENGINE_STEPS.find((s) => s.key === run.current_step)?.title ?? "Engine run"}
-        description={`Status: ${run.status} · Stage ${stepIndex(run.current_step) + 1} of ${ENGINE_STEPS.length}`}
-      />
-
-      <EngineRunToolbar runId={run.id} />
-
-      <EngineStepper currentStep={run.current_step} status={run.status} />
-
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <EngineRunSaveForm runId={run.id} input={input} />
-        <EngineRunCanvas run={run} assets={assets} businessName={business.name} />
-      </div>
-    </div>
+    <GrowthEngineOsProvider
+      connectedIds={connectedIds}
+      defaults={{ businessName: business.name, websiteUrl: business.website ?? "" }}
+    >
+      <EngineWorkspaceClient run={run} assets={assets} businessName={business.name} />
+    </GrowthEngineOsProvider>
   );
 }
