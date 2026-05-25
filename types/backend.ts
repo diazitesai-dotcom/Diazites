@@ -79,6 +79,7 @@ export interface BusinessUpsertInput {
   businessHours?: string | null;
   monthlyBudget?: number;
   logoUrl?: string | null;
+  profile?: Record<string, unknown>;
 }
 
 export interface CampaignCreateInput {

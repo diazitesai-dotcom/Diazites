@@ -13,6 +13,8 @@ import {
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { RetargetingAgentDeploymentPanel } from "@/components/agents/retargeting-agent-deployment-panel";
 import { DeployableStacksPanel } from "@/components/dashboard/mission-control/deployable-stacks-panel";
+import { CommandCenterWidgets } from "@/components/dashboard/command-center-widgets";
+import { LiveAgentStatusRow } from "@/components/dashboard/live-agent-status-row";
 import { CeoCockpitHero } from "@/components/dashboard/mission-control/ceo-cockpit-hero";
 import {
   AccountConnectionCenter,
@@ -168,6 +170,12 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
     <>
       <div className="relative mx-auto max-w-7xl space-y-10 pb-24">
         <CeoCockpitHero data={data} />
+
+        <CommandCenterWidgets data={data} />
+
+        <LiveAgentStatusRow
+          activeAgentKeys={data.agents.filter((a) => a.status === "active").map((a) => a.key)}
+        />
 
         <MissionControlAlerts data={data} />
 

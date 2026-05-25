@@ -3,15 +3,23 @@ import {
   BarChart3,
   Bot,
   Building2,
+  Calendar,
+  CheckSquare,
   FlaskConical,
   Funnel,
+  Inbox,
   LayoutDashboard,
+  LineChart,
+  Mail,
+  MessageSquare,
   Plug,
   Radar,
   ShieldAlert,
   Sparkles,
+  Target,
   Users,
   Webhook,
+  Zap,
 } from "lucide-react";
 
 /** Canonical dashboard routes for the AI Growth Operating System. */
@@ -28,6 +36,14 @@ export const ROUTES = {
   approvalCenter: "/dashboard/approvals",
   reportsIntelligence: "/dashboard/reports",
   organization: "/dashboard/organization",
+  businessProfile: "/dashboard/business",
+  tasks: "/dashboard/tasks",
+  followUp: "/dashboard/follow-up",
+  inbox: "/dashboard/inbox",
+  calendar: "/dashboard/calendar",
+  analytics: "/dashboard/analytics",
+  pipeline: "/dashboard/leads",
+  landingPages: "/dashboard/funnel",
   /** Legacy — redirect to campaignOps */
   ads: "/dashboard/ads",
   campaigns: "/dashboard/campaigns",
@@ -48,7 +64,13 @@ export type DashboardNavId =
   | "automation_center"
   | "approval_center"
   | "reports_intelligence"
-  | "organization";
+  | "organization"
+  | "business_profile"
+  | "tasks"
+  | "follow_up"
+  | "inbox"
+  | "calendar"
+  | "analytics";
 
 export type DashboardNavItem = {
   id: DashboardNavId;
@@ -178,3 +200,224 @@ export const PLATFORM_AGENT_ROSTER = [
 ] as const;
 
 export const PRODUCT_TAGLINE = "AI Growth Operating System";
+
+/** Full spec sidebar — grouped sections mapped to live or Phase 1 routes. */
+export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    items: [
+      {
+        id: "mission_control",
+        href: ROUTES.missionControl,
+        label: "Overview",
+        description: "CEO cockpit & KPIs",
+        icon: LayoutDashboard,
+      },
+      {
+        id: "agents",
+        href: ROUTES.agents,
+        label: "Live agent activity",
+        description: "Status & workspaces",
+        icon: Bot,
+      },
+      {
+        id: "reports_intelligence",
+        href: ROUTES.reportsIntelligence,
+        label: "Performance snapshot",
+        description: "ROAS, spend, revenue",
+        icon: BarChart3,
+      },
+      {
+        id: "leads_os",
+        href: ROUTES.leadsOs,
+        label: "Recent leads",
+        description: "Inbox & pipeline",
+        icon: Users,
+      },
+      {
+        id: "tasks" as const,
+        href: ROUTES.tasks,
+        label: "Recent tasks",
+        description: "Pending & overdue",
+        icon: CheckSquare,
+      },
+      {
+        id: "campaign_ops",
+        href: ROUTES.campaignOps,
+        label: "Campaign alerts",
+        description: "Draft & active ads",
+        icon: Radar,
+      },
+    ],
+  },
+  {
+    id: "business",
+    label: "Business setup",
+    items: [
+      {
+        id: "business_profile",
+        href: ROUTES.businessProfile,
+        label: "Business profile",
+        description: "Onboarding fields",
+        icon: Building2,
+      },
+      {
+        id: "funnel_studio",
+        href: ROUTES.funnelStudio,
+        label: "Offers & pages",
+        description: "Landing & forms",
+        icon: Funnel,
+      },
+      {
+        id: "integrations_hub",
+        href: ROUTES.integrationsHub,
+        label: "Integrations",
+        description: "Ads, CRM, comms",
+        icon: Plug,
+      },
+    ],
+  },
+  {
+    id: "agents",
+    label: "AI agents",
+    items: [
+      {
+        id: "agents",
+        href: ROUTES.agents,
+        label: "Agent marketplace",
+        description: "Activate stacks",
+        icon: Bot,
+      },
+      {
+        id: "approval_center",
+        href: ROUTES.approvalCenter,
+        label: "Permissions & approvals",
+        description: "Safety modes",
+        icon: ShieldAlert,
+      },
+      {
+        id: "automation_center",
+        href: ROUTES.automationCenter,
+        label: "Agent logs",
+        description: "Action history",
+        icon: Webhook,
+      },
+    ],
+  },
+  {
+    id: "campaigns",
+    label: "Campaigns",
+    items: [
+      {
+        id: "campaign_ops",
+        href: ROUTES.campaignOps,
+        label: "All campaigns",
+        description: "Google, Meta & more",
+        icon: Radar,
+      },
+      {
+        id: "approval_center",
+        href: ROUTES.approvalCenter,
+        label: "Campaign approvals",
+        description: "Draft → live",
+        icon: ShieldAlert,
+      },
+    ],
+  },
+  {
+    id: "leads",
+    label: "Leads CRM",
+    items: [
+      {
+        id: "leads_os",
+        href: ROUTES.leadsOs,
+        label: "Lead inbox",
+        description: "Pipeline & hot leads",
+        icon: Users,
+      },
+      {
+        id: "leads_os",
+        href: `${ROUTES.leadsOs}?view=pipeline`,
+        label: "Pipeline",
+        description: "Kanban stages",
+        icon: Target,
+      },
+    ],
+  },
+  {
+    id: "followup",
+    label: "Follow-up",
+    items: [
+      {
+        id: "follow_up",
+        href: ROUTES.followUp,
+        label: "SMS & email",
+        description: "Sequences & rules",
+        icon: MessageSquare,
+      },
+      {
+        id: "calendar",
+        href: ROUTES.calendar,
+        label: "Appointments",
+        description: "Booking & calendar",
+        icon: Calendar,
+      },
+    ],
+  },
+  {
+    id: "ops",
+    label: "Operations",
+    items: [
+      {
+        id: "tasks",
+        href: ROUTES.tasks,
+        label: "Tasks",
+        description: "User & agent tasks",
+        icon: CheckSquare,
+      },
+      {
+        id: "inbox",
+        href: ROUTES.inbox,
+        label: "Inbox",
+        description: "Replies & AI chat",
+        icon: Inbox,
+      },
+      {
+        id: "analytics",
+        href: ROUTES.analytics,
+        label: "Analytics",
+        description: "Traffic & CVR",
+        icon: LineChart,
+      },
+      {
+        id: "optimization_lab",
+        href: ROUTES.optimizationLab,
+        label: "Optimization",
+        description: "AI recommendations",
+        icon: FlaskConical,
+      },
+      {
+        id: "reports_intelligence",
+        href: ROUTES.reportsIntelligence,
+        label: "Reports",
+        description: "PDF & email",
+        icon: Mail,
+      },
+      {
+        id: "growth_engine",
+        href: ROUTES.growthEngine,
+        label: "Growth engine",
+        description: "Strategy → launch",
+        icon: Sparkles,
+      },
+      {
+        id: "organization",
+        href: ROUTES.organization,
+        label: "Billing & settings",
+        description: "Plan & team",
+        icon: Zap,
+      },
+    ],
+  },
+];

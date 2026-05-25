@@ -23,6 +23,7 @@ export function createOnboardingRepository(client: SupabaseClient) {
       stage?: OnboardingStageDb;
       status?: string;
       checklist?: Record<string, boolean>;
+      profileData?: Record<string, unknown>;
     }) {
       return client
         .from("onboarding")
@@ -39,6 +40,7 @@ export function createOnboardingRepository(client: SupabaseClient) {
             services: payload.services,
             business_hours: payload.businessHours,
             monthly_budget: payload.monthlyBudget,
+            profile_data: payload.profileData ?? {},
             stage: payload.stage ?? "profile",
             status: payload.status ?? "completed",
             checklist:

@@ -21,7 +21,7 @@ export default function Home() {
           <div>
             <p className="text-sm font-semibold tracking-tight">Diazites</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              AI marketing OS for roofing contractors.
+              AI-powered business growth platform for owners who run ads, leads, and follow-up in one place.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">

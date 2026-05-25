@@ -19,7 +19,7 @@ import {
 import { useEffect, useState } from "react";
 
 import {
-  DASHBOARD_NAV,
+  GROWTH_SIDEBAR_GROUPS,
   PRODUCT_TAGLINE,
   ROUTES,
   type DashboardNavItem,
@@ -62,6 +62,14 @@ function isNavItemActive(pathname: string, href: string): boolean {
       pathname.startsWith("/dashboard/settings")
     );
   }
+  if (href === ROUTES.businessProfile) {
+    return pathname === ROUTES.businessProfile || pathname.startsWith(`${ROUTES.businessProfile}/`);
+  }
+  if (href === ROUTES.tasks) return pathname.startsWith(ROUTES.tasks);
+  if (href === ROUTES.followUp) return pathname.startsWith(ROUTES.followUp);
+  if (href === ROUTES.inbox) return pathname.startsWith(ROUTES.inbox);
+  if (href === ROUTES.calendar) return pathname.startsWith(ROUTES.calendar);
+  if (href === ROUTES.analytics) return pathname.startsWith(ROUTES.analytics);
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -142,18 +150,31 @@ export function AppSidebarShell({
     }
 
     return (
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-3">
-        {DASHBOARD_NAV.map((item) =>
-          renderNavLink(
-            {
-              href: item.href,
-              label: item.label,
-              icon: item.icon,
-              description: iconOnly ? undefined : item.description,
-            },
-            iconOnly,
-          ),
-        )}
+      <nav className="flex flex-1 flex-col gap-3 overflow-y-auto px-2 py-3">
+        {GROWTH_SIDEBAR_GROUPS.map((group) => (
+          <div key={group.id}>
+            {!iconOnly ? (
+              <p className="mb-1 px-2 text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
+                {group.label}
+              </p>
+            ) : null}
+            <div className="flex flex-col gap-0.5">
+              {group.items.map((item) => (
+                <div key={`${group.id}-${item.href}-${item.label}`}>
+                  {renderNavLink(
+                    {
+                      href: item.href,
+                      label: item.label,
+                      icon: item.icon,
+                      description: iconOnly ? undefined : item.description,
+                    },
+                    iconOnly,
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </nav>
     );
   };

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { BusinessUpsertInput } from "@/types/backend";
+import type { BusinessProfile } from "@/types/platform-growth";
 
 export function createBusinessRepository(client: SupabaseClient) {
   return {
@@ -56,8 +57,18 @@ export function createBusinessRepository(client: SupabaseClient) {
       if (data.businessHours !== undefined) row.business_hours = data.businessHours;
       if (data.monthlyBudget !== undefined) row.monthly_budget = data.monthlyBudget;
       if (data.logoUrl !== undefined) row.logo_url = data.logoUrl;
+      if (data.profile !== undefined) row.profile = data.profile;
 
       return client.from("businesses").update(row).eq("id", businessId).select("*").single();
+    },
+
+    async updateProfile(businessId: string, profile: BusinessProfile) {
+      return client
+        .from("businesses")
+        .update({ profile })
+        .eq("id", businessId)
+        .select("*")
+        .single();
     },
 
     async listAll() {

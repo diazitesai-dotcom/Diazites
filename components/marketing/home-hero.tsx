@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Cpu } from "lucide-react";
 
+import { HeroBackgroundVideo } from "@/components/marketing/hero-background-video";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { fadeUp, staggerContainer } from "@/lib/motion";
@@ -17,6 +18,7 @@ const stats = [
 export function HomeHero() {
   return (
     <section className="relative overflow-hidden border-b border-white/[0.06]">
+      <HeroBackgroundVideo />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(139,92,246,0.22),transparent)] dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(139,92,246,0.28),transparent)]" />
       <div className="pointer-events-none absolute inset-0 opacity-[0.65] dark:surface-grid dark:opacity-100" />
       <div className="pointer-events-none absolute inset-0 opacity-40 dark:opacity-60 surface-grid-light dark:hidden" />
@@ -31,7 +33,7 @@ export function HomeHero() {
           <motion.div variants={fadeUp}>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground backdrop-blur-md">
               <Cpu className="size-3.5 text-violet-400" aria-hidden />
-              Diazites AI Marketing Platform
+              AI Growth Command Center
             </span>
           </motion.div>
 
@@ -51,9 +53,9 @@ export function HomeHero() {
             variants={fadeUp}
             className="mt-6 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg"
           >
-            Launch campaigns, automate intelligent follow-up, and convert more
-            homeowners — all from one enterprise-grade workspace built for
-            contractors who expect Stripe-level polish.
+            Create your account, onboard your business, connect ads and CRM, activate AI
+            agents, launch campaigns, capture leads, automate follow-up, and scale from one
+            premium command center.
           </motion.p>
 
           <motion.div
