@@ -21,12 +21,15 @@ import { ZernioConnector } from "@/components/integrations/zernio-connector";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AdopsPagePayload } from "@/lib/ads/adops-types";
+import { ROUTES } from "@/lib/navigation/platform-nav";
 
 type AdsCommandCenterClientProps = {
   payload: AdopsPagePayload;
   zapierEvents: { type: string; label: string; description: string }[];
   zapierRules: { id: string; name: string; triggerEvent: string; url: string; enabled: boolean }[];
   zernioConfigured: boolean;
+  /** When true, parent (Campaign Ops) renders module header. */
+  embedded?: boolean;
 };
 
 export function AdsCommandCenterClient({
@@ -34,23 +37,27 @@ export function AdsCommandCenterClient({
   zapierEvents,
   zapierRules,
   zernioConfigured,
+  embedded = false,
 }: AdsCommandCenterClientProps) {
   return (
     <AdopsProvider payload={payload}>
-      <div className="mx-auto max-w-7xl space-y-8 pb-16">
-        <PageHeader
-          eyebrow="AdOps Command Center"
-          title="AI marketing operating system"
-          description="Connect platforms, orchestrate live campaigns, and watch agents execute with full visibility and safety controls."
-        />
-
-        <div className="flex flex-wrap gap-2 text-xs">
-          <MissionLink href="/dashboard" label="Mission Control" />
-          <MissionLink href="/dashboard/engine" label="Growth Engine" />
-          <MissionLink href="/dashboard/integrations" label="Integrations" />
-          <MissionLink href="/dashboard/approvals" label="Approvals" />
-          <MissionLink href="/dashboard/optimization" label="Optimization" />
-        </div>
+      <div className={embedded ? "mx-auto max-w-7xl space-y-8" : "mx-auto max-w-7xl space-y-8 pb-16"}>
+        {!embedded ? (
+          <>
+            <PageHeader
+              eyebrow="Campaign Ops"
+              title="Live campaign operations"
+              description="Connect platforms, orchestrate live campaigns, and watch agents execute with full visibility and safety controls."
+            />
+            <div className="flex flex-wrap gap-2 text-xs">
+              <MissionLink href={ROUTES.missionControl} label="Mission Control" />
+              <MissionLink href={ROUTES.growthEngine} label="Growth Engine" />
+              <MissionLink href={ROUTES.integrationsHub} label="Integrations" />
+              <MissionLink href={ROUTES.approvalCenter} label="Approvals" />
+              <MissionLink href={ROUTES.optimizationLab} label="Optimization Lab" />
+            </div>
+          </>
+        ) : null}
 
         <Suspense fallback={null}>
           <AdsOAuthBanner />

@@ -20,9 +20,9 @@ export default async function LeadsManagerPage() {
     return (
       <div className="mx-auto max-w-6xl space-y-10">
         <PageHeader
-          eyebrow="Pipeline"
-          title="Leads CRM"
-          description="Track every lead from first touch to won job."
+          eyebrow="Leads OS"
+          title="Leads OS"
+          description="Everything after capture — inbox, CRM, pipelines, conversations, follow-up, and attribution."
         />
         <Card className="border-white/[0.06]">
           <CardHeader>
@@ -48,9 +48,9 @@ export default async function LeadsManagerPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <PageHeader
-        eyebrow="Pipeline"
-        title="Leads CRM"
-        description="Track every lead from first touch to won job. Switch between kanban and table without losing context."
+        eyebrow="Leads OS"
+        title="Lead & revenue operations"
+        description="Inbox, CRM, scoring, pipelines, SMS, email, bookings, follow-up, attribution, and AI qualification."
       />
       <LeadsBoard leads={leads} />
     </div>

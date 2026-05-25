@@ -14,9 +14,9 @@ export default async function FunnelDashboardPage() {
     return (
       <div className="mx-auto max-w-6xl space-y-10">
         <PageHeader
-          eyebrow="Conversion"
-          title="Funnel Builder"
-          description="Build landing pages with versions, A/B tests, and CRM-connected forms."
+          eyebrow="Funnel Studio"
+          title="Conversion systems"
+          description="Landing pages, forms, offers, variants, and conversion analytics."
         />
         <Card className="border-white/[0.06]">
           <CardHeader>
@@ -36,9 +36,9 @@ export default async function FunnelDashboardPage() {
   return (
     <div className="mx-auto max-w-[1400px] space-y-8">
       <PageHeader
-        eyebrow="Conversion"
-        title="Funnel Builder"
-        description="Full landing page editor — sections, form fields, A/B variants, AI conversion review, and publish to /lp/[slug]."
+        eyebrow="Funnel Studio"
+        title="Build & optimize funnels"
+        description="Landing pages, forms, surveys, offers, A/B tests, heatmaps, and conversion analytics — publish to /lp/[slug]."
       />
       <FunnelBuilderClient
         businessId={businessId}

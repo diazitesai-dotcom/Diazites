@@ -137,6 +137,7 @@ export async function pushLandingPageToCampaignAction(landingPageId: string, cam
   );
   if (!result.success) return { ok: false as const, error: result.error };
   revalidatePath("/dashboard/funnel");
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/campaigns");
   return { ok: true as const };
 }
@@ -185,6 +186,7 @@ export async function connectAdAccountAction(input: {
   const { supabase, userId, businessId } = await ctx();
   const result = await connectAdAccount(supabase, userId, businessId, input);
   if (!result.success) return { ok: false as const, error: result.error };
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
   return { ok: true as const, data: result.data };
 }
@@ -193,6 +195,7 @@ export async function testAdAccountAction(adAccountId: string) {
   const { supabase, userId, businessId } = await ctx();
   const result = await testAdAccountConnection(supabase, userId, businessId, adAccountId);
   if (!result.success) return { ok: false as const, error: result.error };
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
   return { ok: true as const, data: result.data };
 }
@@ -201,7 +204,9 @@ export async function syncAdAccountAction(adAccountId: string) {
   const { supabase, userId, businessId } = await ctx();
   const result = await syncAdAccountCampaigns(supabase, userId, businessId, adAccountId);
   if (!result.success) return { ok: false as const, error: result.error };
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/campaigns");
   return { ok: true as const, data: result.data };
 }
@@ -210,6 +215,7 @@ export async function disconnectAdAccountAction(adAccountId: string) {
   const { supabase, userId, businessId } = await ctx();
   const result = await disconnectAdAccount(supabase, userId, businessId, adAccountId);
   if (!result.success) return { ok: false as const, error: result.error };
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
   return { ok: true as const };
 }
@@ -281,6 +287,7 @@ export async function updateAgentPermissionAction(input: {
   const { supabase, userId, businessId } = await ctx();
   const result = await updateAgentPermission(supabase, userId, businessId, input);
   if (!result.success) return { ok: false as const, error: result.error };
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
   return { ok: true as const };
 }

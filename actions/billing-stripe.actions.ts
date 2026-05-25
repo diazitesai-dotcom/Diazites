@@ -18,7 +18,7 @@ export async function startSubscriptionCheckout(planName: BillingPlanName) {
   const businesses = createBusinessRepository(supabase);
   const { data: business } = await businesses.getByOwnerUserId(user.id);
   if (!business) {
-    redirect("/dashboard/billing?error=no_business");
+    redirect("/dashboard/organization?tab=billing?error=no_business");
   }
 
   try {
@@ -31,7 +31,7 @@ export async function startSubscriptionCheckout(planName: BillingPlanName) {
     redirect(url);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Checkout failed";
-    redirect(`/dashboard/billing?error=${encodeURIComponent(msg)}`);
+    redirect(`/dashboard/organization?tab=billing?error=${encodeURIComponent(msg)}`);
   }
 }
 
@@ -41,13 +41,13 @@ export async function openBillingPortal() {
   const businesses = createBusinessRepository(supabase);
   const { data: business } = await businesses.getByOwnerUserId(user.id);
   if (!business) {
-    redirect("/dashboard/billing?error=no_business");
+    redirect("/dashboard/organization?tab=billing?error=no_business");
   }
 
   const billing = createBillingRepository(supabase);
   const { data: row } = await billing.getByBusinessId(business.id);
   if (!row?.stripe_customer_id) {
-    redirect("/dashboard/billing?error=no_stripe_customer");
+    redirect("/dashboard/organization?tab=billing?error=no_stripe_customer");
   }
 
   try {
@@ -58,6 +58,6 @@ export async function openBillingPortal() {
     redirect(url);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Portal failed";
-    redirect(`/dashboard/billing?error=${encodeURIComponent(msg)}`);
+    redirect(`/dashboard/organization?tab=billing?error=${encodeURIComponent(msg)}`);
   }
 }

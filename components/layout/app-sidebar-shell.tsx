@@ -5,34 +5,20 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
-  BarChart3,
   Bot,
-  CreditCard,
   FileText,
-  Funnel,
-  Gauge,
-  LayoutDashboard,
-  Megaphone,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
-  Plug,
-  Settings,
   Shield,
-  ShieldAlert,
   ShieldCheck,
-  Sparkles,
-  Target,
   UserCircle2,
-  UserCog,
-  Users,
-  Webhook,
   X,
   Zap,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { DASHBOARD_NAV, PRODUCT_TAGLINE, ROUTES } from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils";
 
 import { NotificationBell } from "./notification-bell";
@@ -40,26 +26,16 @@ import { NotificationBell } from "./notification-bell";
 type NavItem = {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: typeof DASHBOARD_NAV[number]["icon"];
+  description?: string;
 };
 
-const DASHBOARD_NAV: NavItem[] = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/engine", label: "Growth Engine", icon: Sparkles },
-  { href: "/dashboard/ads", label: "Ads", icon: Target },
-  { href: "/dashboard/optimization", label: "Optimization", icon: Gauge },
-  { href: "/dashboard/agents", label: "Agent Manager", icon: Bot },
-  { href: "/dashboard/leads", label: "Leads CRM", icon: Users },
-  { href: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone },
-  { href: "/dashboard/funnel", label: "Funnel Builder", icon: Funnel },
-  { href: "/dashboard/integrations", label: "Integrations", icon: Plug },
-  { href: "/dashboard/automations", label: "Automations", icon: Webhook },
-  { href: "/dashboard/approvals", label: "Approvals", icon: ShieldAlert },
-  { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
-  { href: "/dashboard/team", label: "Team", icon: UserCog },
-  { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
-];
+const DASHBOARD_NAV_ITEMS: NavItem[] = DASHBOARD_NAV.map((item) => ({
+  href: item.href,
+  label: item.label,
+  icon: item.icon,
+  description: item.description,
+}));
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: Shield },
@@ -86,7 +62,7 @@ export function AppSidebarShell({
   brandTitle,
   footerLink,
 }: AppSidebarShellProps) {
-  const navItems = variant === "dashboard" ? DASHBOARD_NAV : ADMIN_NAV;
+  const navItems = variant === "dashboard" ? DASHBOARD_NAV_ITEMS : ADMIN_NAV;
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -99,10 +75,26 @@ export function AppSidebarShell({
     <nav className="flex flex-1 flex-col gap-1 px-2 py-3">
       {navItems.map((item) => {
         const Icon = item.icon;
-        const active =
-          item.href === "/dashboard" || item.href === "/admin"
-            ? pathname === item.href
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = (() => {
+          if (item.href === "/admin") return pathname === "/admin";
+          if (item.href === ROUTES.missionControl) return pathname === ROUTES.missionControl;
+          if (item.href === ROUTES.campaignOps) {
+            return (
+              pathname === ROUTES.campaignOps ||
+              pathname.startsWith("/dashboard/ads") ||
+              pathname.startsWith("/dashboard/campaigns")
+            );
+          }
+          if (item.href === ROUTES.organization) {
+            return (
+              pathname === ROUTES.organization ||
+              pathname.startsWith("/dashboard/team") ||
+              pathname.startsWith("/dashboard/billing") ||
+              pathname.startsWith("/dashboard/settings")
+            );
+          }
+          return pathname === item.href || pathname.startsWith(`${item.href}/`);
+        })();
 
         return (
           <Link
@@ -169,6 +161,10 @@ export function AppSidebarShell({
             {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
           </button>
         </div>
+
+        {!collapsed && variant === "dashboard" ? (
+          <p className="px-4 pb-2 text-[10px] leading-snug text-muted-foreground/80">{PRODUCT_TAGLINE}</p>
+        ) : null}
 
         <NavBody iconOnly={collapsed} />
 

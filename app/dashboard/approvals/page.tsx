@@ -27,9 +27,9 @@ export default async function ApprovalsPage() {
     return (
       <div className="mx-auto max-w-6xl space-y-10">
         <PageHeader
-          eyebrow="Approvals"
-          title="Decision queue"
-          description="Approve or reject the items the engine routes to you."
+          eyebrow="Approval Center"
+          title="Human oversight layer"
+          description="Pending launches, budgets, agent actions, risk review, and audit history."
         />
         <Card className="border-white/[0.06]">
           <CardHeader>
@@ -63,9 +63,9 @@ export default async function ApprovalsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <PageHeader
-        eyebrow="Approvals"
-        title="Decision queue"
-        description="Engine launches that failed QA, large budget changes, and other high-stakes decisions land here for human review."
+        eyebrow="Approval Center"
+        title="Human oversight layer"
+        description="Recommend-only, requires approval, auto-under-limits, or full autonomous — with policy rules and manual overrides."
       />
 
       <section className="space-y-3">

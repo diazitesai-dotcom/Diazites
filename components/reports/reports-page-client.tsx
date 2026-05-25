@@ -97,9 +97,9 @@ export function ReportsPageClient({
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <PageHeader
-        eyebrow="Analytics"
-        title="Reports"
-        description="The six headline KPIs from the Growth Engine map — visitors, leads, conversion, CPL, ROAS, and booked calls — in one command view."
+        eyebrow="Reports & Intelligence"
+        title="Analytics & executive insights"
+        description="ROAS, revenue, pipeline, attribution, funnel performance, forecasting, agent performance, and AI summaries."
       />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">

@@ -49,7 +49,7 @@ export function MissionControlBridge({
     alerts.push({
       id: "retarget",
       message: `Retargeting ready — ${visitorsForRetargeting} visitors available.`,
-      href: "/dashboard/campaigns",
+      href: "/dashboard/campaign-ops",
       tone: "cyan",
     });
   }

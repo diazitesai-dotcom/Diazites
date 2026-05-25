@@ -161,7 +161,7 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
 
   const kpiLinks: Record<string, string> = {
     leads: "/dashboard/leads",
-    campaigns: "/dashboard/campaigns",
+    campaigns: "/dashboard/campaign-ops",
     booked: "/dashboard/leads",
   };
 
@@ -179,9 +179,9 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
         <AgentPerformanceBoard data={data} />
 
         <PageHeader
-          eyebrow="AI Growth OS"
-          title="Mission control"
-          description="Your AI-powered marketing command center — what is happening, what is broken, and what to do next."
+          eyebrow="Mission Control"
+          title="Global live command center"
+          description="Everything happening right now — system map, KPIs, agent activity, campaign health, lead velocity, approvals, and AI recommendations."
           actions={<CommandCenterBell items={data.commandCenter} />}
         />
 

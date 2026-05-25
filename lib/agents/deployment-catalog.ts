@@ -136,9 +136,14 @@ export function mapDbStatusToLifecycle(
 export function inferGoalFromHref(href: string): DeploymentGoalId | undefined {
   if (href.includes("/dashboard/engine")) return "deploy_full_growth_engine";
   if (href.includes("/dashboard/funnel")) return "build_landing_page";
-  if (href.includes("/dashboard/ads")) return "launch_ads";
+  if (
+    href.includes("/dashboard/campaign-ops") ||
+    href.includes("/dashboard/ads") ||
+    href.includes("/dashboard/campaigns")
+  ) {
+    return "launch_ads";
+  }
   if (href.includes("/dashboard/leads")) return "follow_up_leads";
-  if (href.includes("/dashboard/campaigns")) return "launch_ads";
   if (href.includes("/dashboard/optimization")) return "improve_conversion";
   return undefined;
 }

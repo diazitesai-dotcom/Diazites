@@ -3,6 +3,8 @@ import Link from "next/link";
 import { AgentMcpDocs } from "@/components/agents/agent-mcp-docs";
 import { AgentMcpAccessPanel } from "@/components/agents/agent-mcp-access-panel";
 import { AgentManagerClient } from "@/components/agents/agent-manager-client";
+import { PlatformAgentRoster } from "@/components/agents/platform-agent-roster";
+import { ModulePurpose } from "@/components/layout/module-purpose";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { getPublicAppUrl } from "@/lib/env";
@@ -41,10 +43,15 @@ export default async function AgentManagerPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <PageHeader
-        eyebrow="Automation"
-        title="Agent Manager"
-        description="Activate specialized AI agents for your roofing growth engine. Connect OpenClaw, Hermes, Cursor, and other MCP clients via Zernio or Diazites tokens."
+        eyebrow="Agents"
+        title="Autonomous execution layer"
+        description="Active agents, task queues, AI reasoning, execution logs, permissions, memory, rollback, and approval states — the core of your growth operating system."
       />
+      <ModulePurpose
+        title="Agent operations"
+        description="Research through follow-up: each agent runs with transparent reasoning, connected tools, and enterprise approval modes from recommend-only to full autonomous."
+      />
+      <PlatformAgentRoster />
       <p className="-mt-6 text-sm text-muted-foreground">
         Full setup guide for connecting agents to this site:{" "}
         <Link href="/docs/agents" className="text-violet-300 underline">

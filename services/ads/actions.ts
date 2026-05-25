@@ -86,6 +86,7 @@ export async function disconnectAdsPlatformAction(
     targetKind: "ad_account",
   });
 
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
   return ok({ ok: true });
 }
@@ -125,6 +126,7 @@ export async function pushWinningCreativeAction(
     metadata: { engineRunId, winningAssetId, dailyBudgetUsd },
   });
 
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
   return ok(result.data);
 }
@@ -144,6 +146,7 @@ export async function syncMetaMetricsAction(): Promise<ServiceResult<MetricsSync
     metadata: { summary: result.data },
   });
 
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
   return ok(result.data);
 }
@@ -198,6 +201,7 @@ export async function pushZernioCreativeAction(
     metadata: { engineRunId, winningAssetId, zernioPostId: result.data.zernioPostId },
   });
 
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
   return ok(result.data);
 }

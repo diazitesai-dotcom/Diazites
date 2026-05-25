@@ -51,19 +51,19 @@ export function CampaignsTable({ campaigns }: { campaigns: CampaignRow[] }) {
               </div>
             </Link>
             <Link
-              href="/dashboard/ads"
+              href="/dashboard/campaign-ops"
               className="flex items-start gap-3 rounded-xl border border-white/[0.06] p-4 transition-colors hover:bg-white/[0.03]"
             >
               <Target className="mt-0.5 h-5 w-5 text-primary" />
               <div>
-                <p className="font-medium">Connect Ads Platform</p>
+                <p className="font-medium">Open Campaign Ops</p>
                 <p className="text-xs text-muted-foreground">
                   Meta, Google, TikTok, Microsoft, Zernio, or Zapier.
                 </p>
               </div>
             </Link>
             <Link
-              href="/dashboard/campaigns"
+              href="/dashboard/campaign-ops"
               className="flex items-start gap-3 rounded-xl border border-white/[0.06] p-4 transition-colors hover:bg-white/[0.03]"
             >
               <Upload className="mt-0.5 h-5 w-5 text-primary" />

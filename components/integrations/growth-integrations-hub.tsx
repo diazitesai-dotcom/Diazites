@@ -71,9 +71,9 @@ export function GrowthIntegrationsHub({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-300/90">
-            AI Growth OS
+            Integrations Hub
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight">Growth Integrations Hub</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">External systems & credentials</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Connect ad platforms, CRM, analytics, tracking, ecommerce, and comms — agents monitor,
             recommend, and execute within your guardrails.

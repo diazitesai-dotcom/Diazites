@@ -26,9 +26,9 @@ export default async function AutomationsPage() {
     return (
       <div className="mx-auto max-w-6xl space-y-10">
         <PageHeader
-          eyebrow="Automations"
-          title="Event-driven workflows"
-          description="Send webhooks and SMS when engine events fire."
+          eyebrow="Automation Center"
+          title="Workflow orchestration"
+          description="Triggers, conditions, multi-step automations, and agent-driven event routing."
         />
         <Card className="border-white/[0.06]">
           <CardHeader>
@@ -61,9 +61,9 @@ export default async function AutomationsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <PageHeader
-        eyebrow="Automations"
-        title="Event-driven workflows"
-        description="Send webhooks and SMS when engine events fire — new lead, status change, AI follow-up sent, and more."
+        eyebrow="Automation Center"
+        title="Workflow orchestration"
+        description="Lead captured → CRM sync → SMS → email → agent notify → retargeting — with logs and performance analytics."
       />
       <AutomationsManager rules={rules} recentRuns={runs} triggers={triggers} />
     </div>

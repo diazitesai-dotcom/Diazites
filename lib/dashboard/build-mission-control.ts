@@ -25,6 +25,7 @@ import type {
   RevenueForecast,
   StackHealthItem,
 } from "@/lib/dashboard/mission-control-types";
+import { ROUTES } from "@/lib/navigation/platform-nav";
 import { AGENTS } from "@/utils/constants";
 
 type Metrics = {
@@ -253,7 +254,7 @@ export function buildMissionControlPayload(input: {
     ? {
         title: "Connect Meta Ads & launch retargeting",
         impact: "Estimated +18–32% lead volume once paid channels are live",
-        href: "/dashboard/ads",
+        href: ROUTES.campaignOps,
         cta: "Connect Now",
         confidence: 88,
         risk: "low",
@@ -329,7 +330,7 @@ export function buildMissionControlPayload(input: {
       impact: "Unlock paid acquisition + budget optimization",
       expectedOutcome: "+18–32 leads/month modeled",
       cta: "Fix Now",
-      href: "/dashboard/ads",
+      href: ROUTES.campaignOps,
       confidence: 91,
       risk: "low",
       deployEtaSeconds: 300,
@@ -421,7 +422,7 @@ export function buildMissionControlPayload(input: {
       impact: "Lower CPL by ~$18 per lead",
       priority: "medium",
       cta: "Fix Now",
-      href: "/dashboard/ads",
+      href: ROUTES.campaignOps,
       reasoning: "Search auction pressure eased in your service area for high-intent terms.",
       confidence: 72,
       risk: "low",
@@ -564,7 +565,7 @@ export function buildMissionControlPayload(input: {
       id: "meta",
       name: "Meta Ads",
       status: hasMeta ? "connected" : "missing",
-      href: "/dashboard/ads",
+      href: ROUTES.campaignOps,
       category: "ads",
       healthDetail: hasMeta ? "Token valid · syncing" : "Connect to unlock paid",
     },
@@ -572,7 +573,7 @@ export function buildMissionControlPayload(input: {
       id: "google",
       name: "Google Ads",
       status: hasGoogle ? "connected" : "missing",
-      href: "/dashboard/ads",
+      href: ROUTES.campaignOps,
       category: "ads",
       healthDetail: hasGoogle ? "Account linked" : "Not connected",
     },
@@ -580,7 +581,7 @@ export function buildMissionControlPayload(input: {
       id: "tiktok",
       name: "TikTok Ads",
       status: "missing",
-      href: "/dashboard/ads",
+      href: ROUTES.campaignOps,
       category: "ads",
       healthDetail: "Available in integrations",
     },
@@ -588,14 +589,14 @@ export function buildMissionControlPayload(input: {
       id: "linkedin",
       name: "LinkedIn Ads",
       status: "missing",
-      href: "/dashboard/ads",
+      href: ROUTES.campaignOps,
       category: "ads",
     },
     {
       id: "youtube",
       name: "YouTube",
       status: "needs_attention",
-      href: "/dashboard/ads",
+      href: ROUTES.campaignOps,
       category: "ads",
       healthDetail: "Channel not linked",
     },
@@ -647,7 +648,7 @@ export function buildMissionControlPayload(input: {
       id: "stripe",
       name: "Stripe",
       status: billingActive ? "connected" : "pending",
-      href: "/dashboard/billing",
+      href: `${ROUTES.organization}?tab=billing`,
       category: "commerce",
       healthDetail: billingActive ? "Billing active" : "Complete setup",
     },
@@ -655,7 +656,7 @@ export function buildMissionControlPayload(input: {
       id: "analytics",
       name: "Analytics",
       status: "needs_attention",
-      href: "/dashboard/settings",
+      href: `${ROUTES.organization}?tab=settings`,
       category: "analytics",
       healthDetail: "GA4 property pending",
     },
@@ -663,7 +664,7 @@ export function buildMissionControlPayload(input: {
       id: "pixel",
       name: "Pixel / Domain",
       status: "error",
-      href: "/dashboard/settings",
+      href: `${ROUTES.organization}?tab=settings`,
       category: "analytics",
       healthDetail: "Meta Pixel ID missing",
     },
@@ -671,14 +672,14 @@ export function buildMissionControlPayload(input: {
       id: "dns",
       name: "Domain DNS",
       status: "pending",
-      href: "/dashboard/settings",
+      href: `${ROUTES.organization}?tab=settings`,
       category: "analytics",
     },
     {
       id: "openai",
       name: "OpenAI API",
       status: "connected",
-      href: "/dashboard/settings",
+      href: `${ROUTES.organization}?tab=settings`,
       category: "ai",
       healthDetail: "Platform key active",
     },
@@ -950,12 +951,12 @@ export function buildMissionControlPayload(input: {
         detail: c.detail,
         href:
           c.id === "ads"
-            ? "/dashboard/ads"
+            ? ROUTES.campaignOps
             : c.id === "billing"
-              ? "/dashboard/billing"
+              ? `${ROUTES.organization}?tab=billing`
               : c.id === "qual"
                 ? "/dashboard/agents"
-                : "/dashboard/settings",
+                : `${ROUTES.organization}?tab=settings`,
       })),
     ...opportunities.slice(0, 2).map((o) => ({
       id: `opp-${o.id}`,

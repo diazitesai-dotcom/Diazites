@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function IntegrationsPage() {
   const supabase = await createServerSupabaseClient();
   const ctxResult = await requireBusinessContext(supabase);
-  if (!ctxResult.ok) redirect("/dashboard/settings");
+  if (!ctxResult.ok) redirect("/dashboard/organization?tab=settings");
 
   const { data: adAccounts } = await supabase
     .from("ad_accounts")

@@ -536,7 +536,7 @@ export function QuickActionsRow() {
       icon: Bot,
     },
     { label: "Import Leads", href: "/dashboard/leads", icon: Import },
-    { label: "Connect Ad Account", href: "/dashboard/ads", icon: Plug },
+    { label: "Campaign Ops", href: "/dashboard/campaign-ops", icon: Plug },
     { label: "View reports", href: "/dashboard/reports", icon: LineChart },
   ];
   return (

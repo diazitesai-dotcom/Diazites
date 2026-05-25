@@ -52,7 +52,7 @@ export function ZeroSpendEmpty() {
           </p>
         </div>
         <Link
-          href="/dashboard/ads"
+          href="/dashboard/campaign-ops"
           className={cn(buttonVariants({ variant: "outline" }), "shrink-0 rounded-xl")}
         >
           Connect Ad Account

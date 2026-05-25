@@ -35,7 +35,7 @@ export function GrowthOrchestrationTimeline({
     row: { label: string },
   ) {
     if (actionId === "open_logs" || actionId === "view_payload") {
-      router.push("/dashboard/settings");
+      router.push("/dashboard/organization?tab=settings");
       return;
     }
     if (actionId === "ai_fix" || actionId === "retry") {

@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   const oauthError = url.searchParams.get("error");
 
   const appUrl = getPublicAppUrl();
-  const adsUrl = `${appUrl}/dashboard/ads`;
+  const adsUrl = `${appUrl}/dashboard/campaign-ops`;
 
   if (oauthError) {
     return NextResponse.redirect(
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.redirect(`${appUrl}/login?next=${encodeURIComponent("/dashboard/ads")}`);
+    return NextResponse.redirect(`${appUrl}/login?next=${encodeURIComponent("/dashboard/campaign-ops")}`);
   }
 
   const result =

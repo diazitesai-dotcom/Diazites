@@ -28,9 +28,9 @@ export default async function OptimizationPage() {
     return (
       <div className="mx-auto max-w-6xl space-y-10">
         <PageHeader
-          eyebrow="Optimization Loop"
-          title="AI-driven recommendations"
-          description="The 24-hour optimization sweep distills engagement + spend into clear, actionable decisions."
+          eyebrow="Optimization Lab"
+          title="Continuous AI performance tuning"
+          description="Budget, creative, funnel, and audience optimization with experiments and rollbacks."
         />
         <Card className="border-white/[0.06]">
           <CardHeader>
@@ -64,9 +64,9 @@ export default async function OptimizationPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <PageHeader
-        eyebrow="Optimization Loop"
-        title="AI-driven recommendations"
-        description="The 24-hour optimization sweep distills engagement, conversions, and spend into clear, actionable decisions you can approve or apply."
+        eyebrow="Optimization Lab"
+        title="Continuous AI performance tuning"
+        description="Scaling opportunities, predictive recommendations, experiment tracking, AI tuning history, and forecasting."
       />
       <OptimizationDashboard decisions={decisions} runs={runs} />
     </div>

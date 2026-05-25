@@ -108,7 +108,7 @@ export function buildSystemModuleDetails(ctx: SystemModuleContext): Record<Syste
       { time: "09:02", event: "Session start · Organic" },
     ],
     contextualActions: [
-      { label: "Launch ads", href: "/dashboard/campaigns" },
+      { label: "Launch ads", href: "/dashboard/campaign-ops" },
       { label: "Create audience", href: "/dashboard/integrations" },
       { label: "Analyze dropoff", href: "/dashboard/funnel" },
     ],
@@ -389,7 +389,7 @@ export function buildSystemModuleDetails(ctx: SystemModuleContext): Record<Syste
     contextualActions: [
       { label: "Review logs", href: "/dashboard/optimization" },
       { label: "Rollback", href: "/dashboard/optimization" },
-      { label: "Launch retargeting", href: "/dashboard/campaigns" },
+      { label: "Launch retargeting", href: "/dashboard/campaign-ops" },
     ],
   };
 
