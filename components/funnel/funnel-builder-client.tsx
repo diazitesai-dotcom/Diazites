@@ -5,7 +5,10 @@ import { useCallback, useMemo, useState, useTransition } from "react";
 import {
   Copy,
   Eye,
+  Files,
   Monitor,
+  PanelLeft,
+  Sparkles,
   Smartphone,
   Tablet,
   Upload,
@@ -23,8 +26,10 @@ import {
 } from "@/actions/marketing-os.actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,6 +41,17 @@ import {
   type LandingSection,
   type LandingSectionType,
 } from "@/types/marketing-os";
+
+type BuilderSection =
+  | "pages"
+  | "funnels"
+  | "templates"
+  | "assets"
+  | "forms"
+  | "versions"
+  | "analytics"
+  | "seo"
+  | "settings";
 
 const SECTION_TYPES: { type: LandingSectionType; label: string }[] = [
   { type: "hero", label: "Hero" },
@@ -81,6 +97,9 @@ export function FunnelBuilderClient({ businessId, initialPages }: FunnelBuilderC
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [message, setMessage] = useState("");
+  const [activeSection, setActiveSection] = useState<BuilderSection>("pages");
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
   const [pending, startTransition] = useTransition();
 
   const activeVersion = useMemo(() => {
@@ -97,6 +116,7 @@ export function FunnelBuilderClient({ businessId, initialPages }: FunnelBuilderC
     if (result.ok) {
       setEditor(result.data as EditorState);
       setSelectedPageId(pageId);
+      setActiveSection("pages");
     } else {
       setMessage(result.error);
     }
@@ -153,40 +173,106 @@ export function FunnelBuilderClient({ businessId, initialPages }: FunnelBuilderC
             } else setMessage(result.error);
           });
         }}
+        onAiBuild={() => setAiOpen(true)}
       />
 
       {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
 
-      <div className="grid gap-6 xl:grid-cols-[240px_1fr_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[260px_1fr_420px]">
         <Card className="border-white/[0.06]">
-          <CardHeader>
-            <CardTitle className="text-sm">Pages</CardTitle>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-sm">Workspace</CardTitle>
+            <CardDescription>Pages, funnels, templates, assets, forms, and analytics.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {pages.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No pages yet. Create one to start.</p>
+          <CardContent className="space-y-4">
+            <nav className="space-y-1">
+              <LeftNavButton
+                icon={Files}
+                label="Pages"
+                description="Website & landing pages"
+                active={activeSection === "pages"}
+                onClick={() => setActiveSection("pages")}
+              />
+              <LeftNavButton
+                icon={PanelLeft}
+                label="Funnels"
+                description="Visual funnel mapping"
+                active={activeSection === "funnels"}
+                onClick={() => setActiveSection("funnels")}
+              />
+              <LeftNavButton
+                icon={Sparkles}
+                label="Templates"
+                description="Clone & customize"
+                active={activeSection === "templates"}
+                onClick={() => setActiveSection("templates")}
+              />
+              <LeftNavButton
+                icon={Upload}
+                label="Assets"
+                description="Images & brand kit"
+                active={activeSection === "assets"}
+                onClick={() => setActiveSection("assets")}
+              />
+              <LeftNavButton
+                icon={Wand2}
+                label="Forms"
+                description="Lead forms & surveys"
+                active={activeSection === "forms"}
+                onClick={() => setActiveSection("forms")}
+              />
+              <LeftNavButton
+                icon={Copy}
+                label="Versions"
+                description="A/B tests & rollback"
+                active={activeSection === "versions"}
+                onClick={() => setActiveSection("versions")}
+              />
+              <LeftNavButton
+                icon={Eye}
+                label="Analytics"
+                description="CVR & performance"
+                active={activeSection === "analytics"}
+                onClick={() => setActiveSection("analytics")}
+              />
+            </nav>
+
+            {activeSection === "pages" ? (
+              <ScrollArea className="h-[380px] pr-2">
+                <div className="space-y-2">
+                  {pages.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No pages yet. Create one to start.</p>
+                  ) : (
+                    pages.map((page) => (
+                      <button
+                        key={page.id}
+                        type="button"
+                        onClick={() => void loadEditor(page.id)}
+                        className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                          selectedPageId === page.id
+                            ? "border-violet-500/40 bg-violet-500/10"
+                            : "border-border/60 hover:bg-white/[0.04]"
+                        }`}
+                      >
+                        <p className="font-medium">{page.headline ?? page.slug}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {page.published ? "Published" : "Draft"}
+                        </p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
             ) : (
-              pages.map((page) => (
-                <button
-                  key={page.id}
-                  type="button"
-                  onClick={() => void loadEditor(page.id)}
-                  className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                    selectedPageId === page.id
-                      ? "border-violet-500/40 bg-violet-500/10"
-                      : "border-border/60 hover:bg-white/[0.04]"
-                  }`}
-                >
-                  <p className="font-medium">{page.headline ?? page.slug}</p>
-                  <p className="text-xs text-muted-foreground">{page.published ? "Published" : "Draft"}</p>
-                </button>
-              ))
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-sm text-muted-foreground">
+                Coming next: {activeSection.replace(/^\w/, (c) => c.toUpperCase())} builder.
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {editor && activeVersion ? (
-          <>
+        {activeSection === "pages" ? (
+          editor && activeVersion ? (
             <EditorPanel
               editor={editor}
               sections={sections}
@@ -247,24 +333,116 @@ export function FunnelBuilderClient({ businessId, initialPages }: FunnelBuilderC
                 });
               }}
             />
-
-            <PreviewPanel
-              editor={editor}
-              sections={sections}
-              formFields={formFields}
-              device={previewDevice}
-              onDeviceChange={setPreviewDevice}
-              businessId={businessId}
-            />
-          </>
+          ) : (
+            <Card className="border-white/[0.06]">
+              <CardContent className="py-16 text-center text-muted-foreground">
+                Select or create a page to open the editor.
+              </CardContent>
+            </Card>
+          )
         ) : (
-          <Card className="border-white/[0.06] xl:col-span-2">
+          <Card className="border-white/[0.06]">
+            <CardHeader>
+              <CardTitle className="text-lg">Builder canvas</CardTitle>
+              <CardDescription>Drag-and-drop canvas, layers, and responsive controls.</CardDescription>
+            </CardHeader>
             <CardContent className="py-16 text-center text-muted-foreground">
-              Select or create a landing page to open the editor.
+              {activeSection === "funnels"
+                ? "Funnel map builder is next."
+                : activeSection === "templates"
+                  ? "Template library and marketplace is next."
+                  : "Select Pages to edit a live landing page."}
             </CardContent>
           </Card>
         )}
+
+        <Card className="border-white/[0.06]">
+          {activeSection === "pages" ? (
+            editor && activeVersion ? (
+              <PreviewPanel
+                editor={editor}
+                sections={sections}
+                formFields={formFields}
+                device={previewDevice}
+                onDeviceChange={setPreviewDevice}
+                businessId={businessId}
+              />
+            ) : (
+              <CardContent className="py-16 text-center text-muted-foreground">
+                Preview opens when a page is selected.
+              </CardContent>
+            )
+          ) : (
+            <CardContent className="py-16 text-center text-muted-foreground">
+              Properties + AI tools panel (coming next).
+            </CardContent>
+          )}
+        </Card>
       </div>
+
+      <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+        <DialogContent className="border-white/[0.08] bg-neutral-950">
+          <DialogHeader>
+            <DialogTitle>Build from business prompt</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label htmlFor="ai-prompt">Describe your business or niche</Label>
+            <Textarea
+              id="ai-prompt"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder='Build me a roofing lead generation website with landing pages, quote form, reviews, FAQs, booking, and Facebook lead funnel.'
+              className="min-h-[120px]"
+            />
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setAiOpen(false)} className="rounded-xl">
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="gradient"
+                className="rounded-xl"
+                disabled={pending || aiPrompt.trim().length < 8}
+                onClick={() => {
+                  startTransition(async () => {
+                    // MVP: create a small starter set of pages based on the prompt.
+                    // (Full AI template engine + structured site maps come next.)
+                    const base = aiPrompt.trim();
+                    const headline = base.slice(0, 60);
+                    const result = await createLandingPageAction({
+                      headline: headline.length ? headline : "New website",
+                      subheadline: "Generated draft — customize sections, forms, and offers",
+                      offer: "Launch-ready conversion system",
+                      location: "Your city",
+                      ctaText: "Get started",
+                    });
+                    if (result.ok) {
+                      setPages((prev) => [
+                        {
+                          id: result.data.landingPageId,
+                          slug: result.data.slug,
+                          headline: headline.length ? headline : "New website",
+                          published: false,
+                          status: "draft",
+                        },
+                        ...prev,
+                      ]);
+                      await loadEditor(result.data.landingPageId);
+                      setMessage("AI draft created. Next: templates + multi-page site maps.");
+                      setAiOpen(false);
+                      setAiPrompt("");
+                    } else {
+                      setMessage(result.error);
+                    }
+                  });
+                }}
+              >
+                Generate draft
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -272,9 +450,11 @@ export function FunnelBuilderClient({ businessId, initialPages }: FunnelBuilderC
 function FunnelHeader({
   pending,
   onCreate,
+  onAiBuild,
 }: {
   pending: boolean;
   onCreate: () => void;
+  onAiBuild: () => void;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -282,10 +462,51 @@ function FunnelHeader({
         <p className="text-xs uppercase tracking-wide text-muted-foreground">Funnel Builder</p>
         <h2 className="text-lg font-semibold">Landing page editor</h2>
       </div>
-      <Button disabled={pending} onClick={onCreate} variant="gradient" className="rounded-xl">
-        New landing page
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button disabled={pending} onClick={onAiBuild} variant="secondary" className="rounded-xl">
+          <Sparkles className="mr-2 size-4" />
+          AI build
+        </Button>
+        <Button disabled={pending} onClick={onCreate} variant="gradient" className="rounded-xl">
+          New landing page
+        </Button>
+      </div>
     </div>
+  );
+}
+
+function LeftNavButton({
+  icon: Icon,
+  label,
+  description,
+  active,
+  onClick,
+}: {
+  icon: typeof Files;
+  label: string;
+  description: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`
+        w-full rounded-xl border px-3 py-2 text-left transition-colors
+        ${active ? "border-violet-500/40 bg-violet-500/10" : "border-border/60 hover:bg-white/[0.04]"}
+      `}
+    >
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 inline-flex size-8 items-center justify-center rounded-lg bg-white/[0.04]">
+          <Icon className="size-4 text-muted-foreground" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+      </div>
+    </button>
   );
 }
 

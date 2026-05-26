@@ -120,7 +120,8 @@ export const DASHBOARD_NAV: DashboardNavItem[] = [
     id: "funnel_studio",
     href: ROUTES.funnelStudio,
     label: "Funnel Studio",
-    description: "Pages, forms & conversion",
+    description:
+      "Build websites, funnels, landing pages, forms, offers, surveys, automations, and conversion systems.",
     icon: Funnel,
   },
   {
@@ -265,8 +266,9 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
       {
         id: "funnel_studio",
         href: ROUTES.funnelStudio,
-        label: "Offers & pages",
-        description: "Landing & forms",
+        label: "Funnel Studio",
+        description:
+          "Build websites, funnels, landing pages, forms, offers, surveys, automations, and conversion systems.",
         icon: Funnel,
       },
       {

@@ -38,7 +38,7 @@ export default async function FunnelDashboardPage() {
       <PageHeader
         eyebrow="Funnel Studio"
         title="Build & optimize funnels"
-        description="Landing pages, forms, surveys, offers, A/B tests, heatmaps, and conversion analytics — publish to /lp/[slug]."
+        description="Build websites, funnels, landing pages, forms, offers, surveys, automations, and conversion systems."
       />
       <FunnelBuilderClient
         businessId={businessId}
