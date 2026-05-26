@@ -15,8 +15,8 @@ export default async function DashboardPage() {
       <div className="mx-auto max-w-6xl space-y-10">
         <PageHeader
           eyebrow="Mission Control"
-          title="CEO Cockpit"
-          description="Connect your business profile to unlock executive KPIs, live operations map, agent performance, and AI decision support."
+          title="Growth Command Center"
+          description="Connect your business profile to unlock revenue, campaigns, leads, AI agents, and growth opportunities in one central hub."
         />
         <Card className="border-white/[0.06]">
           <CardHeader>

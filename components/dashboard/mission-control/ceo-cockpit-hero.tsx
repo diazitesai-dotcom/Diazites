@@ -226,10 +226,12 @@ export function CeoCockpitHero({ data }: { data: DashboardOverviewData }) {
             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-violet-300/90">
               Mission Control
             </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">CEO Cockpit</h1>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
+              Growth Command Center
+            </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Revenue, pipeline, spend efficiency, lead velocity, agent health, and approvals —
-              one executive row before you drill into operations.
+              Monitor revenue, campaigns, leads, AI agents, and growth opportunities from one
+              central hub.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

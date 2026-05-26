@@ -166,7 +166,7 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
     <motion.div variants={fadeItem} initial="hidden" animate="show">
       <GlassCard
         title="Executive briefing"
-        description="Deep context behind the CEO Cockpit summary"
+        description="Deep context behind the Growth Command Center summary"
         className="border-violet-500/15 shadow-[0_12px_48px_-20px_rgba(139,92,246,0.35)]"
         headerExtra={
           <div className="flex flex-wrap items-center gap-1.5">
