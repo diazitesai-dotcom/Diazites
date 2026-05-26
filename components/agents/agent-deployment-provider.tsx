@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -13,13 +14,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AgentDeploymentDrawer } from "@/components/agents/agent-deployment-drawer";
 import { AiOperatorConsole } from "@/components/ai-operator/ai-operator-console";
-import { AGENT_STACKS, normalizeDeploymentGoalId } from "@/types/agent-deployment";
+import { parseUrlDeployLaunch } from "@/lib/agents/parse-url-deploy-launch";
 import type {
   AgentDeploymentContext,
-  AgentStackId,
   DeploymentLaunchParams,
 } from "@/types/agent-deployment";
-import type { AgentType } from "@/types/domain";
 
 type AgentRow = { agent_type: string; status: string; activated_at?: string | null };
 
@@ -85,34 +84,16 @@ export function AgentDeploymentProvider({
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [pathname, router, searchParams]);
 
+  const { fromUrl, launch: urlLaunch } = useMemo(
+    () => parseUrlDeployLaunch(searchParams),
+    [searchParams],
+  );
+
+  const drawerOpen = open || fromUrl;
+  const drawerLaunch = open ? launch : urlLaunch;
+
   useEffect(() => {
-    const deploy = searchParams.get("deploy");
-    if (!deploy) return;
-
-    if (deploy === "retargeting") {
-      openDeployment({
-        preset: "retargeting",
-        agent: "retargeting",
-        goal: "improve_conversion",
-        mode: "autonomous",
-        step: "plan",
-        source: "opportunity",
-      });
-    } else if (deploy === "1" || deploy === "true") {
-      const goal = normalizeDeploymentGoalId(searchParams.get("goal") ?? undefined);
-      const stack = searchParams.get("stack") as AgentStackId | null;
-      const agent = searchParams.get("agent") as AgentType | null;
-
-      openDeployment({
-        goal: goal ?? undefined,
-        stack: stack && AGENT_STACKS.some((s) => s.id === stack) ? stack : undefined,
-        agent: agent ?? undefined,
-        source: "activate_agent",
-      });
-    } else {
-      return;
-    }
-
+    if (!fromUrl) return;
     if (cleanUrlTimerRef.current) clearTimeout(cleanUrlTimerRef.current);
     cleanUrlTimerRef.current = setTimeout(() => {
       stripDeployParams();
@@ -125,7 +106,7 @@ export function AgentDeploymentProvider({
         cleanUrlTimerRef.current = null;
       }
     };
-  }, [searchParams, openDeployment, stripDeployParams]);
+  }, [fromUrl, stripDeployParams]);
 
   useEffect(() => {
     if (!open && searchParams.get("deploy")) {
@@ -137,7 +118,7 @@ export function AgentDeploymentProvider({
     <DeploymentContext.Provider value={{ openDeployment, closeDeployment, isOpen: open, agents }}>
       {children}
       <AgentDeploymentDrawer
-        open={open}
+        open={drawerOpen}
         onOpenChange={(next) => {
           if (!next) {
             closeDeployment();
@@ -149,14 +130,14 @@ export function AgentDeploymentProvider({
         }}
         agents={agents}
         context={deploymentContext}
-        initialGoal={launch.goal}
-        initialStack={launch.stack}
-        initialAgent={launch.agent}
-        initialStep={launch.step}
-        initialPreset={launch.preset}
-        initialMode={launch.mode}
-        launchSource={launch.source}
-        key={`${open}-${launch.goal ?? ""}-${launch.stack ?? ""}-${launch.agent ?? ""}-${launch.preset ?? ""}`}
+        initialGoal={drawerLaunch.goal}
+        initialStack={drawerLaunch.stack}
+        initialAgent={drawerLaunch.agent}
+        initialStep={drawerLaunch.step}
+        initialPreset={drawerLaunch.preset}
+        initialMode={drawerLaunch.mode}
+        launchSource={drawerLaunch.source}
+        key={`${drawerOpen}-${drawerLaunch.goal ?? ""}-${drawerLaunch.stack ?? ""}-${drawerLaunch.agent ?? ""}-${drawerLaunch.preset ?? ""}`}
       />
       <AiOperatorConsole />
     </DeploymentContext.Provider>

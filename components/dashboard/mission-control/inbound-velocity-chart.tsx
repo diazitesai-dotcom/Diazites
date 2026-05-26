@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import {
@@ -133,8 +133,11 @@ function VelocityIntelligenceLayer({ annotations }: { annotations: SparkPoint[] 
 }
 
 export function InboundVelocityChart({ data }: { data?: SparkPoint[] }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const series = data && data.length > 0 ? data : [];
   const annotated = useMemo(

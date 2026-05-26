@@ -170,30 +170,6 @@ export function AgentDeploymentDrawer({
     };
   }, [open, onOpenChange, step]);
 
-  useEffect(() => {
-    if (!open) return;
-    if (initialPreset) {
-      const p = getDeploymentPreset(initialPreset);
-      setGoalId(p.goal);
-      setSelectedAgents([p.agent]);
-      setConfig({ ...defaultConfig, ...p.config });
-      setMode(initialMode ?? p.defaultMode);
-    }
-    if (initialGoal) setGoalId(initialGoal);
-    if (initialStack) {
-      const stack = AGENT_STACKS.find((s) => s.id === initialStack);
-      if (stack) setSelectedAgents([...stack.agents]);
-    }
-    if (initialAgent) {
-      setSelectedAgents([initialAgent]);
-      setStep(initialStep ?? "stack");
-    } else if (initialStep) {
-      setStep(initialStep);
-    }
-    if (initialMode) setMode(initialMode);
-    if (!initialPreset && context?.prefill) setConfig({ ...defaultConfig, ...context.prefill });
-  }, [open, initialGoal, initialStack, initialAgent, initialStep, initialPreset, initialMode, context?.prefill]);
-
   function selectGoal(id: DeploymentGoalId) {
     setGoalId(id);
     setSelectedAgents(recommendAgentsForGoal(id));

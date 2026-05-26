@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import {
   Bar,
   BarChart,
@@ -32,8 +32,11 @@ export type PerformanceSeriesRow = {
 };
 
 export function PerformanceChart({ data }: { data?: PerformanceSeriesRow[] }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   if (!mounted) {
     return (

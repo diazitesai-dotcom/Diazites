@@ -1,31 +1,37 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 
 export function AdsOAuthBanner() {
   const searchParams = useSearchParams();
-  const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const connected = searchParams.get("connected");
+  const error = searchParams.get("error");
+
+  const message = useMemo(() => {
+    if (connected) {
+      return {
+        kind: "ok" as const,
+        text: `${connected.charAt(0).toUpperCase()}${connected.slice(1)} account connected successfully.`,
+      };
+    }
+    if (error) {
+      return {
+        kind: "err" as const,
+        text: decodeURIComponent(error.replace(/\+/g, " ")),
+      };
+    }
+    return null;
+  }, [connected, error]);
 
   useEffect(() => {
-    const connected = searchParams.get("connected");
-    const error = searchParams.get("error");
-    if (connected) {
-      setMessage({
-        kind: "ok",
-        text: `${connected.charAt(0).toUpperCase()}${connected.slice(1)} account connected successfully.`,
-      });
-    } else if (error) {
-      setMessage({ kind: "err", text: decodeURIComponent(error.replace(/\+/g, " ")) });
-    }
-    if (connected || error) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("connected");
-      url.searchParams.delete("error");
-      window.history.replaceState({}, "", url.pathname + url.search);
-    }
-  }, [searchParams]);
+    if (!connected && !error) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("connected");
+    url.searchParams.delete("error");
+    window.history.replaceState({}, "", url.pathname + url.search);
+  }, [connected, error]);
 
   if (!message) return null;
 

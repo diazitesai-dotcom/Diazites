@@ -28,9 +28,14 @@ export function NotificationBell() {
   }
 
   useEffect(() => {
-    refresh();
+    const refreshTimer = window.setTimeout(() => {
+      void refresh();
+    }, 0);
     const interval = setInterval(refresh, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(refreshTimer);
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -91,7 +96,7 @@ export function NotificationBell() {
           <ul className="max-h-[420px] overflow-y-auto divide-y divide-border/40">
             {items.length === 0 ? (
               <li className="px-3 py-6 text-center text-xs text-muted-foreground">
-                You're all caught up.
+                You are all caught up.
               </li>
             ) : (
               items.map((n) => {

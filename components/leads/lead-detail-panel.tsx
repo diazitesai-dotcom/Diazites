@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Trash2, X } from "lucide-react";
 
 import {
@@ -43,47 +43,35 @@ type LeadDetailPanelProps = {
 
 export function LeadDetailPanel({ lead, mode, onClose, onSaved }: LeadDetailPanelProps) {
   const open = mode === "create" || lead !== null;
+  if (!open) return null;
+
+  const formKey = mode === "create" ? "create" : lead!.id;
+
+  return (
+    <LeadDetailForm
+      key={formKey}
+      lead={lead}
+      mode={mode}
+      onClose={onClose}
+      onSaved={onSaved}
+    />
+  );
+}
+
+function LeadDetailForm({ lead, mode, onClose, onSaved }: LeadDetailPanelProps) {
+  const isCreate = mode === "create";
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
-  const [roofingNeed, setRoofingNeed] = useState("");
-  const [timeline, setTimeline] = useState("");
-  const [source, setSource] = useState("");
-  const [status, setStatus] = useState<PipelineStatus>("new");
-  const [notes, setNotes] = useState("");
-
-  useEffect(() => {
-    if (mode === "create") {
-      setName("");
-      setPhone("");
-      setEmail("");
-      setAddress("");
-      setRoofingNeed("");
-      setTimeline("");
-      setSource("manual");
-      setStatus("new");
-      setNotes("");
-      setError(null);
-      return;
-    }
-    if (!lead) return;
-    setName(lead.name);
-    setPhone(lead.phone);
-    setEmail(lead.email);
-    setAddress(lead.address);
-    setRoofingNeed(lead.roofingNeed);
-    setTimeline(lead.timeline);
-    setSource(lead.source);
-    setStatus(lead.status);
-    setNotes(lead.notes);
-    setError(null);
-  }, [lead, mode]);
-
-  if (!open) return null;
+  const [name, setName] = useState(isCreate ? "" : (lead?.name ?? ""));
+  const [phone, setPhone] = useState(isCreate ? "" : (lead?.phone ?? ""));
+  const [email, setEmail] = useState(isCreate ? "" : (lead?.email ?? ""));
+  const [address, setAddress] = useState(isCreate ? "" : (lead?.address ?? ""));
+  const [roofingNeed, setRoofingNeed] = useState(isCreate ? "" : (lead?.roofingNeed ?? ""));
+  const [timeline, setTimeline] = useState(isCreate ? "" : (lead?.timeline ?? ""));
+  const [source, setSource] = useState(isCreate ? "manual" : (lead?.source ?? ""));
+  const [status, setStatus] = useState<PipelineStatus>(isCreate ? "new" : (lead?.status ?? "new"));
+  const [notes, setNotes] = useState(isCreate ? "" : (lead?.notes ?? ""));
 
   function handleSave() {
     setError(null);

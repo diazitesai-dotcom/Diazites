@@ -16,7 +16,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   GROWTH_SIDEBAR_GROUPS,
@@ -92,11 +92,7 @@ export function AppSidebarShell({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
-
-  const renderNavLink = (item: NavItem, iconOnly: boolean) => {
+  const renderNavLink = (item: NavItem, iconOnly: boolean, onNavigate?: () => void) => {
     const Icon = item.icon;
     const active = isNavItemActive(pathname, item.href);
 
@@ -105,6 +101,7 @@ export function AppSidebarShell({
         key={item.href}
         href={item.href}
         title={iconOnly ? item.label : undefined}
+        onClick={onNavigate}
         className={cn(
           "group relative flex rounded-xl transition-colors",
           iconOnly ? "justify-center px-2 py-2.5" : "gap-2.5 px-2.5 py-2",
@@ -140,11 +137,11 @@ export function AppSidebarShell({
     );
   };
 
-  const NavBody = ({ iconOnly }: { iconOnly: boolean }) => {
+  const renderNavBody = (iconOnly: boolean, onNavigate?: () => void) => {
     if (variant === "admin") {
       return (
         <nav className="flex flex-1 flex-col gap-1 px-2 py-3">
-          {ADMIN_NAV.map((item) => renderNavLink(item, iconOnly))}
+          {ADMIN_NAV.map((item) => renderNavLink(item, iconOnly, onNavigate))}
         </nav>
       );
     }
@@ -169,6 +166,7 @@ export function AppSidebarShell({
                       description: iconOnly ? undefined : item.description,
                     },
                     iconOnly,
+                    onNavigate,
                   )}
                 </div>
               ))}
@@ -223,7 +221,7 @@ export function AppSidebarShell({
           </p>
         ) : null}
 
-        <NavBody iconOnly={collapsed} />
+        {renderNavBody(collapsed)}
 
         {footerLink ? (
           <div className="border-t border-border/60 p-2">
@@ -305,7 +303,7 @@ export function AppSidebarShell({
                   <X className="size-4" />
                 </button>
               </div>
-              <NavBody iconOnly={false} />
+              {renderNavBody(false, () => setMobileOpen(false))}
               {footerLink ? (
                 <div className="border-t border-border/60 p-2">
                   <Link

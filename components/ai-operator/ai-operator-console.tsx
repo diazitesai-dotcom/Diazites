@@ -48,6 +48,7 @@ export function AiOperatorConsole() {
   const [logs, setLogs] = useState<string[]>([]);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messageIdRef = useRef(0);
   const pathname = usePathname();
   const router = useRouter();
   const { openDeployment } = useAgentDeployment();
@@ -59,9 +60,14 @@ export function AiOperatorConsole() {
 
   useEffect(() => {
     if (!open) return;
-    void refreshContext();
+    const refreshTimer = window.setTimeout(() => {
+      void refreshContext();
+    }, 0);
     const t = setInterval(() => setPlaceholderIdx((i) => (i + 1) % PLACEHOLDERS.length), 4000);
-    return () => clearInterval(t);
+    return () => {
+      window.clearTimeout(refreshTimer);
+      clearInterval(t);
+    };
   }, [open, refreshContext]);
 
   useEffect(() => {
@@ -77,12 +83,17 @@ export function AiOperatorConsole() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, pending]);
 
+  function nextMessageId(prefix: string) {
+    messageIdRef.current += 1;
+    return `${prefix}-${messageIdRef.current}`;
+  }
+
   async function submit(text: string) {
     const trimmed = text.trim();
     if (!trimmed || pending) return;
 
     const userMsg: OperatorMessage = {
-      id: `u-${Date.now()}`,
+      id: nextMessageId("u"),
       role: "user",
       content: trimmed,
     };
@@ -99,7 +110,7 @@ export function AiOperatorConsole() {
       void refreshContext();
     } catch {
       const err: OperatorAssistantMessage = {
-        id: `e-${Date.now()}`,
+        id: nextMessageId("e"),
         role: "assistant",
         mode: "support",
         content: "I couldn't process that request. Try again or use a quick command below.",
