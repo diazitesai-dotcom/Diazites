@@ -177,6 +177,36 @@
       linear-gradient(180deg, #000000 0%, #000000 100%);
   }
 
+  /* Mission Control — revenue / KPI layout (no overlap) */
+  .mission-kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.75rem), 1fr));
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .mission-kpi-cell {
+    min-width: 0;
+    display: flex;
+  }
+
+  .mission-kpi-cell > * {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .mission-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.75rem), 1fr));
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .mission-metric-tile {
+    overflow: hidden;
+  }
+
   .mission-shimmer-btn {
     position: relative;
     overflow: hidden;

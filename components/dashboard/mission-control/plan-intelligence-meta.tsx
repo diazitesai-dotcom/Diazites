@@ -33,7 +33,7 @@ export function PlanIntelligenceMeta({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] tracking-wide",
+        "flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-[11px] leading-relaxed tracking-wide",
         className,
       )}
     >

@@ -29,6 +29,7 @@ import { ApprovalStateBadge } from "@/components/dashboard/mission-control/appro
 import { PlanIntelligenceMeta, resolvePlanIntelligence } from "@/components/dashboard/mission-control/plan-intelligence-meta";
 import { AnimatedCounter, AnimatedMoney } from "@/components/dashboard/mission-control/animated-counter";
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
+import { MissionMetricGrid, MissionMetricTile } from "@/components/dashboard/mission-control/mission-metric";
 import { inferGoalFromHref } from "@/lib/agents/deployment-catalog";
 import { HealthRadialChart } from "@/components/dashboard/mission-control/health-radial-chart";
 import { FunnelEmptyHint } from "@/components/dashboard/mission-control/mission-empty-states";
@@ -112,8 +113,8 @@ function GoalDiagnosticRow({ goal }: { goal: BusinessGoal }) {
 
   return (
     <div className="space-y-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-sm font-medium text-foreground">{goal.label}</span>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+        <span className="text-sm font-medium leading-snug text-foreground">{goal.label}</span>
         <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{display}</span>
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
@@ -199,18 +200,22 @@ export function AiCommandBriefing({ data }: { data: DashboardOverviewData }) {
           ) : null}
           <p className="text-sm leading-relaxed text-foreground/95">{b.aiInsight}</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+            <div className="min-w-0 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Expected uplift (model)
               </p>
-              <p className="mt-1 text-sm font-semibold text-emerald-300/95">{b.expectedUplift}</p>
+              <p className="mt-1.5 break-words text-sm font-semibold leading-snug text-emerald-300/95">
+                {b.expectedUplift}
+              </p>
             </div>
-            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+            <div className="min-w-0 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Highest leverage
               </p>
-              <p className="mt-1 text-sm font-semibold text-violet-200">{b.leverageRecommendation}</p>
-              <p className="mt-1 text-xs text-cyan-200/80">{b.expectedImpact}</p>
+              <p className="mt-1.5 break-words text-sm font-semibold leading-snug text-violet-200">
+                {b.leverageRecommendation}
+              </p>
+              <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-cyan-200/80">{b.expectedImpact}</p>
             </div>
           </div>
           <div className="mt-4 flex justify-end border-t border-white/[0.06] pt-4">
@@ -284,15 +289,20 @@ export function RecommendedNextActionCard({ data }: { data: DashboardOverviewDat
         className="border-cyan-500/20 bg-gradient-to-br from-cyan-950/20 via-card/80 to-violet-950/20"
         headerExtra={<Zap className="size-4 text-amber-400" />}
       >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-2">
-            <p className="text-lg font-semibold tracking-tight text-foreground">{action.title}</p>
-            <p className="text-sm text-cyan-200/90">{action.impact}</p>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1 space-y-4">
+            <div className="space-y-2">
+              <p className="text-lg font-semibold leading-snug tracking-tight text-foreground">
+                {action.title}
+              </p>
+              <p className="text-sm leading-relaxed text-cyan-200/90">{action.impact}</p>
+            </div>
             <BusinessOutcomeBlock outcome={action.businessOutcome} />
             <PlanIntelligenceMeta
               confidence={action.confidence}
               risk={action.risk}
               deployEtaSeconds={action.deployEtaSeconds}
+              className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2"
             />
             <ApprovalStateBadge state={action.approvalState} />
           </div>
@@ -300,7 +310,7 @@ export function RecommendedNextActionCard({ data }: { data: DashboardOverviewDat
             type="button"
             variant="outline"
             size="lg"
-            className="shrink-0 rounded-xl border-white/10"
+            className="w-full shrink-0 rounded-xl border-white/10 sm:w-auto lg:mt-1"
             onClick={() =>
               openDeployment({
                 goal: inferGoalFromHref(action.href),
@@ -362,21 +372,21 @@ export function RevenueForecastCard({ data }: { data: DashboardOverviewData }) {
       }
     >
       <p className="mb-4 text-xs leading-relaxed text-muted-foreground">{r.explanation}</p>
-      <div className="grid grid-cols-2 gap-3">
+      <MissionMetricGrid>
         {items.map((item) => (
-          <div
+          <MissionMetricTile
             key={item.label}
-            className="mission-elevate rounded-xl border border-white/[0.06] bg-white/[0.02] p-3"
-          >
-            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              {item.label}
-            </p>
-            <p className="mt-1 text-xl font-semibold tabular-nums">
-              <AnimatedMoney value={item.value} />
-            </p>
-          </div>
+            label={item.label}
+            labelTitle={
+              item.label === "Pipeline value"
+                ? "Potential sales value from leads not closed yet"
+                : undefined
+            }
+            value={<AnimatedMoney value={item.value} />}
+            className="mission-elevate"
+          />
         ))}
-      </div>
+      </MissionMetricGrid>
     </GlassCard>
   );
 }

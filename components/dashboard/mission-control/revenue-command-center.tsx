@@ -1,20 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  CalendarCheck,
-  DollarSign,
-  Handshake,
-  LineChart,
-  Target,
-  TrendingUp,
-  Wallet,
-} from "lucide-react";
 
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
+import { MissionMetricGrid, MissionMetricTile } from "@/components/dashboard/mission-control/mission-metric";
 import type { RevenueCommandCenter } from "@/lib/dashboard/mission-control-types";
 import { fadeItem } from "@/lib/motion";
-import { cn } from "@/lib/utils";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -27,40 +18,50 @@ function formatMoney(n: number) {
 const KPI_CONFIG: {
   key: keyof RevenueCommandCenter;
   label: string;
-  icon: typeof DollarSign;
+  labelTitle?: string;
   format: (v: RevenueCommandCenter) => string;
   accent?: string;
 }[] = [
-  { key: "spend", label: "Spend", icon: Wallet, format: (r) => formatMoney(r.spend) },
-  { key: "leads", label: "Leads", icon: Target, format: (r) => String(r.leads) },
+  { key: "spend", label: "Spend", format: (r) => formatMoney(r.spend) },
+  { key: "leads", label: "Leads", format: (r) => String(r.leads) },
   {
     key: "cpl",
     label: "CPL",
-    icon: TrendingUp,
+    labelTitle: "Cost per lead",
     format: (r) => (r.cpl != null ? formatMoney(r.cpl) : "—"),
   },
   {
     key: "roas",
-    label: "Return on ad spend",
-    icon: LineChart,
+    label: "ROAS",
+    labelTitle: "Return on ad spend",
     format: (r) => (r.roas != null ? `${r.roas.toFixed(1)}×` : "—"),
     accent: "text-cyan-200",
   },
   {
     key: "revenue",
-    label: "Money generated",
-    icon: DollarSign,
+    label: "Generated",
+    labelTitle: "Money generated from closed deals",
     format: (r) => formatMoney(r.revenue),
     accent: "text-emerald-300",
   },
   {
     key: "pipeline",
-    label: "Potential sales",
-    icon: LineChart,
+    label: "Pipeline",
+    labelTitle: "Potential sales value from leads not closed yet",
     format: (r) => formatMoney(r.pipeline),
   },
-  { key: "appointments", label: "Appointments", icon: CalendarCheck, format: (r) => String(r.appointments) },
-  { key: "closedDeals", label: "Closed deals", icon: Handshake, format: (r) => String(r.closedDeals) },
+  {
+    key: "appointments",
+    label: "Appts",
+    labelTitle: "Appointments booked",
+    format: (r) => String(r.appointments),
+  },
+  {
+    key: "closedDeals",
+    label: "Closed",
+    labelTitle: "Closed deals",
+    format: (r) => String(r.closedDeals),
+  },
 ];
 
 export function RevenueCommandCenterRow({ data }: { data: RevenueCommandCenter }) {
@@ -70,30 +71,30 @@ export function RevenueCommandCenterRow({ data }: { data: RevenueCommandCenter }
         title="Revenue Command Center"
         description="Money generated from tracked leads and closed deals — spend, profit, and return on ad spend"
         headerExtra={
-          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-200">
+          <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-200">
             Live
           </span>
         }
       >
-        <motion.div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+        <MissionMetricGrid>
           {KPI_CONFIG.map((kpi, i) => (
             <motion.div
               key={kpi.key}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
-              className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition-colors hover:border-emerald-500/25 hover:bg-emerald-500/5"
+              className="min-w-0"
             >
-              <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                <kpi.icon className="size-3 shrink-0 text-emerald-400/80" />
-                {kpi.label}
-              </div>
-              <p className={cn("mt-1.5 text-lg font-bold tabular-nums tracking-tight", kpi.accent ?? "text-foreground")}>
-                {kpi.format(data)}
-              </p>
+              <MissionMetricTile
+                label={kpi.label}
+                labelTitle={kpi.labelTitle}
+                value={kpi.format(data)}
+                accent={kpi.accent}
+                className="h-full transition-colors hover:border-emerald-500/25 hover:bg-emerald-500/5"
+              />
             </motion.div>
           ))}
-        </motion.div>
+        </MissionMetricGrid>
       </GlassCard>
     </motion.div>
   );

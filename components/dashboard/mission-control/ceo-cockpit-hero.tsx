@@ -15,6 +15,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import { MissionKpiCell, MissionKpiGrid } from "@/components/dashboard/mission-control/mission-metric";
 import { CeoRevenueKpi } from "@/components/revenue/ceo-revenue-kpi";
 import { CommandCenterBell } from "@/components/dashboard/mission-control/command-center-bell";
 import { ApprovalStateBadge } from "@/components/dashboard/mission-control/approval-state-badge";
@@ -100,21 +101,30 @@ function TopKpiCard({ kpi, index }: { kpi: TopKpi; index: number }) {
       <Link
         href={kpi.href}
         className={cn(
-          "flex min-w-[132px] flex-col rounded-xl border border-white/[0.1] bg-white/[0.04] p-4 transition-all",
+          "flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/[0.1] bg-white/[0.04] p-4 transition-all",
           "hover:border-violet-500/35 hover:bg-violet-500/10 hover:shadow-[0_8px_28px_-12px_rgba(139,92,246,0.35)]",
         )}
       >
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+        <div className="flex items-start justify-between gap-2">
+          <span
+            className="text-[10px] font-bold uppercase leading-tight tracking-[0.12em] text-muted-foreground"
+            title={kpi.label}
+          >
             {kpi.label}
           </span>
-          <Icon className="size-3.5 shrink-0 text-violet-400/80" />
+          <Icon className="size-3.5 shrink-0 text-violet-400/80" aria-hidden />
         </div>
-        <p className={cn("mt-2 text-2xl font-bold tabular-nums tracking-tight", kpi.accent)}>
+        <p
+          className={cn(
+            "mt-2 text-xl font-bold tabular-nums leading-tight tracking-tight sm:text-2xl",
+            "break-words [overflow-wrap:anywhere]",
+            kpi.accent,
+          )}
+        >
           {kpi.value}
         </p>
-        <div className="mt-1 flex items-center justify-between gap-1">
-          <p className="text-[10px] text-muted-foreground">{kpi.sub}</p>
+        <div className="mt-auto space-y-1 pt-2">
+          <p className="line-clamp-3 text-[10px] leading-snug text-muted-foreground">{kpi.sub}</p>
           {TrendIcon && kpi.trendPercent != null && kpi.trendPercent > 0 ? (
             <span
               className={cn(
@@ -122,7 +132,7 @@ function TopKpiCard({ kpi, index }: { kpi: TopKpi; index: number }) {
                 kpi.trend === "up" ? "text-emerald-400" : "text-rose-400",
               )}
             >
-              <TrendIcon className="size-2.5" />
+              <TrendIcon className="size-2.5 shrink-0" />
               {kpi.trendPercent}%
             </span>
           ) : null}
@@ -148,7 +158,7 @@ export function CeoCockpitHero({ data }: { data: DashboardOverviewData }) {
     {
       label: "Pipeline",
       value: formatMoney(rev.pipeline),
-      sub: "Potential sales value from leads not closed yet",
+      sub: "Potential sales · not closed yet",
       href: ROUTES.leadsOs,
       icon: LineChart,
       accent: "text-cyan-300",
@@ -244,16 +254,16 @@ export function CeoCockpitHero({ data }: { data: DashboardOverviewData }) {
         <p className="mb-3 px-1 text-[10px] font-bold uppercase tracking-[0.22em] text-violet-400/80">
           Top KPIs
         </p>
-        <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 scrollbar-thin md:grid md:grid-cols-7 md:overflow-visible">
-          <div className="shrink-0 md:shrink md:min-w-0">
+        <MissionKpiGrid className="pb-1">
+          <MissionKpiCell>
             <CeoRevenueKpi index={0} />
-          </div>
+          </MissionKpiCell>
           {topKpis.map((kpi, i) => (
-            <div key={kpi.label} className="shrink-0 md:shrink md:min-w-0">
+            <MissionKpiCell key={kpi.label}>
               <TopKpiCard kpi={kpi} index={i + 1} />
-            </div>
+            </MissionKpiCell>
           ))}
-        </div>
+        </MissionKpiGrid>
       </div>
 
       <div className="relative grid gap-4 px-6 py-5 lg:grid-cols-2">
@@ -288,7 +298,7 @@ export function CeoCockpitHero({ data }: { data: DashboardOverviewData }) {
             </p>
           </div>
           <p className="mt-2 text-lg font-semibold leading-snug">{action.title}</p>
-          <p className="mt-1 text-sm text-cyan-100/80">{action.impact}</p>
+          <p className="mt-1 text-sm leading-relaxed text-cyan-100/80">{action.impact}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <ApprovalStateBadge state={action.approvalState} />
             <Link

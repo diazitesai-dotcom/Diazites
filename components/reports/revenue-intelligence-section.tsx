@@ -46,41 +46,55 @@ function RevenueIntelligenceInner() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4">
+      <div className="mission-metric-grid">
+        <div className="mission-metric-tile min-w-0 border-emerald-500/25 bg-emerald-500/10">
           <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Money generated</p>
-          <p className="mt-1 text-2xl font-bold text-emerald-200">{formatMoney(summary.revenueGenerated)}</p>
+          <p className="mt-1.5 break-words text-xl font-bold tabular-nums text-emerald-200 sm:text-2xl">
+            {formatMoney(summary.revenueGenerated)}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">{summary.closedDeals} closed deals</p>
         </div>
-        <div className="rounded-xl border border-white/[0.08] p-4">
+        <div className="mission-metric-tile min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total profit</p>
-          <p className="mt-1 text-2xl font-bold">{formatMoney(summary.profit)}</p>
+          <p className="mt-1.5 break-words text-xl font-bold tabular-nums sm:text-2xl">{formatMoney(summary.profit)}</p>
         </div>
-        <div className="rounded-xl border border-white/[0.08] p-4">
+        <div className="mission-metric-tile min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Ad spend</p>
-          <p className="mt-1 text-2xl font-bold">{formatMoney(summary.totalSpend)}</p>
+          <p className="mt-1.5 break-words text-xl font-bold tabular-nums sm:text-2xl">{formatMoney(summary.totalSpend)}</p>
         </div>
-        <div className="rounded-xl border border-white/[0.08] p-4">
+        <div className="mission-metric-tile min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Potential sales (pipeline)
+            Potential sales
           </p>
-          <p className="mt-1 text-2xl font-bold">{formatMoney(totals.pipelineValue)}</p>
+          <p
+            className="mt-1.5 break-words text-xl font-bold tabular-nums sm:text-2xl"
+            title="Pipeline value from leads not closed yet"
+          >
+            {formatMoney(totals.pipelineValue)}
+          </p>
+          <p className="mt-1 text-[10px] text-muted-foreground">Not closed revenue yet</p>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-white/[0.08] px-4 py-3 text-sm">
-          <p className="font-medium">Paid revenue</p>
-          <p className="text-lg font-bold text-emerald-300/90">{formatMoney(paidRevenue)}</p>
+      <div className="mission-metric-grid sm:grid-cols-3">
+        <div className="mission-metric-tile min-w-0 text-sm">
+          <p className="text-[10px] font-bold uppercase text-muted-foreground">Paid revenue</p>
+          <p className="mt-1.5 break-words text-lg font-bold tabular-nums text-emerald-300/90">
+            {formatMoney(paidRevenue)}
+          </p>
         </div>
-        <div className="rounded-lg border border-white/[0.08] px-4 py-3 text-sm">
-          <p className="font-medium">Organic revenue</p>
-          <p className="text-lg font-bold text-cyan-300/90">{formatMoney(organicRevenue)}</p>
-          <p className="text-[10px] text-muted-foreground">No ad spend</p>
+        <div className="mission-metric-tile min-w-0 text-sm">
+          <p className="text-[10px] font-bold uppercase text-muted-foreground">Organic revenue</p>
+          <p className="mt-1.5 break-words text-lg font-bold tabular-nums text-cyan-300/90">
+            {formatMoney(organicRevenue)}
+          </p>
+          <p className="mt-1 text-[10px] text-muted-foreground">No ad spend</p>
         </div>
-        <div className="rounded-lg border border-white/[0.08] px-4 py-3 text-sm">
-          <p className="font-medium">AI-influenced revenue</p>
-          <p className="text-lg font-bold text-violet-300/90">{formatMoney(agentRevenue)}</p>
+        <div className="mission-metric-tile min-w-0 text-sm">
+          <p className="text-[10px] font-bold uppercase text-muted-foreground">AI-influenced</p>
+          <p className="mt-1.5 break-words text-lg font-bold tabular-nums text-violet-300/90">
+            {formatMoney(agentRevenue)}
+          </p>
         </div>
       </div>
 

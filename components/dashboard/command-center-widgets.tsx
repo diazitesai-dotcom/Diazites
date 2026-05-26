@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { MissionMetricGrid, MissionMetricTile } from "@/components/dashboard/mission-control/mission-metric";
 import type { DashboardOverviewData } from "@/lib/dashboard/load-dashboard-overview";
 import { ROUTES } from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,7 @@ function formatMoney(n: number) {
 
 type Widget = {
   label: string;
+  labelTitle?: string;
   value: string;
   href: string;
   accent?: string;
@@ -27,33 +29,44 @@ export function CommandCenterWidgets({ data }: { data: DashboardOverviewData }) 
   const widgets: Widget[] = [
     { label: "Total leads", value: m ? String(m.totalLeads) : "—", href: ROUTES.leadsOs },
     {
-      label: "Conversion rate",
+      label: "Conversion",
+      labelTitle: "Conversion rate",
       value: m?.conversionRate != null ? `${(m.conversionRate * 100).toFixed(1)}%` : "—",
       href: ROUTES.analytics,
     },
     { label: "Ad spend", value: m ? formatMoney(m.totalSpend) : formatMoney(rev.spend), href: ROUTES.campaignOps },
     {
-      label: "Cost per lead",
+      label: "CPL",
+      labelTitle: "Cost per lead",
       value: m?.costPerLead != null ? formatMoney(m.costPerLead) : "—",
       href: ROUTES.reportsIntelligence,
     },
-    { label: "Revenue", value: formatMoney(rev.revenue), href: ROUTES.reportsIntelligence, accent: "text-emerald-300" },
+    {
+      label: "Generated",
+      labelTitle: "Money generated from closed deals",
+      value: formatMoney(rev.revenue),
+      href: ROUTES.reportsIntelligence,
+      accent: "text-emerald-300",
+    },
     {
       label: "ROAS",
+      labelTitle: "Return on ad spend",
       value: rev.roas != null ? `${rev.roas.toFixed(1)}×` : m?.roi != null ? `${m.roi.toFixed(1)}×` : "—",
       href: ROUTES.reportsIntelligence,
     },
     {
-      label: "Active agents",
+      label: "Agents",
+      labelTitle: "Active agents",
       value: String(data.agents.filter((a) => a.status === "active").length),
       href: ROUTES.agents,
     },
     {
-      label: "Active campaigns",
+      label: "Campaigns",
+      labelTitle: "Active campaigns",
       value: String(m?.activeCampaigns ?? 0),
       href: ROUTES.campaignOps,
     },
-    { label: "Pending tasks", value: String(pendingTasks), href: ROUTES.tasks },
+    { label: "Tasks", labelTitle: "Pending tasks", value: String(pendingTasks), href: ROUTES.tasks },
     {
       label: "Hot leads",
       value: hotLeads?.status === "active" ? hotLeads.resultMetric : "—",
@@ -69,20 +82,21 @@ export function CommandCenterWidgets({ data }: { data: DashboardOverviewData }) 
   ];
 
   return (
-    <section className="space-y-3">
+    <section className="min-w-0 space-y-3">
       <h2 className="text-sm font-semibold tracking-tight">Performance snapshot</h2>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+      <MissionMetricGrid className="sm:gap-2">
         {widgets.map((w) => (
-          <Link
-            key={w.label}
-            href={w.href}
-            className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 transition-colors hover:border-violet-500/30 hover:bg-violet-500/5"
-          >
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{w.label}</p>
-            <p className={cn("mt-1 text-xl font-bold tabular-nums", w.accent)}>{w.value}</p>
+          <Link key={w.label} href={w.href} className="min-w-0">
+            <MissionMetricTile
+              label={w.label}
+              labelTitle={w.labelTitle}
+              value={w.value}
+              accent={cn("text-lg sm:text-xl", w.accent)}
+              className="h-full transition-colors hover:border-violet-500/30 hover:bg-violet-500/5"
+            />
           </Link>
         ))}
-      </div>
+      </MissionMetricGrid>
     </section>
   );
 }

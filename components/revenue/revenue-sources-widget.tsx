@@ -21,20 +21,21 @@ export function RevenueSourcesWidget({ className }: { className?: string }) {
           Which campaigns and channels made money — spend, revenue, and return on ad spend
         </p>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mission-metric-grid">
         {rows.map((row) => (
           <button
             key={row.id}
             type="button"
             onClick={() => ctx.openDrawer(`journey-${row.id}`)}
-            className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-left transition-colors hover:border-violet-500/30 hover:bg-violet-500/5"
+            className="mission-metric-tile min-w-0 text-left transition-colors hover:border-violet-500/30 hover:bg-violet-500/5"
           >
-            <p className="text-sm font-medium">{row.sourceName}</p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Spend {formatMoney(row.spend)} · Revenue {formatMoney(row.revenue)}
+            <p className="line-clamp-2 text-sm font-medium leading-snug">{row.sourceName}</p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              <span className="block">Spend {formatMoney(row.spend)}</span>
+              <span className="block">Revenue {formatMoney(row.revenue)}</span>
             </p>
-            <p className="mt-1 text-sm font-semibold text-emerald-300/90">
-              {row.roas != null ? `${row.roas}× return on ad spend` : row.labelNote ?? "Organic"}
+            <p className="mt-1.5 text-sm font-semibold leading-snug text-emerald-300/90">
+              {row.roas != null ? `${row.roas}× ROAS` : row.labelNote ?? "Organic"}
             </p>
           </button>
         ))}
