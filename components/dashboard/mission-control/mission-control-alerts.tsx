@@ -21,7 +21,7 @@ function buildAlerts(data: DashboardOverviewData): Alert[] {
     (c) => (c.id === "hubspot" || c.id === "crm") && c.status === "connected",
   );
   const trackingDegraded = data.diagnostics.some(
-    (d) => d.id === "tracking" && d.status !== "healthy",
+    (d) => d.id === "tracking" && d.status === "critical",
   );
   const alerts: Alert[] = [];
 

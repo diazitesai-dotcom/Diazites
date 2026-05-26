@@ -66,6 +66,9 @@ export function buildMissionControlPayload(input: {
   const qualAgent = agents.find((a) => a.key === "lead_qualification");
   const retargetAgent = agents.find((a) => a.key === "retargeting");
   const hasPaidAds = hasMeta || hasGoogle;
+  const hasTrafficSignal = funnelCounts.visitors > 0 || totalLeads > 0;
+  const trackingRequired = hasPaidAds || activeCampaigns > 0;
+  const pixelOk = !trackingRequired || hasTrafficSignal;
 
   const trafficSpikeDetected =
     funnelCounts.visitors > 0 &&
@@ -178,8 +181,12 @@ export function buildMissionControlPayload(input: {
     {
       id: "pixel",
       label: "Pixel / domain tracking",
-      ok: false,
-      detail: "Pending — add pixel in Settings",
+      ok: pixelOk,
+      detail: pixelOk
+        ? hasTrafficSignal
+          ? "Events flowing from site & campaigns"
+          : "Ready when you launch paid traffic"
+        : "Reconnect Meta Pixel or GA4 in Integrations",
     },
     {
       id: "billing",
@@ -655,18 +662,24 @@ export function buildMissionControlPayload(input: {
     {
       id: "analytics",
       name: "Analytics",
-      status: "needs_attention",
-      href: `${ROUTES.organization}?tab=settings`,
+      status: pixelOk ? "connected" : trackingRequired ? "needs_attention" : "pending",
+      href: ROUTES.integrationsHub,
       category: "analytics",
-      healthDetail: "GA4 property pending",
+      healthDetail: pixelOk
+        ? "Attribution events active"
+        : "GA4 property pending",
     },
     {
       id: "pixel",
       name: "Pixel / Domain",
-      status: "error",
-      href: `${ROUTES.organization}?tab=settings`,
+      status: pixelOk ? "connected" : trackingRequired ? "error" : "pending",
+      href: ROUTES.integrationsHub,
       category: "analytics",
-      healthDetail: "Meta Pixel ID missing",
+      healthDetail: pixelOk
+        ? "Pixel verified"
+        : trackingRequired
+          ? "Meta Pixel ID missing"
+          : "Optional until ads go live",
     },
     {
       id: "dns",
@@ -904,13 +917,16 @@ export function buildMissionControlPayload(input: {
     },
   ];
 
-  const pixelOk = healthChecks.find((c) => c.id === "pixel")?.ok ?? false;
   const diagnostics: AiDiagnostic[] = [
     {
       id: "tracking",
       label: "Tracking",
-      status: pixelOk ? "healthy" : "warning",
-      detail: pixelOk ? "Pixel firing" : "Domain / pixel pending",
+      status: pixelOk ? "healthy" : trackingRequired ? "critical" : "healthy",
+      detail: pixelOk
+        ? "Pixel firing"
+        : trackingRequired
+          ? "Domain / pixel pending"
+          : "Not required until ads launch",
     },
     {
       id: "campaigns",
