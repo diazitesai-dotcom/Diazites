@@ -34,12 +34,7 @@ export default async function FunnelDashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-8">
-      <PageHeader
-        eyebrow="Funnel Studio"
-        title="Build & optimize funnels"
-        description="Build websites, funnels, landing pages, forms, offers, surveys, automations, and conversion systems."
-      />
+    <div className="mx-auto max-w-[100%]">
       <FunnelBuilderClient
         businessId={businessId}
         initialPages={pages as Array<{
