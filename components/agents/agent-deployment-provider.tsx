@@ -12,7 +12,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AgentDeploymentDrawer } from "@/components/agents/agent-deployment-drawer";
-import { AiCopilotFab } from "@/components/dashboard/mission-control/ai-copilot-fab";
+import { AiOperatorConsole } from "@/components/ai-operator/ai-operator-console";
 import { AGENT_STACKS, normalizeDeploymentGoalId } from "@/types/agent-deployment";
 import type {
   AgentDeploymentContext,
@@ -158,7 +158,7 @@ export function AgentDeploymentProvider({
         launchSource={launch.source}
         key={`${open}-${launch.goal ?? ""}-${launch.stack ?? ""}-${launch.agent ?? ""}-${launch.preset ?? ""}`}
       />
-      <AiCopilotFab />
+      <AiOperatorConsole />
     </DeploymentContext.Provider>
   );
 }
