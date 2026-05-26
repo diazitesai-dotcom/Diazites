@@ -92,7 +92,7 @@ export const DASHBOARD_NAV: DashboardNavItem[] = [
     id: "mission_control",
     href: ROUTES.missionControl,
     label: "Mission Control",
-    description: "Global live command center",
+    description: "Growth Command Center",
     icon: LayoutDashboard,
   },
   {
@@ -210,8 +210,8 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
       {
         id: "mission_control",
         href: ROUTES.missionControl,
-        label: "Overview",
-        description: "CEO cockpit & KPIs",
+        label: "Mission Control",
+        description: "Growth Command Center",
         icon: LayoutDashboard,
       },
       {
