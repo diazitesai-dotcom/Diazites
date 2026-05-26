@@ -30,6 +30,8 @@ export type LandingPageEditorInput = {
   audience?: string;
   industry?: string;
   campaignId?: string | null;
+  sections?: LandingSection[];
+  versionName?: string;
 };
 
 export async function createLandingPageWithVersions(
@@ -70,13 +72,13 @@ export async function createLandingPageWithVersions(
     })
     .eq("id", page.id);
 
-  const sections = buildSectionsFromInput(input);
+  const sections = input.sections ?? buildSectionsFromInput(input);
   const versions = createLandingPageVersionRepository(client);
   const { data: draftVersion, error: versionError } = await versions.create({
     landingPageId: page.id,
     businessId,
     versionLabel: "draft",
-    name: "Draft",
+    name: input.versionName ?? "Draft",
     sections,
     formFields: DEFAULT_FORM_FIELDS,
     trafficWeight: 0,

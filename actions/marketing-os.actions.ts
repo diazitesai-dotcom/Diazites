@@ -17,6 +17,7 @@ import {
   listApprovals,
 } from "@/services/approvals/approval.service";
 import { startGrowthEngineRun, listGrowthEngineRuns } from "@/services/growth-engine/growth-engine.service";
+import { generateAndSaveThreeLandingPages } from "@/services/funnel/funnel-ai-generator.service";
 import {
   addLandingPageAsset,
   cloneLandingPage,
@@ -47,6 +48,14 @@ async function ctx() {
   const result = await requireBusinessContext(supabase);
   if (!result.ok) throw new Error(result.error);
   return { supabase, ...result.ctx };
+}
+
+export async function generateThreeLandingPagesAction(prompt: string) {
+  const { supabase, userId, businessId } = await ctx();
+  const result = await generateAndSaveThreeLandingPages(supabase, userId, businessId, prompt);
+  if (!result.success) return { ok: false as const, error: result.error };
+  revalidatePath("/dashboard/funnel");
+  return { ok: true as const, data: result.data };
 }
 
 export async function createLandingPageAction(input: {
