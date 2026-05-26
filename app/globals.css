@@ -187,12 +187,16 @@
 
   .mission-kpi-cell {
     min-width: 0;
+    max-width: 100%;
     display: flex;
+    overflow: hidden;
+    isolation: isolate;
   }
 
   .mission-kpi-cell > * {
     flex: 1 1 auto;
     min-width: 0;
+    max-width: 100%;
     width: 100%;
   }
 
