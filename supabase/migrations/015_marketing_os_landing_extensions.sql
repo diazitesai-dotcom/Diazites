@@ -95,9 +95,17 @@ create table if not exists landing_page_analytics (
   utm_campaign text,
   utm_source text,
   utm_medium text,
-  created_at timestamptz not null default now(),
-  unique(landing_page_id, version_id, analytics_date, coalesce(source, ''), coalesce(utm_campaign, ''))
+  created_at timestamptz not null default now()
 );
+
+create unique index if not exists idx_landing_page_analytics_daily_unique
+  on landing_page_analytics (
+    landing_page_id,
+    version_id,
+    analytics_date,
+    coalesce(source, ''),
+    coalesce(utm_campaign, '')
+  );
 
 create table if not exists lead_events (
   id uuid primary key default gen_random_uuid(),
