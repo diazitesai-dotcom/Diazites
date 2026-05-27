@@ -1,34 +1,17 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  BookOpenCheck,
-  DollarSign,
-  Gauge,
-  Sparkles,
-  Target,
-  TrendingUp,
-} from "lucide-react";
 
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
-import { RetargetingAgentDeploymentPanel } from "@/components/agents/retargeting-agent-deployment-panel";
-import { DeployableStacksPanel } from "@/components/dashboard/mission-control/deployable-stacks-panel";
 import { CommandCenterWidgets } from "@/components/dashboard/command-center-widgets";
-import { LiveAgentStatusRow } from "@/components/dashboard/live-agent-status-row";
+import { DeployableStacksPanel } from "@/components/dashboard/mission-control/deployable-stacks-panel";
 import { CeoCockpitHero } from "@/components/dashboard/mission-control/ceo-cockpit-hero";
 import {
   AccountConnectionCenter,
-  AgentPerformanceBoard,
-  AiCommandBriefing,
-  AiDiagnosticsWidget,
   AiRecommendationsPanel,
   BusinessGoalsWidget,
   FunnelSnapshot,
   GrowthEngineHealth,
-  MarketSignalsWidget,
-  OpportunityFeed,
-  QuickActionsRow,
-  RecommendedNextActionCard,
   RevenueForecastCard,
 } from "@/components/dashboard/mission-control/mission-control-panels";
 import {
@@ -37,19 +20,14 @@ import {
   ZeroSpendEmpty,
 } from "@/components/dashboard/mission-control/mission-empty-states";
 import { GrowthOrchestrationTimeline } from "@/components/dashboard/mission-control/growth-orchestration-timeline";
-import { CredentialVaultPanel } from "@/components/dashboard/mission-control/credential-vault-panel";
 import { LandingStackManager } from "@/components/dashboard/mission-control/landing-stack-manager";
-import { RevenueCommandCenterRow } from "@/components/dashboard/mission-control/revenue-command-center";
-import { AgentRevenueCards } from "@/components/revenue/agent-revenue-cards";
+import { LiveAgentActivityPanel } from "@/components/dashboard/mission-control/live-agent-activity-panel";
 import { RevenueAttributionProvider } from "@/components/revenue/revenue-attribution-context";
 import { RevenueBreakdownDrawer } from "@/components/revenue/revenue-breakdown-drawer";
-import { RevenueRecommendations } from "@/components/revenue/revenue-recommendations";
-import { RevenueSourcesWidget } from "@/components/revenue/revenue-sources-widget";
-import { RevenueTimeline } from "@/components/revenue/revenue-timeline";
 import { MissionControlAlerts } from "@/components/dashboard/mission-control/mission-control-alerts";
 import { RuntimeOverview } from "@/components/dashboard/mission-control/runtime-overview";
+import { StackHealthSection } from "@/components/dashboard/mission-control/stack-health-section";
 import { InboundVelocityChart } from "@/components/dashboard/mission-control/inbound-velocity-chart";
-import { StatCard } from "@/components/dashboard/stat-card";
 import type { DashboardOverviewData } from "@/lib/dashboard/load-dashboard-overview";
 import type { SystemModuleContext } from "@/lib/dashboard/system-module-types";
 import { fadeItem } from "@/lib/motion";
@@ -79,136 +57,38 @@ function buildModuleContext(data: DashboardOverviewData): SystemModuleContext {
   };
 }
 
-function formatMoney(n: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
-function trendForKey(data: DashboardOverviewData, key: string) {
-  return data.kpiTrends.find((t) => t.key === key);
-}
-
-function insightForKey(data: DashboardOverviewData, key: string) {
-  return data.kpiInsights.find((k) => k.key === key);
-}
-
 export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
   const m = data.metrics;
-  const periodHint = m ? `Last ${m.periodDays} days` : "No data yet";
   const zeroCampaigns = (m?.activeCampaigns ?? 0) === 0;
   const zeroSpend = (m?.totalSpend ?? 0) === 0;
-
-  const metricsCards = [
-    {
-      key: "leads",
-      label: "Leads generated",
-      value: m ? String(m.totalLeads) : "—",
-      numericValue: m?.totalLeads,
-      icon: Target,
-      hint: periodHint,
-      trend: trendForKey(data, "leads")?.direction ?? "neutral",
-      trendPercent: trendForKey(data, "leads")?.changePercent,
-    },
-    {
-      key: "campaigns",
-      label: "Active campaigns",
-      value: m ? String(m.activeCampaigns) : "—",
-      numericValue: m?.activeCampaigns,
-      icon: Gauge,
-      hint: zeroCampaigns ? "Launch your first campaign" : periodHint,
-      trend: trendForKey(data, "campaigns")?.direction ?? "neutral",
-      trendPercent: trendForKey(data, "campaigns")?.changePercent,
-    },
-    {
-      key: "spend",
-      label: "Spend (period)",
-      value: m ? formatMoney(m.totalSpend) : "—",
-      numericValue: m?.totalSpend,
-      formatValue: formatMoney,
-      icon: DollarSign,
-      hint: zeroSpend ? "Connect ads to track spend" : periodHint,
-      trend: trendForKey(data, "spend")?.direction ?? "neutral",
-      trendPercent: trendForKey(data, "spend")?.changePercent,
-    },
-    {
-      key: "cpl",
-      label: "Cost per lead",
-      value: m?.costPerLead != null ? formatMoney(m.costPerLead) : "—",
-      numericValue: m?.costPerLead != null ? Math.round(m.costPerLead) : undefined,
-      formatValue: formatMoney,
-      icon: TrendingUp,
-      hint: m?.costPerLead != null ? "Blended CPL" : periodHint,
-      trend: trendForKey(data, "cpl")?.direction ?? "neutral",
-      trendPercent: trendForKey(data, "cpl")?.changePercent,
-      invertTrend: true,
-    },
-    {
-      key: "booked",
-      label: "Booked + won",
-      value: String(data.bookedOrWonCount),
-      numericValue: data.bookedOrWonCount,
-      icon: BookOpenCheck,
-      hint: periodHint,
-      trend: trendForKey(data, "booked")?.direction ?? "neutral",
-      trendPercent: trendForKey(data, "booked")?.changePercent,
-    },
-    {
-      key: "roi",
-      label: "ROI (model)",
-      value: m?.roi != null ? `${m.roi.toFixed(1)}×` : "—",
-      icon: Sparkles,
-      hint: "Attributed vs spend",
-      trend: trendForKey(data, "roi")?.direction ?? "neutral",
-      trendPercent: trendForKey(data, "roi")?.changePercent,
-    },
-  ] as const;
-
-  const kpiLinks: Record<string, string> = {
-    leads: "/dashboard/leads",
-    campaigns: "/dashboard/campaign-ops",
-    booked: "/dashboard/leads",
-  };
 
   return (
     <RevenueAttributionProvider attribution={data.revenueAttribution}>
       <RevenueBreakdownDrawer />
-      <div className="relative mx-auto max-w-7xl space-y-10 pb-24">
+      <div className="relative mx-auto max-w-7xl space-y-10 pb-20">
         <CeoCockpitHero data={data} />
+
+        <MissionControlAlerts data={data} />
 
         <CommandCenterWidgets data={data} />
 
-        <LiveAgentStatusRow
-          activeAgentKeys={data.agents.filter((a) => a.status === "active").map((a) => a.key)}
-        />
-
-        <MissionControlAlerts data={data} />
+        <LiveAgentActivityPanel data={data} />
 
         <RuntimeOverview
           flow={data.orchestrationFlow}
           stackHealth={data.stackHealth}
           moduleContext={buildModuleContext(data)}
+          showStackHealthBar={false}
         />
 
-        <AgentPerformanceBoard data={data} />
+        <StackHealthSection items={data.stackHealth} />
 
-        <AiCommandBriefing data={data} />
-        <RevenueCommandCenterRow data={data.revenueCommandCenter} />
         <section className="grid gap-6 lg:grid-cols-2">
-          <RevenueSourcesWidget />
-          <RevenueTimeline />
+          <AiRecommendationsPanel data={data} />
+          <AccountConnectionCenter data={data} />
         </section>
-        <AgentRevenueCards />
-        <RevenueRecommendations />
-        <RecommendedNextActionCard data={data} />
-
-        <RetargetingAgentDeploymentPanel />
 
         <DeployableStacksPanel />
-
-        <QuickActionsRow />
 
         {zeroCampaigns && zeroSpend ? (
           <CombinedAcquisitionEmpty />
@@ -219,51 +99,17 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
           </>
         )}
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {metricsCards.map((card) => {
-            const insight = insightForKey(data, card.key);
-            return (
-            <StatCard
-              key={card.key}
-              label={card.label}
-              value={card.value}
-              icon={card.icon}
-              hint={card.hint}
-              trend={card.trend}
-              trendPercent={card.trendPercent}
-              numericValue={"numericValue" in card ? card.numericValue : undefined}
-              formatValue={"formatValue" in card ? card.formatValue : undefined}
-              invertTrend={"invertTrend" in card ? card.invertTrend : false}
-              trafficSource={insight?.trafficSource}
-              periodLabel={insight?.periodLabel}
-              microInsight={insight?.microInsight}
-              href={kpiLinks[card.key]}
-            />
-          );
-          })}
-        </section>
-
-        <AiDiagnosticsWidget data={data} />
-
-        <section className="grid gap-6 lg:grid-cols-2">
-          <GrowthEngineHealth data={data} />
-          <RevenueForecastCard data={data} />
-        </section>
-
         <section className="grid gap-6 lg:grid-cols-2">
           <FunnelSnapshot data={data} />
           <LandingStackManager versions={data.landingStackVersions} />
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
-          <MarketSignalsWidget data={data} />
-          <CredentialVaultPanel />
+          <BusinessGoalsWidget data={data} />
+          <GrowthEngineHealth data={data} />
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-2">
-          <BusinessGoalsWidget data={data} />
-          <OpportunityFeed data={data} />
-        </section>
+        <RevenueForecastCard data={data} />
 
         <GrowthOrchestrationTimeline
           events={data.orchestrationTimeline}
@@ -272,31 +118,19 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
 
         <section className="grid gap-6 lg:grid-cols-5">
           <motion.div variants={fadeItem} initial="hidden" animate="show" className="lg:col-span-3">
-            <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-card/90 to-card/60 shadow-lg backdrop-blur-sm transition-shadow hover:shadow-[0_8px_32px_-12px_rgba(139,92,246,0.2)]">
-              <div className="flex flex-row items-start justify-between gap-4 border-b border-border/50 p-6 pb-4">
+            <div className="rounded-2xl border border-white/[0.08] bg-card/50 p-6">
+              <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-semibold">Inbound velocity</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Seven-day lead flow with AI velocity annotations.
-                  </p>
+                  <p className="text-sm text-muted-foreground">7-day trend — totals are in Lead velocity KPI</p>
                 </div>
-                <span className="animate-pulse rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-cyan-200">
-                  Live
-                </span>
               </div>
-              <div className="p-6 pt-2">
-                <InboundVelocityChart data={data.sparkSeries} />
-              </div>
+              <InboundVelocityChart data={data.sparkSeries} />
             </div>
           </motion.div>
           <div className="lg:col-span-2">
             <ActivityFeed items={data.activity} />
           </div>
-        </section>
-
-        <section className="grid gap-6 lg:grid-cols-2">
-          <AiRecommendationsPanel data={data} />
-          <AccountConnectionCenter data={data} />
         </section>
       </div>
     </RevenueAttributionProvider>

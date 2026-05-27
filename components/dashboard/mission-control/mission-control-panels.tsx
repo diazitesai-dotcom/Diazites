@@ -36,6 +36,7 @@ import { FunnelEmptyHint } from "@/components/dashboard/mission-control/mission-
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { DashboardOverviewData } from "@/lib/dashboard/load-dashboard-overview";
+import { filterMissionRecommendations } from "@/lib/dashboard/mission-control-narrative";
 import type {
   BusinessGoal,
   ConnectionStatus,
@@ -570,10 +571,13 @@ export function QuickActionsRow() {
 
 export function AiRecommendationsPanel({ data }: { data: DashboardOverviewData }) {
   const { openDeployment } = useAgentDeployment();
+  const recommendations = filterMissionRecommendations(data);
+  if (!recommendations.length) return null;
+
   return (
-    <GlassCard title="AI Recommendations" description="Highest-impact next moves — approve or auto-execute">
+    <GlassCard title="AI recommendations" description="Approve or schedule — problems are listed in alerts above">
       <ul className="space-y-3">
-        {data.recommendations.map((rec) => (
+        {recommendations.map((rec) => (
           <li
             key={rec.id}
             className="flex flex-col gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition-all hover:border-violet-500/20 hover:bg-white/[0.04]"

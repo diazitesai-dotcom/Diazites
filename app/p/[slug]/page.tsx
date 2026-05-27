@@ -6,25 +6,11 @@ import {
   LandingPageRenderer,
   type LandingAssetPayload,
 } from "@/components/public/landing-page-renderer";
-import { createServiceRoleClient } from "@/lib/supabase/server";
-import { createBusinessRepository } from "@/repositories/business.repository";
-import { createLandingPageRepository } from "@/repositories/landing-page.repository";
+import { loadLandingPageDisplay } from "@/lib/landing/load-landing-display";
 
 export const dynamic = "force-dynamic";
 
 type Params = { slug: string };
-
-async function loadLanding(slug: string) {
-  const supabase = createServiceRoleClient();
-  const landingPages = createLandingPageRepository(supabase);
-  const { data } = await landingPages.getPublishedBySlug(slug);
-  if (!data) return null;
-
-  const businesses = createBusinessRepository(supabase);
-  const { data: business } = await businesses.getById(data.business_id);
-
-  return { landing: data, business };
-}
 
 export async function generateMetadata({
   params,
@@ -32,14 +18,12 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const loaded = await loadLanding(slug);
+  const loaded = await loadLandingPageDisplay(slug, { publishedOnly: true });
   if (!loaded) return { title: "Page not found" };
 
-  const config = (loaded.landing.config ?? {}) as Record<string, unknown>;
-  const asset = (config.asset ?? {}) as LandingAssetPayload;
-  const headline = asset.headline ?? loaded.landing.headline ?? "Get a free estimate";
+  const headline = loaded.asset.headline ?? "Get a free estimate";
   const subheadline =
-    asset.subheadline ??
+    loaded.asset.subheadline ??
     "Professional, local, and fully insured — get help in minutes.";
 
   return {
@@ -60,11 +44,10 @@ export default async function PublicLandingPage({
   params: Promise<Params>;
 }) {
   const { slug } = await params;
-  const loaded = await loadLanding(slug);
+  const loaded = await loadLandingPageDisplay(slug, { publishedOnly: true });
   if (!loaded) notFound();
 
-  const config = (loaded.landing.config ?? {}) as Record<string, unknown>;
-  const asset = (config.asset ?? {}) as LandingAssetPayload;
+  const config = (loaded.config ?? {}) as Record<string, unknown>;
   const pixels = (config.pixels ?? {}) as {
     metaPixelId?: string;
     googleConversionId?: string;
@@ -106,9 +89,13 @@ export default async function PublicLandingPage({
 
       <LandingPageRenderer
         slug={slug}
-        asset={asset}
+        asset={loaded.asset as LandingAssetPayload}
         businessName={loaded.business?.name ?? null}
-        location={loaded.landing.location ?? loaded.business?.city_state ?? null}
+        location={
+          loaded.landing.location
+            ? String(loaded.landing.location)
+            : loaded.business?.city_state ?? null
+        }
       />
     </>
   );

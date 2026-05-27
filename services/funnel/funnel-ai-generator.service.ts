@@ -5,6 +5,7 @@ import {
   variantSlug,
   type LandingPageVariantDraft,
 } from "@/lib/funnel/generate-three-landing-pages";
+import { parseFunnelInput } from "@/lib/funnel/parse-funnel-input";
 import { isOpenAiConfigured } from "@/services/engine/ai/openai-client";
 import { ok, fail, type ServiceResult } from "@/lib/result";
 import { createBusinessRepository } from "@/repositories/business.repository";
@@ -18,6 +19,8 @@ export type GeneratedLandingPage = {
   angleLabel: string;
   headline: string;
   subheadline: string;
+  offer: string;
+  ctaText: string;
   published: boolean;
 };
 
@@ -34,6 +37,7 @@ export async function generateAndSaveThreeLandingPages(
   }
 
   let variants: LandingPageVariantDraft[];
+  const parsed = parseFunnelInput(prompt);
   try {
     variants = await generateThreeLandingPageVariants({
       prompt,
@@ -49,7 +53,7 @@ export async function generateAndSaveThreeLandingPages(
 
   for (let i = 0; i < variants.length; i++) {
     const v = variants[i]!;
-    const slug = variantSlug(prompt, v.angle, i);
+    const slug = variantSlug(parsed.slugBase, v.angle, i);
     const result = await createLandingPageWithVersions(client, ownerUserId, businessId, {
       slug,
       headline: v.headline,
@@ -75,6 +79,8 @@ export async function generateAndSaveThreeLandingPages(
       angleLabel: v.angleLabel,
       headline: v.headline,
       subheadline: v.subheadline,
+      offer: v.offer,
+      ctaText: v.ctaText,
       published: false,
     });
   }

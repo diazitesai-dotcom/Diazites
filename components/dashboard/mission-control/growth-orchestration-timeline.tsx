@@ -56,8 +56,8 @@ export function GrowthOrchestrationTimeline({
   return (
     <motion.div variants={fadeItem} initial="hidden" animate="show">
       <GlassCard
-        title="Growth Engine Timeline"
-        description="AI operations execution history"
+        title="System replay"
+        description="Execution history and rollback — not live agent status"
         headerExtra={
           <span className="inline-flex items-center gap-1 rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-violet-200">
             <Activity className="size-3" />

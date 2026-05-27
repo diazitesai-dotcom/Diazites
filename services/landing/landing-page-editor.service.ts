@@ -19,6 +19,7 @@ import { DEFAULT_FORM_FIELDS, DEFAULT_LANDING_SECTIONS } from "@/types/marketing
 
 import { writeAuditLog } from "@/services/audit/audit.service";
 import { triggerEvent } from "@/services/events/event-dispatcher";
+import { buildPublicConfigFromVersion } from "@/lib/landing/build-public-config";
 
 export type LandingPageEditorInput = {
   slug?: string;
@@ -68,7 +69,7 @@ export async function createLandingPageWithVersions(
       audience: input.audience ?? null,
       industry: input.industry ?? null,
       campaign_id: input.campaignId ?? null,
-      status: "draft",
+      page_status: "draft",
     })
     .eq("id", page.id);
 
@@ -88,9 +89,23 @@ export async function createLandingPageWithVersions(
     return fail(versionError?.message ?? "Failed to create draft version");
   }
 
+  const pageSnapshot = {
+    ...page,
+    subheadline: input.subheadline ?? null,
+    cta_text: input.ctaText ?? "Get Started",
+    offer: input.offer,
+    headline: input.headline,
+  } as Record<string, unknown>;
+
+  const config = buildPublicConfigFromVersion(pageSnapshot, draftVersion as Record<string, unknown>);
+
   await client
     .from("landing_pages")
-    .update({ active_version_id: draftVersion.id })
+    .update({
+      active_version_id: draftVersion.id,
+      config,
+      page_status: "draft",
+    })
     .eq("id", page.id);
 
   await writeAuditLog(client, {
@@ -161,6 +176,93 @@ export async function updateLandingPageVersion(
 
   if (error || !data) return fail(error?.message ?? "Update failed");
   return ok(data);
+}
+
+export async function updateGeneratedLandingPageCopy(
+  client: SupabaseClient,
+  ownerUserId: string,
+  businessId: string,
+  landingPageId: string,
+  versionId: string,
+  patch: {
+    headline: string;
+    subheadline?: string;
+    offer?: string;
+    ctaText?: string;
+  },
+): Promise<ServiceResult<{ headline: string; subheadline: string; offer: string; ctaText: string }>> {
+  const businesses = createBusinessRepository(client);
+  const { data: business } = await businesses.getById(businessId);
+  if (!business || business.user_id !== ownerUserId) {
+    return fail("Forbidden", "FORBIDDEN");
+  }
+
+  const versions = createLandingPageVersionRepository(client);
+  const { data: version } = await versions.getById(versionId);
+  if (!version || version.business_id !== businessId) {
+    return fail("Version not found", "NOT_FOUND");
+  }
+
+  const { data: page } = await client
+    .from("landing_pages")
+    .select("*")
+    .eq("id", landingPageId)
+    .eq("business_id", businessId)
+    .maybeSingle();
+
+  if (!page) return fail("Landing page not found", "NOT_FOUND");
+
+  const headline = patch.headline.trim();
+  if (!headline) return fail("Headline is required");
+
+  const subheadline = patch.subheadline?.trim() ?? "";
+  const offer = patch.offer?.trim() ?? String(page.offer ?? "");
+  const ctaText = patch.ctaText?.trim() || String(page.cta_text ?? "Get Started");
+
+  const sections = (version.sections as LandingSection[]).map((section) => {
+    if (section.type === "hero") {
+      return {
+        ...section,
+        content: { ...section.content, headline, subheadline, cta: ctaText },
+      };
+    }
+    if (section.type === "offer" && patch.offer !== undefined) {
+      return { ...section, content: { ...section.content, body: offer } };
+    }
+    return section;
+  });
+
+  const { error: versionError } = await versions.update(versionId, { sections });
+  if (versionError) return fail(versionError.message);
+
+  const pageSnapshot = {
+    ...page,
+    headline,
+    subheadline: subheadline || null,
+    offer,
+    cta_text: ctaText,
+  } as Record<string, unknown>;
+
+  const config = buildPublicConfigFromVersion(pageSnapshot, {
+    ...(version as Record<string, unknown>),
+    sections,
+  });
+
+  const { error: pageError } = await client
+    .from("landing_pages")
+    .update({
+      headline,
+      subheadline: subheadline || null,
+      offer,
+      cta_text: ctaText,
+      config,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", landingPageId);
+
+  if (pageError) return fail(pageError.message);
+
+  return ok({ headline, subheadline, offer, ctaText });
 }
 
 export async function createLandingPageVariant(
@@ -479,31 +581,6 @@ export async function addLandingPageAsset(
 
   if (error || !data) return fail(error?.message ?? "Failed to add asset");
   return ok(data);
-}
-
-function buildPublicConfigFromVersion(
-  page: Record<string, unknown>,
-  version: Record<string, unknown>,
-): Record<string, unknown> {
-  const sections = (version.sections as LandingSection[] | undefined) ?? [];
-  const hero = sections.find((s) => s.type === "hero" && s.enabled);
-  const offer = sections.find((s) => s.type === "offer" && s.enabled);
-  const benefits = sections.find((s) => s.type === "benefits" && s.enabled);
-
-  const bullets =
-    (benefits?.content?.items as string[] | undefined)?.filter(Boolean) ?? [];
-
-  return {
-    asset: {
-      headline: String(hero?.content?.headline ?? page.headline ?? ""),
-      subheadline: String(hero?.content?.subheadline ?? page.subheadline ?? ""),
-      primaryCta: String(hero?.content?.cta ?? page.cta_text ?? "Get Started"),
-      bullets,
-      socialProof: String(offer?.content?.body ?? page.offer ?? ""),
-    },
-    formFields: version.form_fields ?? [],
-    sections,
-  };
 }
 
 export async function archiveLandingPage(

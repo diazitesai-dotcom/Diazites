@@ -18,6 +18,7 @@ import {
 } from "@/services/approvals/approval.service";
 import { startGrowthEngineRun, listGrowthEngineRuns } from "@/services/growth-engine/growth-engine.service";
 import { generateAndSaveThreeLandingPages } from "@/services/funnel/funnel-ai-generator.service";
+import { isValidFunnelInput, parseFunnelInput } from "@/lib/funnel/parse-funnel-input";
 import {
   addLandingPageAsset,
   cloneLandingPage,
@@ -30,6 +31,7 @@ import {
   pushLandingPageToCampaign,
   suggestAbTestWinner,
   updateLandingPageVersion,
+  updateGeneratedLandingPageCopy,
 } from "@/services/landing/landing-page-editor.service";
 import {
   decideRecommendation,
@@ -51,6 +53,17 @@ async function ctx() {
 }
 
 export async function generateThreeLandingPagesAction(prompt: string) {
+  const parsed = parseFunnelInput(prompt);
+  if (!isValidFunnelInput(parsed)) {
+    return {
+      ok: false as const,
+      error:
+        parsed.kind === "url"
+          ? "Enter a valid URL like domain.com, www.domain.com, or https://domain.com"
+          : "Enter a keyword or business description (at least 3 characters).",
+    };
+  }
+
   const { supabase, userId, businessId } = await ctx();
   const result = await generateAndSaveThreeLandingPages(supabase, userId, businessId, prompt);
   if (!result.success) return { ok: false as const, error: result.error };
@@ -69,6 +82,30 @@ export async function createLandingPageAction(input: {
 }) {
   const { supabase, userId, businessId } = await ctx();
   const result = await createLandingPageWithVersions(supabase, userId, businessId, input);
+  if (!result.success) return { ok: false as const, error: result.error };
+  revalidatePath("/dashboard/funnel");
+  return { ok: true as const, data: result.data };
+}
+
+export async function updateGeneratedLandingPageCopyAction(
+  landingPageId: string,
+  versionId: string,
+  patch: {
+    headline: string;
+    subheadline?: string;
+    offer?: string;
+    ctaText?: string;
+  },
+) {
+  const { supabase, userId, businessId } = await ctx();
+  const result = await updateGeneratedLandingPageCopy(
+    supabase,
+    userId,
+    businessId,
+    landingPageId,
+    versionId,
+    patch,
+  );
   if (!result.success) return { ok: false as const, error: result.error };
   revalidatePath("/dashboard/funnel");
   return { ok: true as const, data: result.data };

@@ -64,6 +64,12 @@ export function createLandingPageRepository(client: SupabaseClient) {
         .maybeSingle();
     },
 
+    async getBySlug(slug: string, businessId?: string) {
+      let query = client.from("landing_pages").select("*").eq("slug", slug);
+      if (businessId) query = query.eq("business_id", businessId);
+      return query.maybeSingle();
+    },
+
     async listByBusiness(businessId: string) {
       return client.from("landing_pages").select("*").eq("business_id", businessId);
     },

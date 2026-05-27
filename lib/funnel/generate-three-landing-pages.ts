@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  parseFunnelInput,
+  slugifyFunnelInput,
+  type ParsedFunnelInput,
+} from "@/lib/funnel/parse-funnel-input";
 import { callJsonResponses, isOpenAiConfigured } from "@/services/engine/ai/openai-client";
 import type { LandingSection } from "@/types/marketing-os";
 import { DEFAULT_LANDING_SECTIONS } from "@/types/marketing-os";
@@ -32,16 +37,6 @@ const responseSchema = z.object({
   industry: z.string(),
   variants: z.array(variantSchema).length(3),
 });
-
-function slugify(text: string) {
-  return (
-    text
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 36) || "landing"
-  );
-}
 
 function buildSections(
   variant: z.infer<typeof variantSchema>,
@@ -87,18 +82,26 @@ function buildSections(
   });
 }
 
-function fallbackVariants(prompt: string): z.infer<typeof responseSchema> {
-  const niche = prompt.trim().slice(0, 80) || "Your business";
-  const location = extractLocation(prompt) ?? "Your area";
+function brandLabel(parsed: ParsedFunnelInput): string {
+  if (parsed.kind === "url" && parsed.domain) {
+    const host = parsed.domain.split(".")[0] ?? parsed.domain;
+    return host.charAt(0).toUpperCase() + host.slice(1);
+  }
+  return parsed.displayLabel.slice(0, 80) || "Your business";
+}
+
+function fallbackVariants(parsed: ParsedFunnelInput): z.infer<typeof responseSchema> {
+  const niche = brandLabel(parsed);
+  const location = extractLocation(parsed.raw) ?? "Your area";
 
   return {
-    businessSummary: niche,
-    industry: guessIndustry(prompt),
+    businessSummary: parsed.displayLabel,
+    industry: guessIndustry(parsed.aiPrompt),
     variants: [
       {
         angle: "trust",
         angleLabel: "Trust & Authority",
-        headline: `${niche} — Trusted by Local Homeowners`,
+        headline: `${niche} — Trusted by Local Customers`,
         subheadline: "Licensed, insured, and backed by hundreds of 5-star reviews.",
         offer: `Free consultation and transparent pricing. No pressure — just honest recommendations for ${location}.`,
         ctaText: "Book Free Consultation",
@@ -128,7 +131,7 @@ function fallbackVariants(prompt: string): z.infer<typeof responseSchema> {
       {
         angle: "value",
         angleLabel: "Offer & Value",
-        headline: `Save More With ${niche.split(" ")[0] ?? "Our"} Best Deal`,
+        headline: `Save More With ${niche}'s Best Deal`,
         subheadline: "Maximum value, premium results — without the premium price tag.",
         offer: `Bundle pricing, flexible payment options, and a satisfaction guarantee tailored for ${location} customers.`,
         ctaText: "Get My Quote",
@@ -151,14 +154,16 @@ function extractLocation(prompt: string): string | null {
 
 function guessIndustry(prompt: string): string {
   const lower = prompt.toLowerCase();
+  if (/\.org|nonprofit|charity|foundation|donat/.test(lower)) return "Nonprofit";
   if (/roof|hvac|plumb|electric|home service/.test(lower)) return "Home Services";
   if (/dentist|medical|clinic|spa/.test(lower)) return "Medical";
   if (/law|attorney|legal/.test(lower)) return "Legal";
   if (/real estate|realtor|agent/.test(lower)) return "Real Estate";
   if (/agency|marketing|consult/.test(lower)) return "Agency";
-  if (/nonprofit|church|donat/.test(lower)) return "Nonprofit";
+  if (/church|ministr/.test(lower)) return "Nonprofit";
   if (/gym|fitness|coach/.test(lower)) return "Fitness";
   if (/restaurant|food|cafe/.test(lower)) return "Restaurant";
+  if (/\.shop|store|commerce|buy|sell/.test(lower)) return "E-commerce";
   return "Local Business";
 }
 
@@ -167,12 +172,9 @@ export async function generateThreeLandingPageVariants(input: {
   supabase: import("@supabase/supabase-js").SupabaseClient;
   businessId: string;
 }): Promise<LandingPageVariantDraft[]> {
-  const prompt = input.prompt.trim();
-  if (prompt.length < 8) {
-    throw new Error("Describe your business or offer in at least a few words.");
-  }
+  const parsed = parseFunnelInput(input.prompt);
 
-  let parsed: z.infer<typeof responseSchema>;
+  let parsedResponse: z.infer<typeof responseSchema>;
 
   if (isOpenAiConfigured()) {
     const result = await callJsonResponses({
@@ -182,8 +184,7 @@ export async function generateThreeLandingPageVariants(input: {
       schema: responseSchema,
       system:
         "You are an expert direct-response copywriter for high-converting landing pages.",
-      prompt: `Business / offer description:
-"${prompt}"
+      prompt: `${parsed.aiPrompt}
 
 Generate exactly 3 DISTINCT landing page concepts for A/B testing:
 1. trust — authority, social proof, credibility
@@ -195,15 +196,15 @@ Return JSON only.`,
     });
 
     if (result.success) {
-      parsed = result.data;
+      parsedResponse = result.data;
     } else {
-      parsed = fallbackVariants(prompt);
+      parsedResponse = fallbackVariants(parsed);
     }
   } else {
-    parsed = fallbackVariants(prompt);
+    parsedResponse = fallbackVariants(parsed);
   }
 
-  return parsed.variants.map((v) => ({
+  return parsedResponse.variants.map((v) => ({
     angle: v.angle,
     angleLabel: v.angleLabel,
     headline: v.headline,
@@ -211,12 +212,14 @@ Return JSON only.`,
     offer: v.offer,
     ctaText: v.ctaText,
     location: v.location,
-    industry: parsed.industry,
+    industry: parsedResponse.industry,
     sections: buildSections(v),
   }));
 }
 
-export function variantSlug(basePrompt: string, angle: string, index: number) {
-  const base = slugify(basePrompt);
+export function variantSlug(slugBase: string, angle: string, index: number) {
+  const base = slugifyFunnelInput(slugBase);
   return `${base}-${angle}-${index + 1}`;
 }
+
+export { parseFunnelInput, slugifyFunnelInput };

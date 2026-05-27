@@ -39,16 +39,6 @@ alter table campaigns
     )),
   add column if not exists roas numeric(8,2) default 0;
 
-alter table leads
-  add column if not exists landing_page_id uuid references landing_pages(id) on delete set null,
-  add column if not exists landing_page_version_id uuid references landing_page_versions(id) on delete set null,
-  add column if not exists budget text,
-  add column if not exists custom_fields jsonb not null default '{}'::jsonb,
-  add column if not exists ai_score numeric(5,2),
-  add column if not exists utm_source text,
-  add column if not exists utm_medium text,
-  add column if not exists utm_campaign text;
-
 create table if not exists landing_page_versions (
   id uuid primary key default gen_random_uuid(),
   landing_page_id uuid not null references landing_pages(id) on delete cascade,
@@ -66,6 +56,16 @@ create table if not exists landing_page_versions (
 );
 
 create index if not exists idx_landing_page_versions_page on landing_page_versions(landing_page_id);
+
+alter table leads
+  add column if not exists landing_page_id uuid references landing_pages(id) on delete set null,
+  add column if not exists landing_page_version_id uuid references landing_page_versions(id) on delete set null,
+  add column if not exists budget text,
+  add column if not exists custom_fields jsonb not null default '{}'::jsonb,
+  add column if not exists ai_score numeric(5,2),
+  add column if not exists utm_source text,
+  add column if not exists utm_medium text,
+  add column if not exists utm_campaign text;
 
 create table if not exists landing_page_assets (
   id uuid primary key default gen_random_uuid(),

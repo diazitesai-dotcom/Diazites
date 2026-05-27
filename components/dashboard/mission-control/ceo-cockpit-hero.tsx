@@ -20,6 +20,7 @@ import { CeoRevenueKpi } from "@/components/revenue/ceo-revenue-kpi";
 import { CommandCenterBell } from "@/components/dashboard/mission-control/command-center-bell";
 import { ApprovalStateBadge } from "@/components/dashboard/mission-control/approval-state-badge";
 import { buttonVariants } from "@/components/ui/button";
+import { buildExecutiveNarrative } from "@/lib/dashboard/mission-control-narrative";
 import type { DashboardOverviewData } from "@/lib/dashboard/load-dashboard-overview";
 import { ROUTES } from "@/lib/navigation/platform-nav";
 import { fadeItem } from "@/lib/motion";
@@ -32,14 +33,6 @@ function formatMoney(n: number) {
     maximumFractionDigits: 0,
   }).format(n);
 }
-
-const QUICK_MODULES = [
-  { label: "Campaign Ops", href: ROUTES.campaignOps },
-  { label: "Leads OS", href: ROUTES.leadsOs },
-  { label: "Growth Engine", href: ROUTES.growthEngine },
-  { label: "Approvals", href: ROUTES.approvalCenter },
-  { label: "Reports", href: ROUTES.reportsIntelligence },
-] as const;
 
 const RISK_STYLE = {
   low: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
@@ -148,6 +141,7 @@ export function CeoCockpitHero({ data }: { data: DashboardOverviewData }) {
   const b = data.briefing;
   const action = data.nextAction;
   const opportunities = data.opportunities.slice(0, 2);
+  const narrative = buildExecutiveNarrative(data);
 
   const velocity = leadVelocity7d(data);
   const agentHealth = agentHealthScore(data);
@@ -229,9 +223,8 @@ export function CeoCockpitHero({ data }: { data: DashboardOverviewData }) {
             <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
               Growth Command Center
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Monitor revenue, campaigns, leads, AI agents, and growth opportunities from one
-              central hub.
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+              Live business + AI operations dashboard.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -268,92 +261,70 @@ export function CeoCockpitHero({ data }: { data: DashboardOverviewData }) {
         </MissionKpiGrid>
       </div>
 
-      <div className="relative grid gap-4 px-6 py-5 lg:grid-cols-2">
-        <div className="space-y-3">
+      <div className="relative border-b border-white/[0.08] px-6 py-5">
+        <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Sparkles className="size-4 text-violet-300" />
             <h2 className="text-sm font-semibold">Executive summary</h2>
           </div>
-          {b.trafficSignal ? (
-            <p className="rounded-lg border border-cyan-500/25 bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-100">
-              {b.trafficSignal.headline}
-            </p>
-          ) : null}
-          <p className="text-sm leading-relaxed text-foreground/90">{b.aiInsight}</p>
-          <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-violet-200">Leverage: </span>
-            {b.leverageRecommendation}
-            {b.expectedImpact ? (
-              <>
-                {" "}
-                · <span className="text-emerald-300/90">{b.expectedImpact}</span>
-              </>
-            ) : null}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-950/30 to-violet-950/20 p-4">
-          <div className="flex items-center gap-2">
-            <Zap className="size-4 text-amber-400" />
-            <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-300/90">
-              Priority decision
-            </p>
-          </div>
-          <p className="mt-2 text-lg font-semibold leading-snug">{action.title}</p>
-          <p className="mt-1 text-sm leading-relaxed text-cyan-100/80">{action.impact}</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <ApprovalStateBadge state={action.approvalState} />
-            <Link
-              href={action.href}
-              className={cn(buttonVariants({ variant: "default", size: "sm" }), "rounded-lg")}
-            >
-              {action.cta}
-              <ArrowRight className="size-3.5" />
-            </Link>
-          </div>
+          <p className="max-w-3xl text-sm leading-relaxed text-foreground/90">{narrative}</p>
         </div>
       </div>
 
-      {opportunities.length > 0 ? (
-        <div className="relative border-t border-white/[0.08] px-6 pb-4">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Scale opportunities
-          </p>
-          <ul className="flex flex-wrap gap-2">
-            {opportunities.map((o) => (
-              <li key={o.id}>
-                <Link
-                  href={o.href ?? ROUTES.optimizationLab}
-                  className="inline-flex max-w-xs flex-col rounded-lg border border-violet-500/20 bg-violet-500/10 px-3 py-2 text-xs transition-colors hover:bg-violet-500/15"
-                >
-                  <span className="font-medium text-violet-100">{o.title}</span>
-                  <span className="text-muted-foreground">{o.detail}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      <div className="relative flex flex-wrap gap-2 border-t border-white/[0.08] px-6 py-4">
-        {QUICK_MODULES.map((mod) => (
-          <Link
-            key={mod.href}
-            href={mod.href}
-            className="rounded-lg border border-white/[0.08] px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-violet-500/30 hover:text-foreground"
-          >
-            {mod.label}
-          </Link>
-        ))}
-        <Link
-          href={ROUTES.reportsIntelligence}
+      <div className="relative px-6 py-5">
+        <div
           className={cn(
-            buttonVariants({ variant: "ghost", size: "sm" }),
-            "ml-auto h-8 text-xs",
+            "grid gap-4",
+            opportunities.length > 0 ? "lg:grid-cols-[1fr_minmax(260px,340px)]" : "",
           )}
         >
-          Full intelligence →
-        </Link>
+          <div className="rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-950/30 to-violet-950/20 p-4">
+            <div className="flex items-center gap-2">
+              <Zap className="size-4 text-amber-400" />
+              <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-300/90">
+                Priority decision
+              </p>
+            </div>
+            <p className="mt-2 text-lg font-semibold leading-snug">{action.title}</p>
+            <p className="mt-1 text-sm leading-relaxed text-cyan-100/80">{action.impact}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <ApprovalStateBadge state={action.approvalState} />
+              <Link
+                href={action.href}
+                className={cn(buttonVariants({ variant: "default", size: "sm" }), "rounded-lg")}
+              >
+                {action.cta}
+                <ArrowRight className="size-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {opportunities.length > 0 ? (
+            <div className="rounded-xl border border-violet-500/15 bg-violet-500/5 p-4">
+              <div className="flex items-center gap-2">
+                <Zap className="size-4 text-violet-300" />
+                <p className="text-[10px] font-bold uppercase tracking-wider text-violet-300/90">
+                  Scale opportunities
+                </p>
+              </div>
+              <ul className="mt-3 space-y-2">
+                {opportunities.map((o) => (
+                  <li key={o.id}>
+                    <Link
+                      href={o.href ?? ROUTES.optimizationLab}
+                      className="block rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 transition-colors hover:border-violet-500/25"
+                    >
+                      <span className="text-sm font-medium text-violet-100">{o.title}</span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground line-clamp-2">
+                        {o.detail}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
       </div>
     </motion.section>
   );

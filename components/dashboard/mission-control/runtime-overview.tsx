@@ -32,10 +32,12 @@ export function RuntimeOverview({
   flow,
   stackHealth,
   moduleContext,
+  showStackHealthBar = true,
 }: {
   flow: OrchestrationFlowStep[];
   stackHealth: StackHealthItem[];
   moduleContext: SystemModuleContext;
+  showStackHealthBar?: boolean;
 }) {
   const context = useMemo(() => moduleContext, [moduleContext]);
 
@@ -46,7 +48,7 @@ export function RuntimeOverview({
           <div>
             <h2 className="text-lg font-semibold tracking-tight">Operations map</h2>
             <p className="text-sm text-muted-foreground">
-              Live AI growth stack — click any node to inspect metrics, logs, and agent reasoning.
+              Live system flow — click a node to inspect. Status labels are map-specific.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -61,7 +63,7 @@ export function RuntimeOverview({
 
         <OrchestrationMap flow={flow} />
 
-        {stackHealth.length > 0 ? (
+        {showStackHealthBar && stackHealth.length > 0 ? (
           <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-card/90 to-card/60 p-4 shadow-lg backdrop-blur-sm">
             <StackHealthBar items={stackHealth} />
           </div>

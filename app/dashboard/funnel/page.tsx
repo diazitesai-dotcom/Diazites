@@ -4,6 +4,7 @@ import { FunnelBuilderClient } from "@/components/funnel/funnel-builder-client";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { pickLatestBatch } from "@/lib/funnel/funnel-batch-utils";
 import { cn } from "@/lib/utils";
 import { loadFunnelPageData } from "@/lib/dashboard/load-funnel-page";
 
@@ -33,7 +34,16 @@ export default async function FunnelDashboardPage() {
     );
   }
 
-  const initialPages = (pages as Array<Record<string, unknown>>).map((p) => {
+  const allPages = pages as Array<Record<string, unknown>>;
+  const latestBatch = pickLatestBatch(
+    allPages.map((p) => ({
+      ...p,
+      slug: String(p.slug),
+      created_at: String(p.created_at ?? ""),
+    })) as Array<Record<string, unknown> & { slug: string; created_at: string }>,
+  );
+
+  const initialPages = latestBatch.map((p) => {
     const slug = String(p.slug);
     const headline = String(p.headline ?? slug);
     const versions = (p.versions as Array<{ id: string }> | undefined) ?? [];
@@ -46,6 +56,8 @@ export default async function FunnelDashboardPage() {
       angleLabel: angleLabelFor(angle),
       headline,
       subheadline: String(p.subheadline ?? ""),
+      offer: String(p.offer ?? ""),
+      ctaText: String(p.cta_text ?? "Get Started"),
       published: Boolean(p.published),
     };
   });
@@ -55,7 +67,7 @@ export default async function FunnelDashboardPage() {
       <PageHeader
         eyebrow="Funnel Studio"
         title="AI landing page generator"
-        description="Describe your business — AI builds 3 unique landing pages you can preview and publish."
+        description="Enter a website URL or keyword — AI builds 3 unique landing pages you can preview and publish."
       />
       <FunnelBuilderClient initialPages={initialPages} />
     </div>
