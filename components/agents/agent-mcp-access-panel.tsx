@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { Copy, KeyRound, Link2, Plug, Shield } from "lucide-react";
+import { Check, Copy, KeyRound, Link2, Plug, Shield } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -215,9 +215,7 @@ export function AgentMcpAccessPanel({
             Copy Diazites MCP config
           </Button>
 
-          {newToken ? (
-            <TokenAlert body={newToken} onCopy={() => copyText(newToken)} />
-          ) : null}
+          {newToken ? <TokenAlert token={newToken} onCopied={() => setMessage("Token copied to clipboard.")} /> : null}
 
           <form
             action={createConnection}
@@ -453,14 +451,69 @@ function ClientTypeSelect() {
   );
 }
 
-function TokenAlert({ body, onCopy }: { body: string; onCopy: () => void }) {
+function TokenAlert({
+  token,
+  onCopied,
+}: {
+  token: string;
+  onCopied?: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyKey() {
+    try {
+      await navigator.clipboard.writeText(token);
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = token;
+      el.setAttribute("readonly", "");
+      el.style.position = "absolute";
+      el.style.left = "-9999px";
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setCopied(true);
+    onCopied?.();
+    window.setTimeout(() => setCopied(false), 2500);
+  }
+
   return (
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
       <p className="text-sm font-medium text-amber-200">New MCP token (shown once)</p>
-      <code className="mt-2 block break-all text-xs">{body}</code>
-      <Button type="button" size="sm" variant="outline" className="mt-3 rounded-xl" onClick={onCopy}>
-        Copy token
-      </Button>
+      <p className="mt-1 text-xs text-amber-100/80">
+        Use as{" "}
+        <code className="text-[11px]">Authorization: Bearer &lt;token&gt;</code> in your MCP client.
+      </p>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Input
+          readOnly
+          value={token}
+          aria-label="Agent connection token"
+          className="rounded-xl border-amber-500/20 bg-black/30 font-mono text-xs text-amber-50"
+          onFocus={(e) => e.currentTarget.select()}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="shrink-0 rounded-xl border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
+          onClick={() => void copyKey()}
+        >
+          {copied ? (
+            <>
+              <Check className="mr-2 size-3.5 text-emerald-400" aria-hidden />
+              Copied
+            </>
+          ) : (
+            <>
+              <Copy className="mr-2 size-3.5" aria-hidden />
+              Copy key
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }
