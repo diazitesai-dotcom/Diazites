@@ -21,6 +21,42 @@ export const DIAZITES_MCP_TOOLS = [
     description: "Create a lead. Required: name. Optional: phone, email, roofing_need, notes.",
   },
   {
+    name: "diazites_funnel_run_full",
+    scope: "funnel:write (+ agents:write recommended)",
+    description:
+      "Build full funnel: generate 3 landing pages, publish, activate agents, start growth engine from a URL or prompt.",
+  },
+  {
+    name: "diazites_funnel_generate",
+    scope: "funnel:write",
+    description: "Generate 3 AI landing page variants (Dashboard → Funnel parity).",
+  },
+  {
+    name: "diazites_funnel_list",
+    scope: "funnel:read",
+    description: "List landing pages, slugs, and public URLs.",
+  },
+  {
+    name: "diazites_funnel_publish",
+    scope: "funnel:write",
+    description: "Publish a landing page version to /p/{slug}.",
+  },
+  {
+    name: "diazites_agents_activate",
+    scope: "agents:write",
+    description: "Activate growth agents (landing, ads, qualification, etc.).",
+  },
+  {
+    name: "diazites_campaigns_list",
+    scope: "campaigns:read",
+    description: "List campaigns for the business.",
+  },
+  {
+    name: "diazites_growth_engine_start",
+    scope: "funnel:write",
+    description: "Start a growth engine run from a website URL.",
+  },
+  {
     name: "zernio_accounts_list",
     scope: "zernio:read + bridge",
     description: "List Zernio-connected social/ad accounts (requires Zernio bridge + Ads API key).",

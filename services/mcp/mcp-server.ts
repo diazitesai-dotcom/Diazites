@@ -4,6 +4,7 @@ import * as zernio from "@/lib/zernio";
 import { createAdAccountRepository } from "@/repositories/ad-account.repository";
 import { createAgentRepository } from "@/repositories/agent.repository";
 import { createLeadRepository } from "@/repositories/lead.repository";
+import { buildFunnelToolsForAuth, callFunnelMcpTool } from "@/services/mcp/mcp-funnel-tools";
 import type { McpAuthContext } from "@/types/mcp";
 import type { McpScope } from "@/utils/mcp-constants";
 
@@ -100,10 +101,10 @@ export function buildToolsForAuth(ctx: McpAuthContext): McpToolDef[] {
         },
         required: ["content", "platforms"],
       },
-    });
+    }    );
   }
 
-  return tools;
+  return [...tools, ...buildFunnelToolsForAuth(ctx)];
 }
 
 export async function callMcpTool(
@@ -113,6 +114,9 @@ export async function callMcpTool(
   args: Record<string, unknown>,
 ): Promise<McpToolResult> {
   try {
+    const funnelResult = await callFunnelMcpTool(client, ctx, name, args);
+    if (funnelResult) return funnelResult;
+
     switch (name) {
       case "diazites_agents_status":
         return await agentsStatus(client, ctx);

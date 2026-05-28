@@ -23,6 +23,7 @@ import type { AgentMcpConnectionPublic } from "@/types/mcp";
 import type { AgentType } from "@/types/domain";
 import {
   AGENT_TYPE_OPTIONS,
+  FULL_FUNNEL_MCP_SCOPES,
   MCP_CLIENT_TYPES,
   MCP_SCOPES,
   ZERNIO_MCP_URL,
@@ -44,6 +45,7 @@ export function AgentMcpAccessPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [newToken, setNewToken] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [fullFunnelAccess, setFullFunnelAccess] = useState(true);
 
   const zernioCursorConfig = useMemo(
     () =>
@@ -227,11 +229,31 @@ export function AgentMcpAccessPanel({
             </p>
             <Field label="Label" name="label" placeholder="OpenClaw production" required />
             <ClientTypeSelect />
-            <AgentAccessCheckboxes />
-            <ScopeCheckboxes />
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-violet-500/25 bg-violet-500/5 px-3 py-2.5 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 rounded border-border"
+                checked={fullFunnelAccess}
+                onChange={(e) => setFullFunnelAccess(e.target.checked)}
+              />
+              <span>
+                <span className="font-medium text-foreground">Full funnel access</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  Enables all API scopes (generate landing pages, publish, activate agents, leads,
+                  campaigns, Zernio bridge tools). Recommended for Hermes / OpenClaw.
+                </span>
+              </span>
+            </label>
+            <AgentAccessCheckboxes fullAccess={fullFunnelAccess} />
+            <ScopeCheckboxes fullAccess={fullFunnelAccess} />
             <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border/50 px-3 py-2 text-sm">
               <span>Enable Zernio bridge (uses Zernio key from Ads)</span>
-              <input type="checkbox" name="zernio_bridge" className="rounded border-border" />
+              <input
+                type="checkbox"
+                name="zernio_bridge"
+                className="rounded border-border"
+                defaultChecked={fullFunnelAccess}
+              />
             </label>
             <Button type="submit" variant="gradient" className="rounded-xl" disabled={pending}>
               {pending ? "Creating…" : "Generate token"}
@@ -270,10 +292,16 @@ export function AgentMcpAccessPanel({
 
 function AgentAccessCheckboxes({
   defaultChecked,
+  fullAccess = false,
 }: {
   defaultChecked?: AgentType[];
+  fullAccess?: boolean;
 }) {
-  const defaults = new Set(defaultChecked ?? AGENT_TYPE_OPTIONS.map((a) => a.key));
+  const defaults = new Set(
+    fullAccess
+      ? AGENT_TYPE_OPTIONS.map((a) => a.key)
+      : (defaultChecked ?? AGENT_TYPE_OPTIONS.map((a) => a.key)),
+  );
   return (
     <fieldset className="space-y-2">
       <legend className="flex items-center gap-2 text-sm font-medium">
@@ -281,6 +309,7 @@ function AgentAccessCheckboxes({
         Agent access
       </legend>
       <CheckboxGrid
+        key={fullAccess ? "agents-full" : "agents-partial"}
         name="allowed_agent_types"
         options={AGENT_TYPE_OPTIONS.map((a) => ({ value: a.key, label: a.label }))}
         defaultChecked={defaults}
@@ -289,14 +318,23 @@ function AgentAccessCheckboxes({
   );
 }
 
-function ScopeCheckboxes({ defaultChecked }: { defaultChecked?: McpScope[] }) {
+function ScopeCheckboxes({
+  defaultChecked,
+  fullAccess = false,
+}: {
+  defaultChecked?: McpScope[];
+  fullAccess?: boolean;
+}) {
   const defaults = new Set(
-    defaultChecked ?? (["agents:read", "leads:read"] as McpScope[]),
+    fullAccess
+      ? FULL_FUNNEL_MCP_SCOPES
+      : (defaultChecked ?? (["agents:read", "leads:read", "leads:write"] as McpScope[])),
   );
   return (
     <fieldset className="space-y-2">
       <legend className="text-sm font-medium">API scopes</legend>
       <CheckboxGrid
+        key={fullAccess ? "scopes-full" : "scopes-partial"}
         name="scopes"
         options={MCP_SCOPES.map((s) => ({ value: s.key, label: s.label }))}
         defaultChecked={defaults}
