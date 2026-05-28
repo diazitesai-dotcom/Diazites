@@ -1,0 +1,166 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OpenAI API",
+    "version": "2.3.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.ads.openai.com/v1"
+    }
+  ],
+  "paths": {
+    "/campaigns": {
+      "get": {
+        "summary": "Get all campaigns for an ad account",
+        "operationId": "ListCampaignsMethod"
+      },
+      "post": {
+        "summary": "Create a campaign for an ad account",
+        "operationId": "CreateCampaignMethod"
+      }
+    },
+    "/campaigns/{campaign_id}": {
+      "get": {
+        "summary": "Get a campaign",
+        "operationId": "GetCampaignMethod"
+      },
+      "post": {
+        "summary": "Update a campaign",
+        "operationId": "UpdateCampaignMethod"
+      }
+    },
+    "/campaigns/{campaign_id}/activate": {
+      "post": {
+        "summary": "Activate a campaign",
+        "operationId": "ActivateCampaignMethod"
+      }
+    },
+    "/campaigns/{campaign_id}/pause": {
+      "post": {
+        "summary": "Pause a campaign",
+        "operationId": "PauseCampaignMethod"
+      }
+    },
+    "/campaigns/{campaign_id}/archive": {
+      "post": {
+        "summary": "Archive a campaign",
+        "operationId": "ArchiveCampaignMethod"
+      }
+    },
+    "/ad_account": {
+      "get": {
+        "summary": "Get metadata for the ad account",
+        "operationId": "GetAdAccountMethod"
+      }
+    },
+    "/ad_account/insights": {
+      "get": {
+        "summary": "Get ad account insights aggregated by time granularity.",
+        "operationId": "GetAdAccountInsightsMethod"
+      }
+    },
+    "/campaigns/{campaign_id}/insights": {
+      "get": {
+        "summary": "Get campaign insights aggregated by time granularity.",
+        "operationId": "GetCampaignInsightsMethod"
+      }
+    },
+    "/ad_groups": {
+      "get": {
+        "summary": "Get all ad groups for a campaign",
+        "operationId": "ListAdGroupsMethod"
+      },
+      "post": {
+        "summary": "Create an ad group for a campaign",
+        "operationId": "CreateAdGroupMethod"
+      }
+    },
+    "/ad_groups/{ad_group_id}": {
+      "get": {
+        "summary": "Get an ad group",
+        "operationId": "GetAdGroupMethod"
+      },
+      "post": {
+        "summary": "Update an ad group",
+        "operationId": "UpdateAdGroupMethod"
+      }
+    },
+    "/ad_groups/{ad_group_id}/activate": {
+      "post": {
+        "summary": "Activate an ad group",
+        "operationId": "ActivateAdGroupMethod"
+      }
+    },
+    "/ad_groups/{ad_group_id}/pause": {
+      "post": {
+        "summary": "Pause an ad group",
+        "operationId": "PauseAdGroupMethod"
+      }
+    },
+    "/ad_groups/{ad_group_id}/archive": {
+      "post": {
+        "summary": "Archive an ad group",
+        "operationId": "ArchiveAdGroupMethod"
+      }
+    },
+    "/ads": {
+      "get": {
+        "summary": "Get all ads for an ad group",
+        "operationId": "ListAdsMethod"
+      },
+      "post": {
+        "summary": "Create an ad for an ad group",
+        "operationId": "CreateAdMethod"
+      }
+    },
+    "/ads/{ad_id}": {
+      "get": {
+        "summary": "Get an ad",
+        "operationId": "GetAdMethod"
+      },
+      "post": {
+        "summary": "Update an ad",
+        "operationId": "UpdateAdMethod"
+      }
+    },
+    "/ads/{ad_id}/activate": {
+      "post": {
+        "summary": "Activate an ad",
+        "operationId": "ActivateAdMethod"
+      }
+    },
+    "/ads/{ad_id}/pause": {
+      "post": {
+        "summary": "Pause an ad",
+        "operationId": "PauseAdMethod"
+      }
+    },
+    "/ads/{ad_id}/archive": {
+      "post": {
+        "summary": "Archive an ad",
+        "operationId": "ArchiveAdMethod"
+      }
+    },
+    "/upload": {
+      "post": {
+        "summary": "Upload an image URL or image file and return a file id",
+        "operationId": "UploadImageMethod"
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "in": "header"
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ]
+}

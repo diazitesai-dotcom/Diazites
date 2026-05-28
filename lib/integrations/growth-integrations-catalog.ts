@@ -27,11 +27,24 @@ type PlatformDef = {
   agentType: GrowthIntegration["agentType"];
   subchannels?: string[];
   defaultStatus?: ConnectionStatus;
+  endpoint?: string;
+  docsUrl?: string;
+  openApiSpecPath?: string;
 };
 
 const PLATFORMS: PlatformDef[] = [
   { id: "meta", name: "Meta Ads", categoryId: "paid_ads", agentType: "paid_ads", subchannels: ["Facebook", "Instagram", "Messenger", "WhatsApp"] },
   { id: "google_ads", name: "Google Ads", categoryId: "paid_ads", agentType: "google_youtube", subchannels: ["Search", "Display", "Shopping", "Performance Max", "YouTube", "Gmail", "Discovery", "Local Service Ads"] },
+  {
+    id: "openai_ads",
+    name: "OpenAI Ads API",
+    categoryId: "paid_ads",
+    agentType: "paid_ads",
+    subchannels: ["Campaigns", "Ad groups", "Ads", "Insights", "Uploads"],
+    endpoint: "https://api.ads.openai.com/v1",
+    docsUrl: "https://api.ads.openai.com/v1",
+    openApiSpecPath: "/openapi/openai-ads-api.json",
+  },
   { id: "microsoft_ads", name: "Microsoft Ads", categoryId: "paid_ads", agentType: "paid_ads", subchannels: ["Bing Search", "MSN", "Audience Network"] },
   { id: "tiktok_ads", name: "TikTok Ads", categoryId: "paid_ads", agentType: "tiktok" },
   { id: "linkedin_ads", name: "LinkedIn Ads", categoryId: "paid_ads", agentType: "linkedin" },
@@ -108,7 +121,7 @@ const PLATFORMS: PlatformDef[] = [
   { id: "paypal", name: "PayPal", categoryId: "ecommerce_payments", agentType: "ecommerce" },
 ];
 
-const CONNECTED_BY_DEFAULT = new Set(["meta", "google_ads", "hubspot", "stripe", "openai"]);
+const CONNECTED_BY_DEFAULT = new Set(["meta", "google_ads", "hubspot", "stripe"]);
 
 export const AGENT_CAPABILITY_GROUPS: AgentCapabilityGroup[] = [
   {
@@ -247,6 +260,9 @@ export function buildGrowthIntegrations(connectedIds: Set<string> = new Set()): 
     lastSync: connectedIds.has(p.id) || CONNECTED_BY_DEFAULT.has(p.id) ? "2 min ago" : null,
     dataAccess: connectedIds.has(p.id) || CONNECTED_BY_DEFAULT.has(p.id) ? "Read + write (scoped)" : "Not connected",
     connectedCampaigns: p.agentType === "paid_ads" || p.agentType === "google_youtube" ? (connectedIds.has(p.id) ? 2 : 0) : undefined,
+    endpoint: p.endpoint,
+    docsUrl: p.docsUrl,
+    openApiSpecPath: p.openApiSpecPath,
   }));
 }
 

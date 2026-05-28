@@ -83,6 +83,24 @@ export function IntegrationDetailDrawer({
                 <div className="space-y-3">
                   <p className="text-muted-foreground">{integration.dataAccess}</p>
                   <p>Last sync: {integration.lastSync ?? "Never"}</p>
+                  {integration.endpoint ? (
+                    <p className="text-xs text-muted-foreground">
+                      Endpoint: <code className="text-foreground">{integration.endpoint}</code>
+                    </p>
+                  ) : null}
+                  {integration.openApiSpecPath ? (
+                    <p className="text-xs text-muted-foreground">
+                      OpenAPI spec:{" "}
+                      <a
+                        href={integration.openApiSpecPath}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-violet-300 underline"
+                      >
+                        {integration.openApiSpecPath}
+                      </a>
+                    </p>
+                  ) : null}
                   {integration.subchannels?.length ? (
                     <p className="text-xs text-muted-foreground">{integration.subchannels.join(" · ")}</p>
                   ) : null}

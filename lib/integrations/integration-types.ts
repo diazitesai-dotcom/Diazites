@@ -40,6 +40,9 @@ export type GrowthIntegration = {
   lastSync: string | null;
   dataAccess: string;
   connectedCampaigns?: number;
+  endpoint?: string;
+  docsUrl?: string;
+  openApiSpecPath?: string;
 };
 
 export type IntegrationCategory = {
