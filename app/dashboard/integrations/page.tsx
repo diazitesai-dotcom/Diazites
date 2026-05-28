@@ -1,5 +1,10 @@
 import { GrowthIntegrationsHub } from "@/components/integrations/growth-integrations-hub";
 import { requireBusinessContext } from "@/lib/auth/business-context";
+import {
+  isAdAccountConnected,
+  resolveLinkedIntegrationId,
+  type LinkedAdAccount,
+} from "@/lib/integrations/integration-connect-config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -12,19 +17,25 @@ export default async function IntegrationsPage() {
 
   const { data: adAccounts } = await supabase
     .from("ad_accounts")
-    .select("platform, status")
+    .select("id, platform, external_account_id, account_name, credentials_hint, connection_status")
     .eq("business_id", ctxResult.ctx.businessId);
 
   const connectedIds: string[] = [];
+  const linkedAccounts: Record<string, LinkedAdAccount> = {};
+
   for (const acc of adAccounts ?? []) {
-    const p = String(acc.platform).toLowerCase();
-    if (acc.status === "connected" || acc.status === "active") {
-      if (p.includes("meta") || p.includes("facebook")) connectedIds.push("meta");
-      if (p.includes("google")) connectedIds.push("google_ads");
-      if (p.includes("tiktok")) connectedIds.push("tiktok_ads");
-      if (p.includes("linkedin")) connectedIds.push("linkedin_ads");
-    }
+    if (!isAdAccountConnected(acc)) continue;
+    const integrationId = resolveLinkedIntegrationId(acc);
+    if (!integrationId) continue;
+    connectedIds.push(integrationId);
+    linkedAccounts[integrationId] = {
+      id: acc.id,
+      accountName: acc.account_name,
+      credentialsHint: acc.credentials_hint,
+    };
   }
 
-  return <GrowthIntegrationsHub connectedIds={connectedIds} />;
+  return (
+    <GrowthIntegrationsHub connectedIds={connectedIds} linkedAccounts={linkedAccounts} />
+  );
 }

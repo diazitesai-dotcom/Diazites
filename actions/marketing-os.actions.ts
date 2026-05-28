@@ -234,6 +234,7 @@ export async function connectAdAccountAction(input: {
   if (!result.success) return { ok: false as const, error: result.error };
   revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
+  revalidatePath("/dashboard/integrations");
   return { ok: true as const, data: result.data };
 }
 
@@ -263,6 +264,7 @@ export async function disconnectAdAccountAction(adAccountId: string) {
   if (!result.success) return { ok: false as const, error: result.error };
   revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
+  revalidatePath("/dashboard/integrations");
   return { ok: true as const };
 }
 

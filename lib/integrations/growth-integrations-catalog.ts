@@ -121,6 +121,8 @@ const PLATFORMS: PlatformDef[] = [
   { id: "paypal", name: "PayPal", categoryId: "ecommerce_payments", agentType: "ecommerce" },
 ];
 
+export const GROWTH_INTEGRATION_IDS = new Set(PLATFORMS.map((p) => p.id));
+
 const CONNECTED_BY_DEFAULT = new Set(["meta", "google_ads", "hubspot", "stripe"]);
 
 export const AGENT_CAPABILITY_GROUPS: AgentCapabilityGroup[] = [

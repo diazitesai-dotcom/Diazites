@@ -26,6 +26,7 @@ import {
   criticalMissingConnections,
   integrationHealthScore,
 } from "@/lib/integrations/growth-integrations-catalog";
+import type { LinkedAdAccount } from "@/lib/integrations/integration-connect-config";
 import type {
   GrowthIntegration,
   IntegrationCategoryId,
@@ -36,8 +37,10 @@ type StatusFilter = ConnectionStatus | "all" | "needs_attention_group";
 
 export function GrowthIntegrationsHub({
   connectedIds,
+  linkedAccounts = {},
 }: {
   connectedIds: string[];
+  linkedAccounts?: Record<string, LinkedAdAccount>;
 }) {
   const connected = useMemo(() => new Set(connectedIds), [connectedIds]);
   const integrations = useMemo(() => buildGrowthIntegrations(connected), [connected]);
@@ -209,7 +212,11 @@ export function GrowthIntegrationsHub({
         <CredentialVaultPanel />
       </section>
 
-      <IntegrationDetailDrawer integration={selected} onClose={() => setSelected(null)} />
+      <IntegrationDetailDrawer
+        integration={selected}
+        linkedAccount={selected ? linkedAccounts[selected.id] ?? null : null}
+        onClose={() => setSelected(null)}
+      />
 
       <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-center text-xs text-muted-foreground">
         <Plug className="mx-auto mb-2 size-4 text-violet-300" />
