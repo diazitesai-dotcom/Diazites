@@ -90,6 +90,7 @@ export default async function PublicLandingPage({
       <LandingPageRenderer
         slug={slug}
         asset={loaded.asset as LandingAssetPayload}
+        sections={(loaded.config.sections as import("@/types/marketing-os").LandingSection[]) ?? []}
         businessName={loaded.business?.name ?? null}
         location={
           loaded.landing.location

@@ -43,6 +43,7 @@ export async function generateAndSaveThreeLandingPages(
       prompt,
       supabase: client,
       businessId,
+      accountBusinessName: business.name,
     });
   } catch (e) {
     return fail(e instanceof Error ? e.message : "Generation failed");
@@ -62,7 +63,7 @@ export async function generateAndSaveThreeLandingPages(
       ctaText: v.ctaText,
       location: v.location,
       industry: v.industry,
-      audience: prompt.slice(0, 200),
+      audience: v.brandName || prompt.slice(0, 200),
       sections: v.sections,
       versionName: v.angleLabel,
     });
