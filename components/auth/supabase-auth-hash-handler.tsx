@@ -64,7 +64,7 @@ export function SupabaseAuthHashHandler() {
         }
 
         window.history.replaceState(null, "", window.location.pathname + window.location.search);
-        window.location.assign("/dashboard");
+        window.location.assign("/onboarding?welcome=trial");
       } catch (e) {
         fail(e instanceof Error ? e.message : "Sign-in failed");
       }

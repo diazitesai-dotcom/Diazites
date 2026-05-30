@@ -3,6 +3,8 @@
 import Link from "next/link";
 
 import { AuthSubmitButton } from "@/components/auth/auth-submit-button";
+import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
+import { AUTH_BRAND } from "@/lib/auth/auth-branding";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,10 +38,15 @@ export function AuthCard({
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl tracking-tight">{title}</CardTitle>
         <CardDescription>
-          Secure sign-in. Your session syncs across the app via Supabase.
+          Sign in to {AUTH_BRAND.platformName} — email, Google, Facebook, Apple, or Microsoft.
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <SocialAuthButtons
+          mode="login"
+          nextPath={returnPath ?? "/dashboard"}
+          className="mb-4"
+        />
         <form className="space-y-4" action={action}>
           {returnPath ? <input type="hidden" name="next" value={returnPath} /> : null}
           <div className="space-y-2">
