@@ -20,9 +20,7 @@ export default async function IntegrationsPage() {
 
   const { data: adAccounts } = await supabase
     .from("ad_accounts")
-    .select(
-      "id, platform, external_account_id, account_name, credentials_hint, connection_status, status",
-    )
+    .select("id, platform, external_account_id, status, meta, access_token, refresh_token")
     .eq("business_id", ctxResult.ctx.businessId);
 
   const connectedIds: string[] = [];
@@ -33,10 +31,18 @@ export default async function IntegrationsPage() {
     const integrationId = resolveLinkedIntegrationId(acc);
     if (!integrationId) continue;
     connectedIds.push(integrationId);
+    const meta = (acc.meta ?? {}) as Record<string, unknown>;
+    const label =
+      typeof meta.accountLabel === "string" ? meta.accountLabel : integrationId.replace(/_/g, " ");
     linkedAccounts[integrationId] = {
       id: acc.id,
-      accountName: acc.account_name,
-      credentialsHint: acc.credentials_hint,
+      accountName: label,
+      credentialsHint:
+        acc.status === "connected"
+          ? "OAuth connected"
+          : acc.status === "pending"
+            ? "OAuth pending"
+            : null,
     };
   }
 

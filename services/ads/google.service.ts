@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { encodeAdsOAuthState } from "@/lib/ads-oauth-state";
-import { maskCredential } from "@/lib/crypto/credentials";
 import { getAdsConfig } from "@/lib/ads-env";
 import { fail, ok, type ServiceResult } from "@/lib/result";
 import {
@@ -100,20 +99,16 @@ export async function exchangeGoogleCode(
   const isLive = Boolean(meta.liveToken);
 
   const engineStatus: AdAccountStatus = isLive ? "connected" : "pending";
-  const vaultStatus = isLive ? "connected" : "needs_permissions";
   const { error } = await repo.upsert({
     businessId: args.businessId,
     platform: "google",
     externalAccountId: "google_ads",
-    accountName: "Google Ads",
     status: engineStatus,
-    connectionStatus: vaultStatus,
-    credentialsHint: refreshToken ? maskCredential(refreshToken) : "OAuth connected",
     accessToken,
     refreshToken,
     tokenExpiresAt: expiresAt,
     scopes: config.scopes,
-    meta,
+    meta: { ...meta, accountLabel: "Google Ads", liveToken: isLive },
   });
   if (error) return fail(error.message);
   return ok({ status: "connected" });
