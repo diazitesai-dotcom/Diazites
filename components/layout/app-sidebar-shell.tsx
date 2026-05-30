@@ -170,9 +170,15 @@ export function AppSidebarShell({
 
     return (
       <nav className="flex flex-1 flex-col gap-3 overflow-y-auto px-2 py-3">
-        {GROWTH_SIDEBAR_GROUPS.map((group) => (
-          <div key={group.id}>
-            {!iconOnly ? (
+        {GROWTH_SIDEBAR_GROUPS.map((group, groupIndex) => (
+          <div
+            key={group.id}
+            className={cn(
+              group.standalone && !iconOnly && groupIndex > 0 && "mt-1",
+              group.standalone && !iconOnly && "pb-2",
+            )}
+          >
+            {!iconOnly && !group.standalone ? (
               <p className="mb-1 px-2 text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
                 {group.label}
               </p>
@@ -193,6 +199,9 @@ export function AppSidebarShell({
                 </div>
               ))}
             </div>
+            {group.standalone && !iconOnly ? (
+              <div className="mx-2 mt-3 border-b border-white/[0.08]" aria-hidden />
+            ) : null}
           </div>
         ))}
       </nav>

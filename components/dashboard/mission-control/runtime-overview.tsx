@@ -46,9 +46,9 @@ export function RuntimeOverview({
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">Operations map</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Live system map</h2>
             <p className="text-sm text-muted-foreground">
-              Live system flow — click a node to inspect. Status labels are map-specific.
+              Runtime overview — click any module for telemetry, logs, and controls.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">

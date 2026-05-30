@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -171,6 +171,11 @@ function TrafficDetail({ detail }: { detail: TrafficModuleDetail }) {
           ))}
         </ul>
       </Section>
+      {detail.landingViews.length ? (
+        <Section title="Landing page views">
+          <MetricGrid items={detail.landingViews} />
+        </Section>
+      ) : null}
       <Section title="Click path">
         <div className="flex flex-wrap items-center gap-1 text-xs">
           {detail.clickPath.map((step, i) => (
@@ -194,6 +199,16 @@ function LandingDetail({ detail }: { detail: LandingModuleDetail }) {
   return (
     <div className="space-y-5">
       <MetricGrid items={detail.metrics} />
+      <Section title="Conversion capture">
+        <MetricGrid
+          items={[
+            { label: "Winning version", value: detail.winningVersion },
+            { label: "Captured leads", value: String(detail.capturedLeads) },
+            { label: "CTA clicks", value: String(detail.ctaClicks) },
+            { label: "Form submissions", value: String(detail.formSubmissions) },
+          ]}
+        />
+      </Section>
       <Section title="A/B test">
         {detail.abTests.length ? (
           <ul className="space-y-2">
@@ -255,6 +270,14 @@ function LandingDetail({ detail }: { detail: LandingModuleDetail }) {
 }
 
 function QualifyDetail({ detail }: { detail: QualifyModuleDetail }) {
+  const [leadStatuses, setLeadStatuses] = useState<Record<string, QualifyModuleDetail["leads"][0]["status"]>>(
+    () => Object.fromEntries(detail.leads.map((l) => [l.id, l.status])),
+  );
+
+  useEffect(() => {
+    setLeadStatuses(Object.fromEntries(detail.leads.map((l) => [l.id, l.status])));
+  }, [detail.leads]);
+
   if (detail.isEmpty) return <EmptyModule detail={detail} />;
   return (
     <div className="space-y-5">
@@ -271,34 +294,60 @@ function QualifyDetail({ detail }: { detail: QualifyModuleDetail }) {
       </Section>
       <Section title="Lead queue">
         <ul className="space-y-3">
-          {detail.leads.map((lead) => (
-            <li key={lead.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium">{lead.name}</p>
-                  <p className="text-xs text-cyan-200/90">Score: {lead.score}</p>
+          {detail.leads.map((lead) => {
+            const status = leadStatuses[lead.id] ?? lead.status;
+            return (
+              <li key={lead.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium">{lead.name}</p>
+                    <p className="text-xs text-cyan-200/90">Score: {lead.score}</p>
+                  </div>
+                  <span
+                    className={cn(
+                      "text-[10px] font-semibold uppercase",
+                      status === "approved" && "text-emerald-300",
+                      status === "rejected" && "text-rose-300",
+                      status === "pending" && "text-muted-foreground",
+                    )}
+                  >
+                    {status}
+                  </span>
                 </div>
-                <span className="text-[10px] uppercase text-muted-foreground">{lead.status}</span>
-              </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                <span className="font-medium text-violet-300/90">AI reasoning: </span>
-                {lead.reasoning}
-              </p>
-              {lead.missingFields.length ? (
-                <p className="mt-1 text-[11px] text-amber-300/90">
-                  Missing: {lead.missingFields.join(", ")}
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  <span className="font-medium text-violet-300/90">AI reasoning: </span>
+                  {lead.reasoning}
                 </p>
-              ) : null}
-              <div className="mt-2 flex gap-2">
-                <Button type="button" size="sm" variant="outline" className="h-7 rounded-lg text-[10px]">
-                  Approve
-                </Button>
-                <Button type="button" size="sm" variant="ghost" className="h-7 rounded-lg text-[10px]">
-                  Reject
-                </Button>
-              </div>
-            </li>
-          ))}
+                {lead.missingFields.length ? (
+                  <p className="mt-1 text-[11px] text-amber-300/90">
+                    Missing: {lead.missingFields.join(", ")}
+                  </p>
+                ) : null}
+                {status === "pending" ? (
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 rounded-lg text-[10px]"
+                      onClick={() => setLeadStatuses((s) => ({ ...s, [lead.id]: "approved" }))}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 rounded-lg text-[10px]"
+                      onClick={() => setLeadStatuses((s) => ({ ...s, [lead.id]: "rejected" }))}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       </Section>
       <Section title="Logs">
@@ -309,6 +358,8 @@ function QualifyDetail({ detail }: { detail: QualifyModuleDetail }) {
 }
 
 function FollowUpDetail({ detail }: { detail: FollowUpModuleDetail }) {
+  const [retried, setRetried] = useState<Record<number, boolean>>({});
+
   if (detail.isEmpty) return <EmptyModule detail={detail} />;
   return (
     <div className="space-y-5">
@@ -321,12 +372,20 @@ function FollowUpDetail({ detail }: { detail: FollowUpModuleDetail }) {
                 <span className="font-medium">{seq.lead}</span>
                 <span className="text-[10px] uppercase text-muted-foreground">{seq.channel}</span>
               </div>
-              <p className="mt-1 text-xs text-cyan-200/80">{seq.status}</p>
+              <p className="mt-1 text-xs text-cyan-200/80">
+                {retried[i] ? "Retry queued · sending" : seq.status}
+              </p>
               <p className="mt-2 rounded-md bg-black/20 p-2 text-[11px] italic text-muted-foreground">
                 &ldquo;{seq.preview}&rdquo;
               </p>
-              {seq.failed ? (
-                <Button type="button" size="sm" variant="outline" className="mt-2 h-7 rounded-lg text-[10px]">
+              {seq.failed && !retried[i] ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 h-7 rounded-lg text-[10px]"
+                  onClick={() => setRetried((r) => ({ ...r, [i]: true }))}
+                >
                   <RefreshCw className="mr-1 size-3" />
                   Retry send
                 </Button>
@@ -391,6 +450,30 @@ function OptimizeDetail({ detail }: { detail: OptimizeModuleDetail }) {
   return (
     <div className="space-y-5">
       <MetricGrid items={detail.metrics} />
+      {detail.tuningActions.length ? (
+        <Section title="Active tuning">
+          <ul className="space-y-1 text-xs text-muted-foreground">
+            {detail.tuningActions.map((a) => (
+              <li key={a} className="flex items-center gap-2">
+                <Activity className="size-3 text-amber-300" />
+                {a}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+      {detail.recommendations.length ? (
+        <Section title="AI recommendations">
+          <ul className="space-y-2">
+            {detail.recommendations.map((rec) => (
+              <li key={rec.id} className="rounded-lg border border-white/[0.06] px-3 py-2 text-sm">
+                <p className="font-medium">{rec.title}</p>
+                <p className="text-xs text-muted-foreground">{rec.impact}</p>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
       <Section title="What changed & why">
         <ul className="space-y-3">
           {detail.changes.map((c) => (
@@ -514,9 +597,42 @@ function TabbedInspectorBody({ detail, tab }: { detail: SystemModuleDetail; tab:
   );
 }
 
+function DrawerActionFooter({ detail }: { detail: SystemModuleDetail }) {
+  const actions = detail.contextualActions ?? [];
+  if (!actions.length) return null;
+  return (
+    <footer className="shrink-0 border-t border-white/10 bg-card/95 px-5 py-3">
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Quick actions
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {actions.map((action) =>
+          action.href ? (
+            <Link
+              key={action.label}
+              href={action.href}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "rounded-lg border-white/10")}
+            >
+              {action.label}
+            </Link>
+          ) : (
+            <Button key={action.label} type="button" variant="outline" size="sm" className="rounded-lg border-white/10">
+              {action.label}
+            </Button>
+          ),
+        )}
+      </div>
+    </footer>
+  );
+}
+
 export function SystemModuleDrawer() {
-  const { drawerOpen, closeModule, activeDetail, loading } = useSystemModule();
+  const { drawerOpen, closeModule, activeDetail, loading, activeModule } = useSystemModule();
   const [tab, setTab] = useState<InspectorTabId>("overview");
+
+  useEffect(() => {
+    setTab("overview");
+  }, [activeModule]);
 
   return (
     <>
@@ -582,6 +698,8 @@ export function SystemModuleDrawer() {
                 <TabbedInspectorBody detail={activeDetail} tab={tab} />
               ) : null}
             </div>
+
+            {!loading && activeDetail ? <DrawerActionFooter detail={activeDetail} /> : null}
           </motion.aside>
         ) : null}
       </AnimatePresence>

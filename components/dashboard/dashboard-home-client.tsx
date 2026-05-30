@@ -46,6 +46,12 @@ function buildModuleContext(data: DashboardOverviewData): SystemModuleContext {
   const booked = funnel.find((s) => s.key === "booked")?.count ?? 0;
   const won = funnel.find((s) => s.key === "won")?.count ?? 0;
 
+  const pixelCheck = data.healthChecks.find((c) => c.id === "pixel");
+  const pixelOk = pixelCheck?.ok ?? true;
+  const trackingRequired = data.connections.some(
+    (c) => (c.id === "meta" || c.id === "google") && c.status !== "missing",
+  );
+
   return {
     funnelCounts: { visitors, leads, qualified, booked, won },
     metrics: data.metrics,
@@ -54,6 +60,8 @@ function buildModuleContext(data: DashboardOverviewData): SystemModuleContext {
     recommendations: data.recommendations,
     crmConnected,
     hasPaidAds,
+    pixelOk,
+    trackingRequired,
   };
 }
 
@@ -70,16 +78,16 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
 
         <MissionControlAlerts data={data} />
 
-        <CommandCenterWidgets data={data} />
-
-        <LiveAgentActivityPanel data={data} />
-
         <RuntimeOverview
           flow={data.orchestrationFlow}
           stackHealth={data.stackHealth}
           moduleContext={buildModuleContext(data)}
           showStackHealthBar={false}
         />
+
+        <CommandCenterWidgets data={data} />
+
+        <LiveAgentActivityPanel data={data} />
 
         <StackHealthSection items={data.stackHealth} />
 

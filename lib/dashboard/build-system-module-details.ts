@@ -36,10 +36,18 @@ export function buildSystemModuleDetails(ctx: SystemModuleContext): Record<Syste
 
   const socialShare = Math.max(0, visitors - directShare - organicShare - paidShare);
 
+  const pixelFailed = ctx.trackingRequired && ctx.pixelOk === false;
+
   const traffic: SystemModuleDetail = {
     moduleId: "traffic",
     title: "Traffic",
-    displayState: hasTraffic ? "live" : visitors === 0 && leads > 0 ? "needs_attention" : "idle",
+    displayState: pixelFailed
+      ? "failed"
+      : hasTraffic
+        ? "live"
+        : visitors === 0 && leads > 0
+          ? "needs_attention"
+          : "idle",
     isEmpty: visitors === 0,
     summary: hasTraffic
       ? `${visitors.toLocaleString()} visits in the last ${ctx.metrics?.periodDays ?? 30} days.`
@@ -109,9 +117,10 @@ export function buildSystemModuleDetails(ctx: SystemModuleContext): Record<Syste
     ],
     contextualActions: [
       { label: "Launch ads", href: "/dashboard/campaign-ops" },
-      { label: "Create audience", href: "/dashboard/integrations" },
+      { label: "Fix pixel", href: "/dashboard/integrations" },
       { label: "Analyze dropoff", href: "/dashboard/funnel" },
     ],
+    healthHint: pixelFailed ? "Pixel validation failed — conversion tracking degraded." : undefined,
   };
 
   const landing: SystemModuleDetail = {
@@ -222,6 +231,17 @@ export function buildSystemModuleDetails(ctx: SystemModuleContext): Record<Syste
       qualAgent?.status === "active" ? "Scoring model v2 active" : "Qualification agent not active",
       qualified > 0 ? `${qualified} leads passed threshold` : "No scored leads",
     ]),
+    aiReasoning:
+      qualQueue > 0
+        ? `${qualQueue} leads waiting — agent prioritizing high-intent scores and missing-field recovery.`
+        : qualified > 0
+          ? "Qualification queue clear. All scored leads meet routing threshold."
+          : "No leads in queue — activate capture on landing to start scoring.",
+    contextualActions: [
+      { label: "Open leads", href: "/dashboard/leads" },
+      { label: "Edit rules", href: "/dashboard/automations" },
+      { label: "Deploy agent", href: "/dashboard/agents" },
+    ],
   };
 
   const followup: SystemModuleDetail = {
@@ -273,13 +293,26 @@ export function buildSystemModuleDetails(ctx: SystemModuleContext): Record<Syste
       pendingFollow > 0 ? `${pendingFollow} leads in nurture queue` : "Queue empty",
       "SMS + email channels within compliance window",
     ]),
+    aiReasoning:
+      pendingFollow > 0
+        ? "Sequences staggered to avoid fatigue — SMS touch follows email open signal."
+        : followAgent?.status === "active"
+          ? "Follow-up agent active with empty queue — awaiting new qualified leads."
+          : "Deploy follow-up agent to automate nurture after qualification.",
+    contextualActions: [
+      { label: "View sequences", href: "/dashboard/automations" },
+      { label: "Open leads", href: "/dashboard/leads" },
+      { label: "Deploy agent", href: "/dashboard/agents" },
+    ],
   };
 
   const crm: SystemModuleDetail = {
     moduleId: "crm",
     title: "CRM",
     displayState: !ctx.crmConnected
-      ? "disconnected"
+      ? leads > 0
+        ? "failed"
+        : "disconnected"
       : booked + won > 0
         ? "live"
         : qualified > 0
