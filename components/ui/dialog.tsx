@@ -65,3 +65,13 @@ export function DialogTitle({ className, children }: { className?: string; child
   return <h3 className={cn("text-lg font-semibold tracking-tight", className)}>{children}</h3>;
 }
 
+export function DialogDescription({
+  className,
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return <p className={cn("text-sm text-muted-foreground", className)}>{children}</p>;
+}
+

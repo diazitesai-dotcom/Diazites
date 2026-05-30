@@ -70,6 +70,8 @@ function isNavItemActive(pathname: string, href: string): boolean {
   if (href === ROUTES.inbox) return pathname.startsWith(ROUTES.inbox);
   if (href === ROUTES.calendar) return pathname.startsWith(ROUTES.calendar);
   if (href === ROUTES.analytics) return pathname.startsWith(ROUTES.analytics);
+  if (href === ROUTES.workflows) return pathname.startsWith(ROUTES.workflows);
+  if (href === ROUTES.aiCallCommandCenter) return pathname.startsWith(ROUTES.aiCallCommandCenter);
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

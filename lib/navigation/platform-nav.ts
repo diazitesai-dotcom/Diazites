@@ -19,6 +19,8 @@ import {
   Target,
   Users,
   Webhook,
+  Phone,
+  Workflow,
   Zap,
 } from "lucide-react";
 
@@ -33,6 +35,8 @@ export const ROUTES = {
   optimizationLab: "/dashboard/optimization",
   integrationsHub: "/dashboard/integrations",
   automationCenter: "/dashboard/automations",
+  workflows: "/dashboard/workflows",
+  aiCallCommandCenter: "/dashboard/ai-calls",
   approvalCenter: "/dashboard/approvals",
   reportsIntelligence: "/dashboard/reports",
   organization: "/dashboard/organization",
@@ -344,6 +348,26 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
         label: "Pipeline",
         description: "Kanban stages",
         icon: Target,
+      },
+    ],
+  },
+  {
+    id: "automation",
+    label: "Automation",
+    items: [
+      {
+        id: "mission_control" as const,
+        href: ROUTES.workflows,
+        label: "Workflows",
+        description: "Visual automations & pipelines",
+        icon: Workflow,
+      },
+      {
+        id: "mission_control" as const,
+        href: ROUTES.aiCallCommandCenter,
+        label: "AI Call Command Center",
+        description: "Native AI calling & campaigns",
+        icon: Phone,
       },
     ],
   },
