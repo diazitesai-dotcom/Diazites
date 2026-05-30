@@ -73,6 +73,9 @@ function isNavItemActive(pathname: string, href: string): boolean {
   if (href === ROUTES.businessProfile) {
     return pathname === ROUTES.businessProfile || pathname.startsWith(`${ROUTES.businessProfile}/`);
   }
+  if (href === ROUTES.onboarding) {
+    return pathname === ROUTES.onboarding || pathname.startsWith(`${ROUTES.onboarding}/`);
+  }
   if (href === ROUTES.tasks) return pathname.startsWith(ROUTES.tasks);
   if (href === ROUTES.followUp) return pathname.startsWith(ROUTES.followUp);
   if (href === ROUTES.inbox) return pathname.startsWith(ROUTES.inbox);

@@ -5,6 +5,7 @@ import {
   Building2,
   Calendar,
   CheckSquare,
+  ClipboardList,
   FlaskConical,
   CreditCard,
   Funnel,
@@ -47,6 +48,7 @@ export const ROUTES = {
   reportsIntelligence: "/dashboard/reports",
   organization: "/dashboard/organization",
   businessProfile: "/dashboard/business",
+  onboarding: "/onboarding",
   tasks: "/dashboard/tasks",
   followUp: "/dashboard/follow-up",
   inbox: "/dashboard/inbox",
@@ -116,8 +118,29 @@ export const PLATFORM_AGENT_ROSTER = [
 
 export const PRODUCT_TAGLINE = "AI Growth Operating System";
 
-/** Sidebar order: Mission Control → Business setup → Automation → Leads & CRM → Campaigns → Operations → Follow-up */
+/** Sidebar: Onboarding (solo) → Mission Control (solo) → Automation → Business setup → Leads → Campaigns → Ops → Follow-up */
 export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
+  {
+    id: "business_onboarding",
+    label: "Business onboarding",
+    standalone: true,
+    items: [
+      {
+        id: "business_profile",
+        href: ROUTES.businessProfile,
+        label: "Business profile",
+        description: "Brand, offer & company details",
+        icon: Building2,
+      },
+      {
+        id: "business_profile" as const,
+        href: ROUTES.onboarding,
+        label: "Onboarding setup",
+        description: "Finish setup & connect accounts",
+        icon: ClipboardList,
+      },
+    ],
+  },
   {
     id: "mission_control",
     label: "Mission Control",
@@ -129,40 +152,6 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
         label: "Mission Control",
         description: "Your growth command center",
         icon: LayoutDashboard,
-      },
-    ],
-  },
-  {
-    id: "business",
-    label: "Business setup",
-    items: [
-      {
-        id: "business_profile",
-        href: ROUTES.businessProfile,
-        label: "Business profile",
-        description: "Brand, offer & onboarding",
-        icon: Building2,
-      },
-      {
-        id: "funnel_studio",
-        href: ROUTES.funnelStudio,
-        label: "Funnel Studio",
-        description: "Landing pages, forms & offers",
-        icon: Funnel,
-      },
-      {
-        id: "integrations_hub",
-        href: ROUTES.integrationsHub,
-        label: "Integrations",
-        description: "Ads, CRM, email & payments",
-        icon: Plug,
-      },
-      {
-        id: "agents",
-        href: ROUTES.agents,
-        label: "AI agents",
-        description: "Activate & manage agent stacks",
-        icon: Bot,
       },
     ],
   },
@@ -218,6 +207,33 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
         label: "Merchant services",
         description: "Payments & billing automations",
         icon: CreditCard,
+      },
+    ],
+  },
+  {
+    id: "business",
+    label: "Business setup",
+    items: [
+      {
+        id: "funnel_studio",
+        href: ROUTES.funnelStudio,
+        label: "Funnel Studio",
+        description: "Landing pages, forms & offers",
+        icon: Funnel,
+      },
+      {
+        id: "integrations_hub",
+        href: ROUTES.integrationsHub,
+        label: "Integrations",
+        description: "Ads, CRM, email & payments",
+        icon: Plug,
+      },
+      {
+        id: "agents",
+        href: ROUTES.agents,
+        label: "AI agents",
+        description: "Activate & manage agent stacks",
+        icon: Bot,
       },
     ],
   },
