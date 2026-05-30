@@ -106,6 +106,13 @@ The sweep is heuristic (no AI cost) so hourly is safe. Each run records a row in
 ## Notes
 
 - Middleware protects `/dashboard`, `/onboarding`, and `/admin`.
-- `/admin` additionally checks `admin_users` access in Supabase.
+- `/admin` additionally checks `admin_users` access in Supabase. If you are signed in but not a platform admin, you are redirected to `/dashboard?admin_access=denied`.
+- **First platform admin (production):** in Supabase SQL Editor, run:
+  ```sql
+  insert into public.admin_users (user_id, role)
+  select id, 'admin' from public.users where email ilike 'your@email.com'
+  on conflict (user_id) do nothing;
+  ```
+  The user must have signed up at least once so they exist in `public.users`. After that, `/admin` and **Admin user manager** work for granting other operators.
 - AI follow-up generation lives in `services/ai/` and the engine pipeline in `services/engine/` (see `orchestrator.service.ts` for the 8-stage flow).
 - Service-oriented layout: `repositories/` (pure DB), `services/` (business logic + external APIs), `actions/` and `services/**/actions.ts` (server actions for UI mutations).

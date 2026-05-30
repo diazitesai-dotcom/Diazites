@@ -8,6 +8,7 @@ import {
   LogOut,
   Settings,
   Shield,
+  Users,
 } from "lucide-react";
 
 import {
@@ -98,6 +99,10 @@ export function AccountMenu({ account, variant }: AccountMenuProps) {
               <CreditCard className="size-4" aria-hidden />
               Team & billing
             </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href={`${ROUTES.organization}?tab=team`} />}>
+              <Users className="size-4" aria-hidden />
+              Manage team
+            </DropdownMenuItem>
             {account.isPlatformAdmin ? (
               <>
                 <DropdownMenuSeparator />
@@ -105,14 +110,24 @@ export function AccountMenu({ account, variant }: AccountMenuProps) {
                   <Shield className="size-4" aria-hidden />
                   Platform admin
                 </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/admin/users" />}>
+                  <Users className="size-4" aria-hidden />
+                  Admin user manager
+                </DropdownMenuItem>
               </>
             ) : null}
           </>
         ) : (
-          <DropdownMenuItem render={<Link href={ROUTES.missionControl} />}>
-            <LayoutDashboard className="size-4" aria-hidden />
-            Back to Growth OS
-          </DropdownMenuItem>
+          <>
+            <DropdownMenuItem render={<Link href="/admin/users" />}>
+              <Users className="size-4" aria-hidden />
+              Admin user manager
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href={ROUTES.missionControl} />}>
+              <LayoutDashboard className="size-4" aria-hidden />
+              Back to Growth OS
+            </DropdownMenuItem>
+          </>
         )}
 
         <DropdownMenuSeparator />

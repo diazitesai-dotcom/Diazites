@@ -1,6 +1,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { createUserProfile } from "@/lib/auth/user-profile";
+import { ensureBootstrapPlatformAdmin } from "@/lib/auth/bootstrap-platform-admin";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { storeSignupPromoCode } from "@/services/billing/promo-code.service";
 import { sendDiazitesWelcomeEmail } from "@/services/auth/welcome-email.service";
@@ -60,6 +61,8 @@ export async function completePostAuthSignup(
       confirmationPending: false,
     });
   }
+
+  await ensureBootstrapPlatformAdmin(user);
 
   const defaultNext = options?.defaultNext ?? "/onboarding?welcome=trial";
   const redirectPath = hasBusiness ? "/dashboard" : defaultNext;

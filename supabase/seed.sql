@@ -43,4 +43,8 @@ begin
           amount = excluded.amount,
           payment_status = excluded.payment_status;
   end if;
+
+  insert into public.admin_users (user_id, role)
+  values (v_user_id, 'admin')
+  on conflict (user_id) do nothing;
 end $$;

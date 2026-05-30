@@ -85,6 +85,7 @@ export async function updateSession(request: NextRequest) {
     if (!adminUser) {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
+      url.searchParams.set("admin_access", "denied");
       return NextResponse.redirect(url);
     }
   }
