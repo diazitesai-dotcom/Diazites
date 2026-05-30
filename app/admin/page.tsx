@@ -24,6 +24,7 @@ export default async function AdminPage() {
   const modules: [string, string][] = [
     ["Auth & OAuth setup", "/admin/setup"],
     ["Platform accounts", "/admin/accounts"],
+    ["Admin user manager", "/admin/users"],
     ["Agents & MCP", "/admin/agents"],
     ["AI Usage", "/admin/usage"],
     ["Merchant Services", "/admin/merchant-services"],

@@ -16,6 +16,7 @@ import {
   CreditCard,
   Settings,
   UserCircle2,
+  Users,
   X,
   Zap,
 } from "lucide-react";
@@ -44,6 +45,7 @@ type NavItem = {
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: Shield },
   { href: "/admin/accounts", label: "Platform accounts", icon: Building2 },
+  { href: "/admin/users", label: "Admin user manager", icon: Users },
   { href: "/admin/agents", label: "Agents & MCP", icon: Bot },
   { href: "/admin/usage", label: "AI Usage", icon: Zap },
   { href: "/admin/audit", label: "Audit Log", icon: ShieldCheck },
@@ -58,6 +60,7 @@ function isNavItemActive(pathname: string, href: string): boolean {
   if (href === "/admin") return pathname === "/admin";
   if (href === "/admin/setup") return pathname.startsWith("/admin/setup");
   if (href === "/admin/accounts") return pathname.startsWith("/admin/accounts");
+  if (href === "/admin/users") return pathname.startsWith("/admin/users");
   if (href === ROUTES.missionControl) return pathname === ROUTES.missionControl;
   if (href === ROUTES.campaignOps) {
     return (

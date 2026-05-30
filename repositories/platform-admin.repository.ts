@@ -116,6 +116,7 @@ export function createPlatformAdminRepository(client: SupabaseClient) {
       actionType: string;
       businessId?: string | null;
       agencyId?: string | null;
+      targetUserId?: string | null;
       details?: Record<string, unknown>;
     }) {
       return client.from("platform_admin_audit_logs").insert({
@@ -123,6 +124,7 @@ export function createPlatformAdminRepository(client: SupabaseClient) {
         action_type: input.actionType,
         business_id: input.businessId ?? null,
         agency_id: input.agencyId ?? null,
+        target_user_id: input.targetUserId ?? null,
         details: input.details ?? {},
       });
     },
