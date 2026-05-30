@@ -1,9 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { encodeAdsOAuthState } from "@/lib/ads-oauth-state";
+import { maskCredential } from "@/lib/crypto/credentials";
 import { getAdsConfig } from "@/lib/ads-env";
 import { fail, ok, type ServiceResult } from "@/lib/result";
-import { createAdAccountRepository } from "@/repositories/ad-account.repository";
+import {
+  createAdAccountRepository,
+  type AdAccountStatus,
+} from "@/repositories/ad-account.repository";
 
 export type GoogleAuthLink = {
   url: string;
@@ -95,10 +99,16 @@ export async function exchangeGoogleCode(
   const repo = createAdAccountRepository(client);
   const isLive = Boolean(meta.liveToken);
 
+  const engineStatus: AdAccountStatus = isLive ? "connected" : "pending";
+  const vaultStatus = isLive ? "connected" : "needs_permissions";
   const { error } = await repo.upsert({
     businessId: args.businessId,
     platform: "google",
-    status: isLive ? "connected" : "pending",
+    externalAccountId: "google_ads",
+    accountName: "Google Ads",
+    status: engineStatus,
+    connectionStatus: vaultStatus,
+    credentialsHint: refreshToken ? maskCredential(refreshToken) : "OAuth connected",
     accessToken,
     refreshToken,
     tokenExpiresAt: expiresAt,

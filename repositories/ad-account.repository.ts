@@ -65,7 +65,11 @@ export function createAdAccountRepository(client: SupabaseClient) {
       businessId: string;
       platform: AdPlatform;
       externalAccountId?: string | null;
+      accountName?: string | null;
       status?: AdAccountStatus;
+      /** Marketing OS column — kept in sync for Integrations hub */
+      connectionStatus?: string | null;
+      credentialsHint?: string | null;
       accessToken?: string | null;
       refreshToken?: string | null;
       tokenExpiresAt?: string | null;
@@ -77,7 +81,10 @@ export function createAdAccountRepository(client: SupabaseClient) {
         platform: input.platform,
       };
       if (input.externalAccountId !== undefined) row.external_account_id = input.externalAccountId;
+      if (input.accountName !== undefined) row.account_name = input.accountName;
       if (input.status !== undefined) row.status = input.status;
+      if (input.connectionStatus !== undefined) row.connection_status = input.connectionStatus;
+      if (input.credentialsHint !== undefined) row.credentials_hint = input.credentialsHint;
       if (input.accessToken !== undefined) row.access_token = input.accessToken;
       if (input.refreshToken !== undefined) row.refresh_token = input.refreshToken;
       if (input.tokenExpiresAt !== undefined) row.token_expires_at = input.tokenExpiresAt;
@@ -96,9 +103,12 @@ export function createAdAccountRepository(client: SupabaseClient) {
         .from("ad_accounts")
         .update({
           status: "disconnected",
+          connection_status: "not_connected",
           access_token: null,
           refresh_token: null,
           token_expires_at: null,
+          credentials_encrypted: null,
+          credentials_hint: null,
         })
         .eq("business_id", businessId)
         .eq("platform", platform)

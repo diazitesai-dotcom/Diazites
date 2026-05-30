@@ -20,7 +20,9 @@ export default async function IntegrationsPage() {
 
   const { data: adAccounts } = await supabase
     .from("ad_accounts")
-    .select("id, platform, external_account_id, account_name, credentials_hint, connection_status")
+    .select(
+      "id, platform, external_account_id, account_name, credentials_hint, connection_status, status",
+    )
     .eq("business_id", ctxResult.ctx.businessId);
 
   const connectedIds: string[] = [];

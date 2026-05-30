@@ -87,7 +87,11 @@ export async function exchangeMetaCode(
   const { error } = await repo.upsert({
     businessId: args.businessId,
     platform: "meta",
+    externalAccountId: "meta",
+    accountName: "Meta Ads",
     status: "pending",
+    connectionStatus: "pending",
+    credentialsHint: "OAuth pending",
     accessToken: args.code,
     tokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     scopes: config.scopes,

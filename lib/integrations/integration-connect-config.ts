@@ -56,7 +56,10 @@ export const LEGACY_PLATFORM_TO_INTEGRATION: Record<string, string> = {
 type AdAccountRow = {
   platform: string;
   external_account_id: string | null;
+  /** Marketing OS vault column */
   connection_status?: string | null;
+  /** Ads engine OAuth column (migration 009) */
+  status?: string | null;
 };
 
 export function resolveLinkedIntegrationId(account: AdAccountRow): string | null {
@@ -68,6 +71,9 @@ export function resolveLinkedIntegrationId(account: AdAccountRow): string | null
 }
 
 export function isAdAccountConnected(account: AdAccountRow): boolean {
-  const status = account.connection_status?.toLowerCase();
-  return status === "connected" || status === "active";
+  const vaultStatus = account.connection_status?.toLowerCase();
+  if (vaultStatus === "connected" || vaultStatus === "active") return true;
+
+  const oauthStatus = account.status?.toLowerCase();
+  return oauthStatus === "connected" || oauthStatus === "pending";
 }
