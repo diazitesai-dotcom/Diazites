@@ -12,6 +12,7 @@ import {
   PanelLeftOpen,
   Shield,
   ShieldCheck,
+  CreditCard,
   UserCircle2,
   X,
   Zap,
@@ -42,6 +43,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/audit", label: "Audit Log", icon: ShieldCheck },
   { href: "/admin/templates", label: "Templates", icon: FileText },
   { href: "/admin/promo-codes", label: "Promo codes", icon: Zap },
+  { href: "/admin/merchant-services", label: "Merchant Services", icon: CreditCard },
   { href: "/admin/onboarding", label: "Onboarding", icon: UserCircle2 },
 ];
 
@@ -73,6 +75,9 @@ function isNavItemActive(pathname: string, href: string): boolean {
   if (href === ROUTES.analytics) return pathname.startsWith(ROUTES.analytics);
   if (href === ROUTES.workflows) return pathname.startsWith(ROUTES.workflows);
   if (href === ROUTES.aiCallCommandCenter) return pathname.startsWith(ROUTES.aiCallCommandCenter);
+  if (href === ROUTES.merchantServices) return pathname.startsWith(ROUTES.merchantServices);
+  if (href === ROUTES.aiTextCommandCenter) return pathname.startsWith(ROUTES.aiTextCommandCenter);
+  if (href === ROUTES.emailCampaignCenter) return pathname.startsWith(ROUTES.emailCampaignCenter);
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
