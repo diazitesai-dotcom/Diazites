@@ -34,6 +34,17 @@ export function credentialLabelFor(integrationId: string, integrationName: strin
   return CREDENTIAL_LABELS[integrationId] ?? `${integrationName} API key or token`;
 }
 
+/** Integrations that support platform OAuth (Meta / Google Ads) from the hub */
+export const OAUTH_INTEGRATION_IDS = new Set(["meta", "google_ads"]);
+
+export function integrationOAuthPlatform(
+  integrationId: string,
+): "meta" | "google" | null {
+  if (integrationId === "meta") return "meta";
+  if (integrationId === "google_ads") return "google";
+  return null;
+}
+
 /** Legacy rows keyed by platform enum instead of external_account_id = integration id. */
 export const LEGACY_PLATFORM_TO_INTEGRATION: Record<string, string> = {
   meta: "meta",

@@ -18,6 +18,9 @@ export default async function LoginPage({
     }
   };
 
+  const rawNext = sp.next;
+  const returnPath = typeof rawNext === "string" ? rawNext : "/dashboard";
+
   const errorMsg = typeof rawError === "string" ? safeDecode(rawError) : null;
   const successMsg =
     typeof rawSuccess === "string"
@@ -49,7 +52,12 @@ export default async function LoginPage({
           submitText="Sign in"
           pendingText="Signing in…"
           action={loginAction}
-          footerHref="/signup"
+          returnPath={returnPath}
+          footerHref={
+            returnPath !== "/dashboard"
+              ? `/signup?next=${encodeURIComponent(returnPath)}`
+              : "/signup"
+          }
           footerText="Need an account?"
           footerCta="Start free"
         />

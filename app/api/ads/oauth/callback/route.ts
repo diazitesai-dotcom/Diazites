@@ -15,22 +15,23 @@ export async function GET(request: Request) {
   const oauthError = url.searchParams.get("error");
 
   const appUrl = getPublicAppUrl();
-  const adsUrl = `${appUrl}/dashboard/campaign-ops`;
 
   if (oauthError) {
     return NextResponse.redirect(
-      `${adsUrl}?error=${encodeURIComponent(oauthError)}`,
+      `${appUrl}/dashboard/integrations?error=${encodeURIComponent(oauthError)}`,
     );
   }
 
   if (!code || !state) {
-    return NextResponse.redirect(`${adsUrl}?error=missing_oauth_params`);
+    return NextResponse.redirect(`${appUrl}/dashboard/integrations?error=missing_oauth_params`);
   }
 
   const decoded = decodeAdsOAuthState(state);
   if (!decoded) {
-    return NextResponse.redirect(`${adsUrl}?error=invalid_oauth_state`);
+    return NextResponse.redirect(`${appUrl}/dashboard/integrations?error=invalid_oauth_state`);
   }
+
+  const returnBase = `${appUrl}${decoded.returnTo}`;
 
   const supabase = await createServerSupabaseClient();
   const {
@@ -38,7 +39,9 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.redirect(`${appUrl}/login?next=${encodeURIComponent("/dashboard/campaign-ops")}`);
+    return NextResponse.redirect(
+      `${appUrl}/login?next=${encodeURIComponent(decoded.returnTo)}`,
+    );
   }
 
   const result =
@@ -56,11 +59,13 @@ export async function GET(request: Request) {
 
   if (!result.success) {
     return NextResponse.redirect(
-      `${adsUrl}?error=${encodeURIComponent(result.error)}`,
+      `${returnBase}?error=${encodeURIComponent(result.error)}`,
     );
   }
 
+  const platformIntegration =
+    decoded.platform === "google" ? "google_ads" : decoded.platform;
   return NextResponse.redirect(
-    `${adsUrl}?connected=${encodeURIComponent(decoded.platform)}`,
+    `${returnBase}?connected=${encodeURIComponent(platformIntegration)}`,
   );
 }

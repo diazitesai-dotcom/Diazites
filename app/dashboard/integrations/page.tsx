@@ -1,4 +1,7 @@
+import { Suspense } from "react";
+
 import { GrowthIntegrationsHub } from "@/components/integrations/growth-integrations-hub";
+import { isAdsConfigured } from "@/lib/ads-env";
 import { requireBusinessContext } from "@/lib/auth/business-context";
 import {
   isAdAccountConnected,
@@ -36,6 +39,18 @@ export default async function IntegrationsPage() {
   }
 
   return (
-    <GrowthIntegrationsHub connectedIds={connectedIds} linkedAccounts={linkedAccounts} />
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-7xl px-4 py-16 text-sm text-muted-foreground">
+          Loading integrations…
+        </div>
+      }
+    >
+      <GrowthIntegrationsHub
+        connectedIds={connectedIds}
+        linkedAccounts={linkedAccounts}
+        oauthConfigured={{ meta: isAdsConfigured("meta"), google: isAdsConfigured("google") }}
+      />
+    </Suspense>
   );
 }

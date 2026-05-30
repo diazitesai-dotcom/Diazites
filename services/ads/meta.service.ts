@@ -49,6 +49,7 @@ export type MetricsSyncSummary = {
 
 export async function buildMetaAuthLink(args: {
   businessId: string;
+  returnTo?: string;
 }): Promise<ServiceResult<MetaAuthLink>> {
   const config = getAdsConfig("meta");
   if (!config) {
@@ -56,7 +57,7 @@ export async function buildMetaAuthLink(args: {
       "Meta isn't configured. Set META_APP_ID, META_APP_SECRET, META_REDIRECT_URL in your env first.",
     );
   }
-  const state = encodeAdsOAuthState(args.businessId, "meta");
+  const state = encodeAdsOAuthState(args.businessId, "meta", args.returnTo);
   const u = new URL(config.authUrl);
   u.searchParams.set("client_id", config.appId);
   u.searchParams.set("redirect_uri", config.redirectUrl);

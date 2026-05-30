@@ -12,6 +12,7 @@ export type GoogleAuthLink = {
 
 export async function buildGoogleAuthLink(args: {
   businessId: string;
+  returnTo?: string;
 }): Promise<ServiceResult<GoogleAuthLink>> {
   const config = getAdsConfig("google");
   if (!config) {
@@ -20,7 +21,7 @@ export async function buildGoogleAuthLink(args: {
     );
   }
 
-  const state = encodeAdsOAuthState(args.businessId, "google");
+  const state = encodeAdsOAuthState(args.businessId, "google", args.returnTo);
   const u = new URL(config.authUrl);
   u.searchParams.set("client_id", config.appId);
   u.searchParams.set("redirect_uri", config.redirectUrl);

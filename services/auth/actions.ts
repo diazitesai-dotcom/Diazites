@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { sanitizeAppReturnPath } from "@/lib/ads-oauth-state";
 import { createUserProfile } from "@/lib/auth/user-profile";
 import { getPublicAppUrl } from "@/lib/env";
 import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
@@ -85,7 +86,8 @@ export async function loginAction(formData: FormData) {
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  redirect("/dashboard");
+  const next = sanitizeAppReturnPath(String(formData.get("next") ?? ""), "/dashboard");
+  redirect(next);
 }
 
 export async function forgotPasswordAction(formData: FormData) {

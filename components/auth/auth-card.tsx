@@ -16,6 +16,8 @@ interface AuthCardProps {
   footerText: string;
   footerCta: string;
   showPassword?: boolean;
+  /** After sign-in, redirect here (validated server-side) */
+  returnPath?: string;
 }
 
 export function AuthCard({
@@ -27,6 +29,7 @@ export function AuthCard({
   footerText,
   footerCta,
   showPassword = true,
+  returnPath,
 }: AuthCardProps) {
   return (
     <Card className="w-full max-w-md border-white/[0.08] shadow-[0_24px_80px_-48px_rgba(99,102,241,0.45)]">
@@ -38,6 +41,7 @@ export function AuthCard({
       </CardHeader>
       <CardContent>
         <form className="space-y-4" action={action}>
+          {returnPath ? <input type="hidden" name="next" value={returnPath} /> : null}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" required autoComplete="email" />

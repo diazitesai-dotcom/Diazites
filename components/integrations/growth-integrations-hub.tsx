@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -38,10 +39,14 @@ type StatusFilter = ConnectionStatus | "all" | "needs_attention_group";
 export function GrowthIntegrationsHub({
   connectedIds,
   linkedAccounts = {},
+  oauthConfigured = { meta: false, google: false },
 }: {
   connectedIds: string[];
   linkedAccounts?: Record<string, LinkedAdAccount>;
+  oauthConfigured?: { meta: boolean; google: boolean };
 }) {
+  const searchParams = useSearchParams();
+  const [banner, setBanner] = useState<string | null>(null);
   const connected = useMemo(() => new Set(connectedIds), [connectedIds]);
   const integrations = useMemo(() => buildGrowthIntegrations(connected), [connected]);
   const [query, setQuery] = useState("");
@@ -49,6 +54,22 @@ export function GrowthIntegrationsHub({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selected, setSelected] = useState<GrowthIntegration | null>(null);
   const [showPermissions, setShowPermissions] = useState(false);
+
+  useEffect(() => {
+    const connected = searchParams.get("connected");
+    const error = searchParams.get("error");
+    if (connected === "google_ads") {
+      setBanner("Google Ads connected successfully.");
+      const match = integrations.find((i) => i.id === "google_ads");
+      if (match) setSelected(match);
+    } else if (connected === "meta") {
+      setBanner("Meta Ads connected successfully.");
+      const match = integrations.find((i) => i.id === "meta");
+      if (match) setSelected(match);
+    } else if (error) {
+      setBanner(`Connection failed: ${error.replace(/_/g, " ")}`);
+    }
+  }, [searchParams, integrations]);
 
   const healthScore = integrationHealthScore(integrations);
   const missingCritical = criticalMissingConnections(integrations);
@@ -111,6 +132,19 @@ export function GrowthIntegrationsHub({
           <p className="text-xs text-muted-foreground">Critical gaps</p>
         </GlassCard>
       </div>
+
+      {banner ? (
+        <div
+          className={cn(
+            "rounded-xl border px-4 py-3 text-sm",
+            banner.startsWith("Connection failed")
+              ? "border-amber-500/30 bg-amber-500/10 text-amber-100"
+              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-100",
+          )}
+        >
+          {banner}
+        </div>
+      ) : null}
 
       {missingCritical.length > 0 ? (
         <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
@@ -215,6 +249,7 @@ export function GrowthIntegrationsHub({
       <IntegrationDetailDrawer
         integration={selected}
         linkedAccount={selected ? linkedAccounts[selected.id] ?? null : null}
+        oauthConfigured={oauthConfigured}
         onClose={() => setSelected(null)}
       />
 
