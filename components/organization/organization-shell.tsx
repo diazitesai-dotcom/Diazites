@@ -10,9 +10,6 @@ const TABS = [
   { id: "team", label: "Team", href: `${ROUTES.organization}?tab=team` },
   { id: "billing", label: "Billing", href: `${ROUTES.organization}?tab=billing` },
   { id: "settings", label: "Workspace", href: `${ROUTES.organization}?tab=settings` },
-  { id: "security", label: "Security", href: `${ROUTES.organization}?tab=security` },
-  { id: "api", label: "API access", href: `${ROUTES.organization}?tab=api` },
-  { id: "audit", label: "Audit logs", href: `${ROUTES.organization}?tab=audit` },
 ] as const;
 
 export type OrganizationTab = (typeof TABS)[number]["id"];

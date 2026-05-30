@@ -29,6 +29,9 @@ import {
 } from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils";
 
+import type { AccountContext } from "@/lib/auth/account-context";
+
+import { AccountMenu } from "./account-menu";
 import { NotificationBell } from "./notification-bell";
 
 type NavItem = {
@@ -48,6 +51,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/promo-codes", label: "Promo codes", icon: Zap },
   { href: "/admin/merchant-services", label: "Merchant Services", icon: CreditCard },
   { href: "/admin/onboarding", label: "Onboarding", icon: UserCircle2 },
+  { href: "/admin/setup", label: "Admin setup", icon: Settings },
 ];
 
 function isNavItemActive(pathname: string, href: string): boolean {
@@ -104,6 +108,7 @@ type AppSidebarShellProps = {
   brandHref: string;
   brandTitle: string;
   footerLink?: { href: string; label: string };
+  account?: AccountContext | null;
 };
 
 export function AppSidebarShell({
@@ -112,6 +117,7 @@ export function AppSidebarShell({
   brandHref,
   brandTitle,
   footerLink,
+  account,
 }: AppSidebarShellProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -296,6 +302,7 @@ export function AppSidebarShell({
           <span className="hidden md:block" aria-hidden />
           <div className="flex items-center gap-2">
             {variant === "dashboard" ? <NotificationBell /> : null}
+            {account ? <AccountMenu account={account} variant={variant} /> : null}
           </div>
         </header>
 

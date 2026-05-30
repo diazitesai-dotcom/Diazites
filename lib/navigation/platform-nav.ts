@@ -333,7 +333,7 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
       {
         id: "organization",
         href: ROUTES.organization,
-        label: "Team & billing",
+        label: "Workspace",
         description: "Plan, seats & settings",
         icon: Zap,
       },

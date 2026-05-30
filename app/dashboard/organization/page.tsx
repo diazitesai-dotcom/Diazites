@@ -4,7 +4,6 @@ import { Suspense } from "react";
 import { BillingPageClient } from "@/components/billing/billing-page-client";
 import { ModulePurpose } from "@/components/layout/module-purpose";
 import { PageHeader } from "@/components/layout/page-header";
-import { OrganizationPlaceholderPanel } from "@/components/organization/organization-placeholder-panel";
 import { OrganizationSettingsPanel } from "@/components/organization/organization-settings-panel";
 import { OrganizationShell, type OrganizationTab } from "@/components/organization/organization-shell";
 import { TeamManager } from "@/components/team/team-manager";
@@ -27,7 +26,7 @@ export const dynamic = "force-dynamic";
 
 function parseTab(raw: string | string[] | undefined): OrganizationTab {
   const t = typeof raw === "string" ? raw : "team";
-  if (t === "billing" || t === "settings" || t === "security" || t === "api" || t === "audit") {
+  if (t === "billing" || t === "settings") {
     return t;
   }
   return "team";
@@ -97,7 +96,7 @@ export default async function OrganizationPage({
       <PageHeader
         eyebrow="Organization"
         title="Workspace administration"
-        description="Team permissions, billing, API access, security, and audit — your enterprise trust layer."
+        description="Team permissions, billing, and workspace settings for your growth OS."
       />
       <ModulePurpose
         title="Workspace control"
@@ -134,24 +133,6 @@ export default async function OrganizationPage({
               businessId={business.id}
               profile={(business.profile ?? {}) as BusinessProfile}
               appUrl={getPublicAppUrl()}
-            />
-          ) : null}
-          {tab === "security" ? (
-            <OrganizationPlaceholderPanel
-              title="Security"
-              description="SSO, session policies, and workspace hardening."
-            />
-          ) : null}
-          {tab === "api" ? (
-            <OrganizationPlaceholderPanel
-              title="API access"
-              description="Service tokens and scoped API keys for developers."
-            />
-          ) : null}
-          {tab === "audit" ? (
-            <OrganizationPlaceholderPanel
-              title="Audit logs"
-              description="Immutable history of agent actions, approvals, and operator overrides."
             />
           ) : null}
         </OrganizationShell>

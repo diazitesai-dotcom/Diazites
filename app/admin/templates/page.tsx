@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAdmin } from "@/lib/auth/admin-guard";
 
 const templateGroups = [
   { name: "Ads", items: 24 },
@@ -10,7 +11,11 @@ const templateGroups = [
   { name: "Funnels", items: 9 },
 ];
 
-export default function TemplateLibraryPage() {
+export const dynamic = "force-dynamic";
+
+export default async function TemplateLibraryPage() {
+  await requireAdmin();
+
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <PageHeader

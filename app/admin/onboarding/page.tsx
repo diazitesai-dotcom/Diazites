@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { requireAdmin } from "@/lib/auth/admin-guard";
 
 const rows = [
   {
@@ -31,7 +32,11 @@ const rows = [
   },
 ];
 
-export default function AdminOnboardingTrackerPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminOnboardingTrackerPage() {
+  await requireAdmin();
+
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <PageHeader
