@@ -38,7 +38,8 @@ export function AuthCard({
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl tracking-tight">{title}</CardTitle>
         <CardDescription>
-          Sign in to {AUTH_BRAND.platformName} — email, Google, Facebook, Apple, or Microsoft.
+          Sign in to {AUTH_BRAND.platformName} with email and password, or social sign-in when
+          configured.
         </CardDescription>
       </CardHeader>
       <CardContent>

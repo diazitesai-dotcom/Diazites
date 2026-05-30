@@ -11,6 +11,7 @@ import type { PipelineStatus } from "@/types/domain";
 
 import { runLeadCreatedAutomation } from "@/services/leads/lead-automation.service";
 import { triggerEvent } from "@/services/events/event-dispatcher";
+import { syncLeadToPipelineStage } from "@/services/pipelines/contact-pipeline.service";
 
 export async function createLead(
   client: SupabaseClient,
@@ -33,6 +34,12 @@ export async function createLead(
       landingPageId: input.landingPageId,
     },
   });
+
+  try {
+    await syncLeadToPipelineStage(client, input.businessId, data.id, "new");
+  } catch (e) {
+    console.error("[createLead] pipeline sync failed", e);
+  }
 
   try {
     const { createBusinessRepository: getBiz } = await import("@/repositories/business.repository");
@@ -224,6 +231,11 @@ export async function saveLead(
       leadId,
       payload: { status: input.status },
     });
+    try {
+      await syncLeadToPipelineStage(client, businessId, leadId, input.status);
+    } catch (e) {
+      console.error("[updateLead] pipeline sync failed", e);
+    }
   }
 
   return ok(data);
@@ -250,6 +262,12 @@ export async function updateLeadStatus(
     leadId,
     payload: { status },
   });
+
+  try {
+    await syncLeadToPipelineStage(client, businessId, leadId, status);
+  } catch (e) {
+    console.error("[updateLeadStatus] pipeline sync failed", e);
+  }
 
   return ok(data);
 }

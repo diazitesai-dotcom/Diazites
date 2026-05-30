@@ -110,6 +110,7 @@ export const WORKFLOW_TRIGGER_OPTIONS = [
   { id: "appointment_booked", label: "Appointment booked" },
   { id: "appointment_missed", label: "Appointment missed" },
   { id: "pipeline_stage_changed", label: "Pipeline stage changed" },
+  { id: "pipeline_stage_entered", label: "Pipeline stage entered" },
   { id: "tag_added", label: "Tag added" },
   { id: "manual", label: "Manual trigger" },
 ] as const;

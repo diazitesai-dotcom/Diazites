@@ -4,6 +4,7 @@ import { EVENT_TYPES } from "@/types/backend";
 import type { MerchantPaymentEventKind } from "@/types/merchant-services";
 
 import { triggerEvent } from "@/services/events/event-dispatcher";
+import { moveContactToStageByNamePatterns } from "@/services/pipelines/contact-pipeline.service";
 import { logAgentActivity } from "@/services/platform/agent-activity.service";
 
 function eventTypeFor(kind: MerchantPaymentEventKind): (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES] {
@@ -152,25 +153,7 @@ async function movePipelineToPaid(
   contactId?: string,
 ): Promise<void> {
   if (!contactId) return;
-
-  const { data: stage } = await client
-    .from("pipeline_stages")
-    .select("id, pipeline_id")
-    .eq("business_id", businessId)
-    .ilike("name", "%paid%")
-    .limit(1)
-    .maybeSingle();
-
-  if (!stage) return;
-
-  await client
-    .from("contacts")
-    .update({
-      pipeline_id: stage.pipeline_id,
-      pipeline_stage_id: stage.id,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", contactId);
+  await moveContactToStageByNamePatterns(client, businessId, contactId, ["%paid%", "%won%"]);
 }
 
 async function createOnboardingTask(

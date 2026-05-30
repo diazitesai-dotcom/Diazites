@@ -56,6 +56,8 @@ export async function bootstrapBusinessSystemAction(
   if (!result.success) return result;
 
   revalidatePath("/dashboard/workflows");
+  revalidatePath("/dashboard/automations");
+  revalidatePath("/dashboard/automations/pipelines");
   revalidatePath("/dashboard/ai-calls");
   revalidatePath("/dashboard/leads");
   return result;

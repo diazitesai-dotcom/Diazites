@@ -53,6 +53,8 @@ export function createWorkflowRepository(client: SupabaseClient) {
         definition: WorkflowDefinition;
         status: string;
         trigger_type: string;
+        pipeline_id: string | null;
+        pipeline_stage_id: string | null;
       }>,
     ) {
       return client

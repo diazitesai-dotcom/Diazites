@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   Bot,
+  Building2,
   FileText,
   Menu,
   PanelLeftClose,
@@ -13,6 +14,7 @@ import {
   Shield,
   ShieldCheck,
   CreditCard,
+  Settings,
   UserCircle2,
   X,
   Zap,
@@ -38,6 +40,7 @@ type NavItem = {
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: Shield },
+  { href: "/admin/accounts", label: "Platform accounts", icon: Building2 },
   { href: "/admin/agents", label: "Agents & MCP", icon: Bot },
   { href: "/admin/usage", label: "AI Usage", icon: Zap },
   { href: "/admin/audit", label: "Audit Log", icon: ShieldCheck },
@@ -49,6 +52,8 @@ const ADMIN_NAV: NavItem[] = [
 
 function isNavItemActive(pathname: string, href: string): boolean {
   if (href === "/admin") return pathname === "/admin";
+  if (href === "/admin/setup") return pathname.startsWith("/admin/setup");
+  if (href === "/admin/accounts") return pathname.startsWith("/admin/accounts");
   if (href === ROUTES.missionControl) return pathname === ROUTES.missionControl;
   if (href === ROUTES.campaignOps) {
     return (
@@ -73,6 +78,15 @@ function isNavItemActive(pathname: string, href: string): boolean {
   if (href === ROUTES.inbox) return pathname.startsWith(ROUTES.inbox);
   if (href === ROUTES.calendar) return pathname.startsWith(ROUTES.calendar);
   if (href === ROUTES.analytics) return pathname.startsWith(ROUTES.analytics);
+  if (href === ROUTES.automationCenter) {
+    return (
+      pathname === ROUTES.automationCenter ||
+      pathname.startsWith("/dashboard/automations")
+    );
+  }
+  if (href === ROUTES.automationPipelines) {
+    return pathname.startsWith(ROUTES.automationPipelines);
+  }
   if (href === ROUTES.workflows) return pathname.startsWith(ROUTES.workflows);
   if (href === ROUTES.aiCallCommandCenter) return pathname.startsWith(ROUTES.aiCallCommandCenter);
   if (href === ROUTES.merchantServices) return pathname.startsWith(ROUTES.merchantServices);

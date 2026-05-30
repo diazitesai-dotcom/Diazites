@@ -37,6 +37,7 @@ export const ROUTES = {
   optimizationLab: "/dashboard/optimization",
   integrationsHub: "/dashboard/integrations",
   automationCenter: "/dashboard/automations",
+  automationPipelines: "/dashboard/automations/pipelines",
   workflows: "/dashboard/workflows",
   aiCallCommandCenter: "/dashboard/ai-calls",
   merchantServices: "/dashboard/merchant-services",
@@ -158,7 +159,7 @@ export const DASHBOARD_NAV: DashboardNavItem[] = [
     id: "automation_center",
     href: ROUTES.automationCenter,
     label: "Automation Center",
-    description: "Workflows & triggers",
+    description: "Pipelines, workflows & triggers",
     icon: Webhook,
   },
   {
@@ -347,13 +348,6 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
         description: "Pipeline & hot leads",
         icon: Users,
       },
-      {
-        id: "leads_os",
-        href: `${ROUTES.leadsOs}?view=pipeline`,
-        label: "Pipeline",
-        description: "Kanban stages",
-        icon: Target,
-      },
     ],
   },
   {
@@ -361,10 +355,24 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
     label: "Automation",
     items: [
       {
+        id: "automation_center",
+        href: ROUTES.automationCenter,
+        label: "Automation Center",
+        description: "Pipelines, event rules & tools",
+        icon: Webhook,
+      },
+      {
+        id: "mission_control" as const,
+        href: ROUTES.automationPipelines,
+        label: "Pipelines",
+        description: "GHL-style stages & stage automations",
+        icon: Target,
+      },
+      {
         id: "mission_control" as const,
         href: ROUTES.workflows,
         label: "Workflows",
-        description: "Visual automations & pipelines",
+        description: "Visual automation builder",
         icon: Workflow,
       },
       {
