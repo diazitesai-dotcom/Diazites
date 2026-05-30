@@ -26,7 +26,10 @@ import {
   criticalMissingConnections,
   integrationHealthScore,
 } from "@/lib/integrations/growth-integrations-catalog";
-import type { LinkedAdAccount } from "@/lib/integrations/integration-connect-config";
+import type {
+  AdsOAuthConfigured,
+  LinkedAdAccount,
+} from "@/lib/integrations/integration-connect-config";
 import type {
   GrowthIntegration,
   IntegrationCategoryId,
@@ -38,9 +41,11 @@ type StatusFilter = ConnectionStatus | "all" | "needs_attention_group";
 export function GrowthIntegrationsHub({
   connectedIds,
   linkedAccounts = {},
+  adsOAuthConfigured = { meta: false, google: false },
 }: {
   connectedIds: string[];
   linkedAccounts?: Record<string, LinkedAdAccount>;
+  adsOAuthConfigured?: AdsOAuthConfigured;
 }) {
   const connected = useMemo(() => new Set(connectedIds), [connectedIds]);
   const integrations = useMemo(() => buildGrowthIntegrations(connected), [connected]);
@@ -215,6 +220,7 @@ export function GrowthIntegrationsHub({
       <IntegrationDetailDrawer
         integration={selected}
         linkedAccount={selected ? linkedAccounts[selected.id] ?? null : null}
+        adsOAuthConfigured={adsOAuthConfigured}
         onClose={() => setSelected(null)}
       />
 

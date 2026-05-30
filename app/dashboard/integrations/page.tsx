@@ -1,4 +1,5 @@
 import { GrowthIntegrationsHub } from "@/components/integrations/growth-integrations-hub";
+import { isAdsConfigured } from "@/lib/ads-env";
 import { requireBusinessContext } from "@/lib/auth/business-context";
 import {
   isAdAccountConnected,
@@ -36,6 +37,13 @@ export default async function IntegrationsPage() {
   }
 
   return (
-    <GrowthIntegrationsHub connectedIds={connectedIds} linkedAccounts={linkedAccounts} />
+    <GrowthIntegrationsHub
+      connectedIds={connectedIds}
+      linkedAccounts={linkedAccounts}
+      adsOAuthConfigured={{
+        meta: isAdsConfigured("meta"),
+        google: isAdsConfigured("google"),
+      }}
+    />
   );
 }

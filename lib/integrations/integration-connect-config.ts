@@ -7,6 +7,11 @@ export type LinkedAdAccount = {
   credentialsHint: string | null;
 };
 
+export type AdsOAuthConfigured = {
+  meta: boolean;
+  google: boolean;
+};
+
 /** Maps growth hub integration id → ad_accounts.platform for encrypted vault storage. */
 const INTEGRATION_TO_AD_PLATFORM: Partial<Record<string, AdPlatform>> = {
   meta: "meta",
@@ -28,6 +33,16 @@ const CREDENTIAL_LABELS: Partial<Record<string, string>> = {
 
 export function resolveAdPlatform(integrationId: string): AdPlatform {
   return INTEGRATION_TO_AD_PLATFORM[integrationId] ?? "other";
+}
+
+/** Integrations that use the shared ads OAuth flow (Campaign Ops + hub). */
+const OAUTH_ADS_PLATFORM_BY_INTEGRATION: Partial<Record<string, "meta" | "google">> = {
+  meta: "meta",
+  google_ads: "google",
+};
+
+export function resolveOAuthAdsPlatform(integrationId: string): "meta" | "google" | null {
+  return OAUTH_ADS_PLATFORM_BY_INTEGRATION[integrationId] ?? null;
 }
 
 export function credentialLabelFor(integrationId: string, integrationName: string): string {

@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { KeyRound, Link2, RotateCcw, ScrollText, Unplug, Wrench, X } from "lucide-react";
+import { ExternalLink, KeyRound, Link2, Loader2, RotateCcw, ScrollText, Unplug, Wrench, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
@@ -19,8 +19,14 @@ import { AGENT_CAPABILITY_GROUPS } from "@/lib/integrations/growth-integrations-
 import {
   credentialLabelFor,
   resolveAdPlatform,
+  resolveOAuthAdsPlatform,
+  type AdsOAuthConfigured,
   type LinkedAdAccount,
 } from "@/lib/integrations/integration-connect-config";
+import {
+  startGoogleConnectAction,
+  startMetaConnectAction,
+} from "@/services/ads/actions";
 import type { GrowthIntegration } from "@/lib/integrations/integration-types";
 import { ROUTES } from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils";
@@ -37,13 +43,20 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "errors", label: "Errors" },
 ];
 
+const OAUTH_ENV_HINTS: Record<"meta" | "google", string> = {
+  meta: "META_APP_ID, META_APP_SECRET, META_REDIRECT_URL",
+  google: "GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET, GOOGLE_ADS_REDIRECT_URL",
+};
+
 export function IntegrationDetailDrawer({
   integration,
   linkedAccount,
+  adsOAuthConfigured = { meta: false, google: false },
   onClose,
 }: {
   integration: GrowthIntegration | null;
   linkedAccount?: LinkedAdAccount | null;
+  adsOAuthConfigured?: AdsOAuthConfigured;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -58,6 +71,8 @@ export function IntegrationDetailDrawer({
   const credentialLabel = integration
     ? credentialLabelFor(integration.id, integration.name)
     : "API key or token";
+  const oauthPlatform = integration ? resolveOAuthAdsPlatform(integration.id) : null;
+  const oauthConfigured = oauthPlatform ? adsOAuthConfigured[oauthPlatform] : false;
 
   useEffect(() => {
     if (!integration) return;
@@ -111,6 +126,24 @@ export function IntegrationDetailDrawer({
       setMessage("Connected — credentials stored encrypted in your vault.");
       setPanelMode("manage");
       refreshAfterMutation();
+    });
+  }
+
+  function handleOAuthConnect() {
+    if (!oauthPlatform) return;
+    startTransition(async () => {
+      const result =
+        oauthPlatform === "google"
+          ? await startGoogleConnectAction()
+          : await startMetaConnectAction();
+      if (!result.success) {
+        setMessage(result.error);
+        openConnectPanel();
+        return;
+      }
+      if (typeof window !== "undefined") {
+        window.location.href = result.data.url;
+      }
     });
   }
 
@@ -200,8 +233,41 @@ export function IntegrationDetailDrawer({
 
               {panelMode === "connect" ? (
                 <div className="space-y-4">
+                  {oauthPlatform ? (
+                    <div className="space-y-3 rounded-lg border border-violet-500/25 bg-violet-500/10 p-3">
+                      <p className="text-xs text-violet-100/90">
+                        Recommended: sign in with {integration.name} OAuth. Tokens are stored
+                        encrypted; refresh tokens power background sync.
+                      </p>
+                      {!oauthConfigured ? (
+                        <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-200">
+                          OAuth not configured — set{" "}
+                          <span className="font-mono">{OAUTH_ENV_HINTS[oauthPlatform]}</span>.
+                          Redirect URI:{" "}
+                          <span className="font-mono">/api/ads/oauth/callback</span>
+                        </p>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="gradient"
+                        size="sm"
+                        className="w-full rounded-lg"
+                        disabled={pending || !oauthConfigured}
+                        onClick={handleOAuthConnect}
+                      >
+                        {pending ? (
+                          <Loader2 className="mr-2 size-3.5 animate-spin" aria-hidden />
+                        ) : (
+                          <ExternalLink className="mr-2 size-3.5" aria-hidden />
+                        )}
+                        Connect with {integration.name}
+                      </Button>
+                    </div>
+                  ) : null}
                   <p className="text-xs text-muted-foreground">
-                    Credentials are encrypted at rest and never shown in full after saving.
+                    {oauthPlatform
+                      ? "Or paste an API key manually — encrypted at rest, never shown in full after saving."
+                      : "Credentials are encrypted at rest and never shown in full after saving."}
                   </p>
                   <div className="space-y-2">
                     <Label htmlFor="integration-account-name">Account label</Label>
@@ -408,23 +474,41 @@ export function IntegrationDetailDrawer({
             </div>
 
             <footer className="flex flex-wrap gap-2 border-t border-white/10 p-4">
-              <Button
-                type="button"
-                variant="gradient"
-                size="sm"
-                className="rounded-lg"
-                disabled={pending}
-                onClick={() => {
-                  if (credential.trim()) {
-                    handleConnect();
-                    return;
-                  }
-                  openConnectPanel();
-                }}
-              >
-                <Link2 className="mr-1 size-3.5" />
-                {linkedAccount ? "Update connection" : "Connect"}
-              </Button>
+              {oauthPlatform && !linkedAccount ? (
+                <Button
+                  type="button"
+                  variant="gradient"
+                  size="sm"
+                  className="rounded-lg"
+                  disabled={pending || !oauthConfigured}
+                  onClick={handleOAuthConnect}
+                >
+                  {pending ? (
+                    <Loader2 className="mr-1 size-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <ExternalLink className="mr-1 size-3.5" aria-hidden />
+                  )}
+                  OAuth connect
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="gradient"
+                  size="sm"
+                  className="rounded-lg"
+                  disabled={pending}
+                  onClick={() => {
+                    if (credential.trim()) {
+                      handleConnect();
+                      return;
+                    }
+                    openConnectPanel();
+                  }}
+                >
+                  <Link2 className="mr-1 size-3.5" />
+                  {linkedAccount ? "Update connection" : "Connect"}
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="outline"
