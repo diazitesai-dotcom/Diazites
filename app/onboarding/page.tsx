@@ -1,12 +1,21 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { TrialWelcomeBanner } from "@/components/onboarding/trial-welcome-banner";
 import { CORE_USER_FLOW } from "@/lib/platform/growth-spec";
 
-export default function OnboardingPage() {
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const showTrialWelcome = sp.welcome === "trial";
+
   return (
     <main className="relative min-h-screen px-4 py-10 sm:px-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_45%_at_50%_-10%,rgba(139,92,246,0.15),transparent)]" />
       <div className="relative mx-auto max-w-4xl space-y-10">
+        {showTrialWelcome ? <TrialWelcomeBanner /> : null}
         <PageHeader
           eyebrow="Setup"
           title="Business onboarding wizard"

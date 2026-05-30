@@ -8,7 +8,8 @@ export const AGENTS = [
 ] as const;
 
 export const BILLING_PLANS = [
-  { name: "Starter", price: 497 },
-  { name: "Growth", price: 997 },
-  { name: "Domination", price: 1997 },
+  { name: "Starter" as const, price: 147 },
+  { name: "Growth" as const, price: 397 },
+  { name: "Pro" as const, price: 997 },
+  { name: "Enterprise" as const, price: 2500 },
 ] as const;

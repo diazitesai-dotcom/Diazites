@@ -13,6 +13,10 @@ export async function updateSession(request: NextRequest) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/login";
       redirectUrl.searchParams.set(
+        "next",
+        `${request.nextUrl.pathname}${request.nextUrl.search}`,
+      );
+      redirectUrl.searchParams.set(
         "error",
         "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local (see README).",
       );
@@ -66,6 +70,8 @@ export async function updateSession(request: NextRequest) {
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    const returnPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    url.searchParams.set("next", returnPath);
     return NextResponse.redirect(url);
   }
 

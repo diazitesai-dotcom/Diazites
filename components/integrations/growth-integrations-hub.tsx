@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -26,9 +27,10 @@ import {
   criticalMissingConnections,
   integrationHealthScore,
 } from "@/lib/integrations/growth-integrations-catalog";
-import type {
-  AdsOAuthConfigured,
-  LinkedAdAccount,
+import {
+  integrationOAuthPlatform,
+  OAUTH_INTEGRATION_IDS,
+  type LinkedAdAccount,
 } from "@/lib/integrations/integration-connect-config";
 import type {
   GrowthIntegration,
@@ -41,12 +43,14 @@ type StatusFilter = ConnectionStatus | "all" | "needs_attention_group";
 export function GrowthIntegrationsHub({
   connectedIds,
   linkedAccounts = {},
-  adsOAuthConfigured = { meta: false, google: false },
+  oauthConfigured = { meta: false, google: false },
 }: {
   connectedIds: string[];
   linkedAccounts?: Record<string, LinkedAdAccount>;
-  adsOAuthConfigured?: AdsOAuthConfigured;
+  oauthConfigured?: { meta: boolean; google: boolean };
 }) {
+  const searchParams = useSearchParams();
+  const [banner, setBanner] = useState<string | null>(null);
   const connected = useMemo(() => new Set(connectedIds), [connectedIds]);
   const integrations = useMemo(() => buildGrowthIntegrations(connected), [connected]);
   const [query, setQuery] = useState("");
@@ -55,9 +59,47 @@ export function GrowthIntegrationsHub({
   const [selected, setSelected] = useState<GrowthIntegration | null>(null);
   const [showPermissions, setShowPermissions] = useState(false);
 
+  useEffect(() => {
+    const connected = searchParams.get("connected");
+    const error = searchParams.get("error");
+    if (connected === "google_ads") {
+      setBanner("Google Ads connected successfully.");
+      const match = integrations.find((i) => i.id === "google_ads");
+      if (match) setSelected(match);
+    } else if (connected === "meta") {
+      setBanner("Meta Ads connected successfully.");
+      const match = integrations.find((i) => i.id === "meta");
+      if (match) setSelected(match);
+    } else if (error) {
+      setBanner(`Connection failed: ${error.replace(/_/g, " ")}`);
+    }
+  }, [searchParams, integrations]);
+
   const healthScore = integrationHealthScore(integrations);
   const missingCritical = criticalMissingConnections(integrations);
   const connectedCount = integrations.filter((i) => i.status === "connected").length;
+
+  function handleSelectIntegration(integration: GrowthIntegration) {
+    const linked = linkedAccounts[integration.id];
+    const platform = integrationOAuthPlatform(integration.id);
+    const oauthReady =
+      platform === "google"
+        ? oauthConfigured.google
+        : platform === "meta"
+          ? oauthConfigured.meta
+          : false;
+
+    if (OAUTH_INTEGRATION_IDS.has(integration.id) && !linked && oauthReady && platform) {
+      const params = new URLSearchParams({
+        platform,
+        returnTo: "/dashboard/integrations",
+      });
+      window.location.href = `/api/ads/oauth/start?${params.toString()}`;
+      return;
+    }
+
+    setSelected(integration);
+  }
 
   const filtered = integrations.filter((i) => {
     if (category !== "all" && i.categoryId !== category) return false;
@@ -116,6 +158,19 @@ export function GrowthIntegrationsHub({
           <p className="text-xs text-muted-foreground">Critical gaps</p>
         </GlassCard>
       </div>
+
+      {banner ? (
+        <div
+          className={cn(
+            "rounded-xl border px-4 py-3 text-sm",
+            banner.startsWith("Connection failed")
+              ? "border-amber-500/30 bg-amber-500/10 text-amber-100"
+              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-100",
+          )}
+        >
+          {banner}
+        </div>
+      ) : null}
 
       {missingCritical.length > 0 ? (
         <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
@@ -189,7 +244,11 @@ export function GrowthIntegrationsHub({
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {filtered.map((integration) => (
-          <IntegrationCard key={integration.id} integration={integration} onSelect={setSelected} />
+          <IntegrationCard
+            key={integration.id}
+            integration={integration}
+            onSelect={handleSelectIntegration}
+          />
         ))}
       </div>
 
@@ -220,7 +279,7 @@ export function GrowthIntegrationsHub({
       <IntegrationDetailDrawer
         integration={selected}
         linkedAccount={selected ? linkedAccounts[selected.id] ?? null : null}
-        adsOAuthConfigured={adsOAuthConfigured}
+        oauthConfigured={oauthConfigured}
         onClose={() => setSelected(null)}
       />
 

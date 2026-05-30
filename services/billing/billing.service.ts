@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { planMonthlyAmount, normalizePlanName } from "@/lib/billing/plans";
 import { ok, fail, type ServiceResult } from "@/lib/result";
 import { createBillingRepository } from "@/repositories/billing.repository";
 import { createBusinessRepository } from "@/repositories/business.repository";
@@ -8,12 +9,7 @@ import type { BillingPlanName } from "@/types/backend";
 import { EVENT_TYPES } from "@/types/backend";
 
 import { triggerEvent } from "@/services/events/event-dispatcher";
-
-const PLAN_AMOUNTS: Record<BillingPlanName, number> = {
-  Starter: 497,
-  Growth: 997,
-  Domination: 1997,
-};
+import { computeTrialSnapshot } from "@/services/billing/trial.service";
 
 export async function getUserPlan(client: SupabaseClient, userId: string) {
   const businesses = createBusinessRepository(client);
@@ -23,7 +19,7 @@ export async function getUserPlan(client: SupabaseClient, userId: string) {
   if (!business) return ok(null);
 
   const { data: row } = await billing.getByBusinessId(business.id);
-  return ok(row);
+  return ok(row ? { ...row, trial: computeTrialSnapshot(row) } : null);
 }
 
 export async function updatePlan(
@@ -39,12 +35,14 @@ export async function updatePlan(
   }
 
   const billing = createBillingRepository(client);
-  const amount = PLAN_AMOUNTS[planName];
+  const normalized = normalizePlanName(planName);
+  const amount = planMonthlyAmount(normalized);
   const { data, error } = await billing.upsertPlan({
     businessId,
-    planName,
+    planName: normalized,
     amount,
     paymentStatus: "active",
+    subscriptionStatus: "active",
   });
 
   if (error || !data) return fail(error?.message ?? "Billing update failed");
@@ -52,7 +50,7 @@ export async function updatePlan(
   await triggerEvent(client, {
     type: EVENT_TYPES.BILLING_PLAN_CHANGED,
     businessId,
-    payload: { planName, amount },
+    payload: { planName: normalized, amount },
   });
 
   return ok(data);

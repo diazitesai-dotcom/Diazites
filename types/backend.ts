@@ -3,6 +3,7 @@ import type { PipelineStatus } from "@/types/domain";
 export const EVENT_TYPES = {
   LEAD_CREATED: "LEAD_CREATED",
   LEAD_STATUS_CHANGED: "LEAD_STATUS_CHANGED",
+  PIPELINE_STAGE_ENTERED: "PIPELINE_STAGE_ENTERED",
   LEAD_NOTE_ADDED: "LEAD_NOTE_ADDED",
   AGENT_ACTIVATED: "AGENT_ACTIVATED",
   AGENT_STATUS_CHANGED: "AGENT_STATUS_CHANGED",
@@ -23,12 +24,30 @@ export const EVENT_TYPES = {
   OPTIMIZATION_RECOMMENDED: "OPTIMIZATION_RECOMMENDED",
   OPTIMIZATION_APPLIED: "OPTIMIZATION_APPLIED",
   GROWTH_ENGINE_STAGE_CHANGED: "GROWTH_ENGINE_STAGE_CHANGED",
+  PAYMENT_SUCCEEDED: "PAYMENT_SUCCEEDED",
+  PAYMENT_FAILED: "PAYMENT_FAILED",
+  SUBSCRIPTION_STARTED: "SUBSCRIPTION_STARTED",
+  SUBSCRIPTION_CANCELED: "SUBSCRIPTION_CANCELED",
+  TRIAL_STARTED: "TRIAL_STARTED",
+  TRIAL_EXPIRED: "TRIAL_EXPIRED",
+  PROMO_REDEEMED: "PROMO_REDEEMED",
+  AGENT_ACTIVITY: "AGENT_ACTIVITY",
+  MERCHANT_PAYMENT: "MERCHANT_PAYMENT",
+  MERCHANT_ACTIVATED: "MERCHANT_ACTIVATED",
   AUDIT_ACTION: "AUDIT_ACTION",
 } as const;
 
 export type SystemEventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES];
 
-export type BillingPlanName = "Starter" | "Growth" | "Domination";
+export type BillingPlanName = "Starter" | "Growth" | "Pro" | "Enterprise" | "Domination";
+
+export type SubscriptionStatus =
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "expired"
+  | "unpaid";
 
 export type OnboardingStageDb =
   | "signup"

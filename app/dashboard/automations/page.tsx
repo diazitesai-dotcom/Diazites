@@ -1,6 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 
-import { AutomationsManager } from "@/components/automations/automations-manager";
+import { AutomationHubClient } from "@/components/automations/automation-hub-client";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,8 @@ import {
   createAutomationRepository,
 } from "@/repositories/automation.repository";
 import { createBusinessRepository } from "@/repositories/business.repository";
+import { createWorkflowRepository } from "@/repositories/workflow.repository";
+import { loadPipelinesHub } from "@/services/pipelines/pipeline.service";
 import { EVENT_TYPES } from "@/types/backend";
 
 export const dynamic = "force-dynamic";
@@ -27,13 +30,13 @@ export default async function AutomationsPage() {
       <div className="mx-auto max-w-6xl space-y-10">
         <PageHeader
           eyebrow="Automation Center"
-          title="Workflow orchestration"
-          description="Triggers, conditions, multi-step automations, and agent-driven event routing."
+          title="Pipelines & automations"
+          description="Build GHL-style pipelines, attach workflows per stage, and orchestrate SMS, email, and AI."
         />
         <Card className="border-white/[0.06]">
           <CardHeader>
             <CardTitle>Finish onboarding first</CardTitle>
-            <CardDescription>Connect your business profile to wire automations.</CardDescription>
+            <CardDescription>Connect your business profile to create pipelines.</CardDescription>
           </CardHeader>
           <CardContent>
             <Link
@@ -48,24 +51,33 @@ export default async function AutomationsPage() {
     );
   }
 
-  const repo = createAutomationRepository(supabase);
-  const [rulesRes, runsRes] = await Promise.all([
-    repo.listForBusiness(business.id),
-    repo.listRecentRuns(business.id, 30),
+  const autoRepo = createAutomationRepository(supabase);
+  const [rulesRes, runsRes, pipelineHub] = await Promise.all([
+    autoRepo.listForBusiness(business.id),
+    autoRepo.listRecentRuns(business.id, 30),
+    loadPipelinesHub(supabase, business.id),
   ]);
 
   const rules = (rulesRes.data ?? []) as AutomationRuleRow[];
-  const runs = (runsRes.data ?? []) as Parameters<typeof AutomationsManager>[0]["recentRuns"];
+  const runs = (runsRes.data ?? []) as Parameters<typeof AutomationHubClient>[0]["recentRuns"];
   const triggers = Object.values(EVENT_TYPES) as ReadonlyArray<string>;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-10">
+    <div className="mx-auto max-w-7xl space-y-10">
       <PageHeader
         eyebrow="Automation Center"
-        title="Workflow orchestration"
-        description="Lead captured → CRM sync → SMS → email → agent notify → retargeting — with logs and performance analytics."
+        title="Pipelines & automations"
+        description="GoHighLevel-style pipelines under Automations — create stages, attach workflows, SMS, email, tags, and tasks on stage entry."
       />
-      <AutomationsManager rules={rules} recentRuns={runs} triggers={triggers} />
+      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+        <AutomationHubClient
+          pipelines={pipelineHub.pipelines}
+          stageCounts={pipelineHub.stageCounts}
+          rules={rules}
+          recentRuns={runs}
+          triggers={triggers}
+        />
+      </Suspense>
     </div>
   );
 }

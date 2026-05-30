@@ -145,4 +145,6 @@ export type SystemModuleContext = {
   recommendations: AiRecommendation[];
   crmConnected: boolean;
   hasPaidAds: boolean;
+  pixelOk?: boolean;
+  trackingRequired?: boolean;
 };

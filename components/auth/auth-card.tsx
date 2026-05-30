@@ -3,6 +3,8 @@
 import Link from "next/link";
 
 import { AuthSubmitButton } from "@/components/auth/auth-submit-button";
+import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
+import { AUTH_BRAND } from "@/lib/auth/auth-branding";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +18,8 @@ interface AuthCardProps {
   footerText: string;
   footerCta: string;
   showPassword?: boolean;
+  /** After sign-in, redirect here (validated server-side) */
+  returnPath?: string;
 }
 
 export function AuthCard({
@@ -27,17 +31,25 @@ export function AuthCard({
   footerText,
   footerCta,
   showPassword = true,
+  returnPath,
 }: AuthCardProps) {
   return (
     <Card className="w-full max-w-md border-white/[0.08] shadow-[0_24px_80px_-48px_rgba(99,102,241,0.45)]">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl tracking-tight">{title}</CardTitle>
         <CardDescription>
-          Secure sign-in. Your session syncs across the app via Supabase.
+          Sign in to {AUTH_BRAND.platformName} with email and password, or social sign-in when
+          configured.
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <SocialAuthButtons
+          mode="login"
+          nextPath={returnPath ?? "/dashboard"}
+          className="mb-4"
+        />
         <form className="space-y-4" action={action}>
+          {returnPath ? <input type="hidden" name="next" value={returnPath} /> : null}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" required autoComplete="email" />

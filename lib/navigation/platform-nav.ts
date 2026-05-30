@@ -5,12 +5,15 @@ import {
   Building2,
   Calendar,
   CheckSquare,
+  ClipboardList,
   FlaskConical,
+  CreditCard,
   Funnel,
   Inbox,
   LayoutDashboard,
   LineChart,
   Mail,
+  Mails,
   MessageSquare,
   Plug,
   Radar,
@@ -19,6 +22,8 @@ import {
   Target,
   Users,
   Webhook,
+  Phone,
+  Workflow,
   Zap,
 } from "lucide-react";
 
@@ -33,10 +38,17 @@ export const ROUTES = {
   optimizationLab: "/dashboard/optimization",
   integrationsHub: "/dashboard/integrations",
   automationCenter: "/dashboard/automations",
+  automationPipelines: "/dashboard/automations/pipelines",
+  workflows: "/dashboard/workflows",
+  aiCallCommandCenter: "/dashboard/ai-calls",
+  merchantServices: "/dashboard/merchant-services",
+  aiTextCommandCenter: "/dashboard/ai-text",
+  emailCampaignCenter: "/dashboard/email-campaigns",
   approvalCenter: "/dashboard/approvals",
   reportsIntelligence: "/dashboard/reports",
   organization: "/dashboard/organization",
   businessProfile: "/dashboard/business",
+  onboarding: "/onboarding",
   tasks: "/dashboard/tasks",
   followUp: "/dashboard/follow-up",
   inbox: "/dashboard/inbox",
@@ -83,106 +95,10 @@ export type DashboardNavItem = {
 export type DashboardNavGroup = {
   id: string;
   label: string;
+  /** When true, section header is hidden (e.g. Mission Control home). */
+  standalone?: boolean;
   items: DashboardNavItem[];
 };
-
-/** Primary sidebar order — matches Growth OS operational flow. */
-export const DASHBOARD_NAV: DashboardNavItem[] = [
-  {
-    id: "mission_control",
-    href: ROUTES.missionControl,
-    label: "Mission Control",
-    description: "Growth Command Center",
-    icon: LayoutDashboard,
-  },
-  {
-    id: "campaign_ops",
-    href: ROUTES.campaignOps,
-    label: "Campaign Ops",
-    description: "Live paid media & platforms",
-    icon: Radar,
-  },
-  {
-    id: "leads_os",
-    href: ROUTES.leadsOs,
-    label: "Leads OS",
-    description: "CRM, pipeline & follow-up",
-    icon: Users,
-  },
-  {
-    id: "growth_engine",
-    href: ROUTES.growthEngine,
-    label: "Growth Engine",
-    description: "Research → launch pipeline",
-    icon: Sparkles,
-  },
-  {
-    id: "funnel_studio",
-    href: ROUTES.funnelStudio,
-    label: "Funnel Studio",
-    description:
-      "Build websites, funnels, landing pages, forms, offers, surveys, automations, and conversion systems.",
-    icon: Funnel,
-  },
-  {
-    id: "agents",
-    href: ROUTES.agents,
-    label: "Agents",
-    description: "Execution, tasks & rollback",
-    icon: Bot,
-  },
-  {
-    id: "optimization_lab",
-    href: ROUTES.optimizationLab,
-    label: "Optimization Lab",
-    description: "Continuous AI tuning",
-    icon: FlaskConical,
-  },
-  {
-    id: "integrations_hub",
-    href: ROUTES.integrationsHub,
-    label: "Integrations Hub",
-    description: "OAuth, APIs & sync",
-    icon: Plug,
-  },
-  {
-    id: "automation_center",
-    href: ROUTES.automationCenter,
-    label: "Automation Center",
-    description: "Workflows & triggers",
-    icon: Webhook,
-  },
-  {
-    id: "approval_center",
-    href: ROUTES.approvalCenter,
-    label: "Approval Center",
-    description: "Oversight & policy",
-    icon: ShieldAlert,
-  },
-  {
-    id: "reports_intelligence",
-    href: ROUTES.reportsIntelligence,
-    label: "Reports & Intelligence",
-    description: "ROAS, pipeline & forecasts",
-    icon: BarChart3,
-  },
-  {
-    id: "organization",
-    href: ROUTES.organization,
-    label: "Organization",
-    description: "Team, billing & security",
-    icon: Building2,
-  },
-];
-
-/** Optional grouped view for docs / palettes. */
-export const DASHBOARD_NAV_GROUPS: DashboardNavGroup[] = [
-  { id: "operate", label: "Operate", items: DASHBOARD_NAV.slice(0, 3) },
-  { id: "build", label: "Build", items: DASHBOARD_NAV.slice(3, 5) },
-  { id: "autonomous", label: "Autonomous", items: DASHBOARD_NAV.slice(5, 7) },
-  { id: "connect", label: "Connect", items: DASHBOARD_NAV.slice(7, 10) },
-  { id: "admin", label: "Intelligence", items: DASHBOARD_NAV.slice(10, 12) },
-];
 
 /** Agent roles surfaced across Mission Control and Agents module. */
 export const PLATFORM_AGENT_ROSTER = [
@@ -202,53 +118,95 @@ export const PLATFORM_AGENT_ROSTER = [
 
 export const PRODUCT_TAGLINE = "AI Growth Operating System";
 
-/** Full spec sidebar — grouped sections mapped to live or Phase 1 routes. */
+/** Sidebar: Onboarding (solo) → Mission Control (solo) → Automation → Business setup → Leads → Campaigns → Ops → Follow-up */
 export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
   {
-    id: "dashboard",
-    label: "Dashboard",
+    id: "business_onboarding",
+    label: "Business onboarding",
+    standalone: true,
+    items: [
+      {
+        id: "business_profile",
+        href: ROUTES.businessProfile,
+        label: "Business profile",
+        description: "Brand, offer & company details",
+        icon: Building2,
+      },
+      {
+        id: "business_profile" as const,
+        href: ROUTES.onboarding,
+        label: "Onboarding setup",
+        description: "Finish setup & connect accounts",
+        icon: ClipboardList,
+      },
+    ],
+  },
+  {
+    id: "mission_control",
+    label: "Mission Control",
+    standalone: true,
     items: [
       {
         id: "mission_control",
         href: ROUTES.missionControl,
         label: "Mission Control",
-        description: "Growth Command Center",
+        description: "Your growth command center",
         icon: LayoutDashboard,
       },
+    ],
+  },
+  {
+    id: "automation",
+    label: "Automation",
+    items: [
       {
-        id: "agents",
-        href: ROUTES.agents,
-        label: "Live agent activity",
-        description: "Status & workspaces",
-        icon: Bot,
+        id: "automation_center",
+        href: ROUTES.automationCenter,
+        label: "Automation Center",
+        description: "Rules, triggers & orchestration",
+        icon: Webhook,
       },
       {
-        id: "reports_intelligence",
-        href: ROUTES.reportsIntelligence,
-        label: "Performance snapshot",
-        description: "ROAS, spend, revenue",
-        icon: BarChart3,
+        id: "mission_control" as const,
+        href: ROUTES.automationPipelines,
+        label: "Pipelines",
+        description: "Stages & stage automations",
+        icon: Target,
       },
       {
-        id: "leads_os",
-        href: ROUTES.leadsOs,
-        label: "Recent leads",
-        description: "Inbox & pipeline",
-        icon: Users,
+        id: "mission_control" as const,
+        href: ROUTES.workflows,
+        label: "Workflows",
+        description: "Visual automation builder",
+        icon: Workflow,
       },
       {
-        id: "tasks" as const,
-        href: ROUTES.tasks,
-        label: "Recent tasks",
-        description: "Pending & overdue",
-        icon: CheckSquare,
+        id: "mission_control" as const,
+        href: ROUTES.aiCallCommandCenter,
+        label: "AI calls",
+        description: "Outbound calling & campaigns",
+        icon: Phone,
       },
       {
-        id: "campaign_ops",
-        href: ROUTES.campaignOps,
-        label: "Campaign alerts",
-        description: "Draft & active ads",
-        icon: Radar,
+        id: "mission_control" as const,
+        href: ROUTES.aiTextCommandCenter,
+        label: "AI text (SMS)",
+        description: "SMS agents & sequences",
+        icon: MessageSquare,
+      },
+      {
+        id: "mission_control" as const,
+        href: ROUTES.emailCampaignCenter,
+        label: "Email campaigns",
+        description: "Audiences, templates & sends",
+        icon: Mails,
+      },
+      {
+        id: "mission_control" as const,
+        href: ROUTES.merchantServices,
+        label: "Merchant services",
+        description: "Payments & billing automations",
+        icon: CreditCard,
       },
     ],
   },
@@ -257,53 +215,52 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
     label: "Business setup",
     items: [
       {
-        id: "business_profile",
-        href: ROUTES.businessProfile,
-        label: "Business profile",
-        description: "Onboarding fields",
-        icon: Building2,
-      },
-      {
         id: "funnel_studio",
         href: ROUTES.funnelStudio,
         label: "Funnel Studio",
-        description:
-          "Build websites, funnels, landing pages, forms, offers, surveys, automations, and conversion systems.",
+        description: "Landing pages, forms & offers",
         icon: Funnel,
       },
       {
         id: "integrations_hub",
         href: ROUTES.integrationsHub,
         label: "Integrations",
-        description: "Ads, CRM, comms",
+        description: "Ads, CRM, email & payments",
         icon: Plug,
+      },
+      {
+        id: "agents",
+        href: ROUTES.agents,
+        label: "AI agents",
+        description: "Activate & manage agent stacks",
+        icon: Bot,
       },
     ],
   },
   {
-    id: "agents",
-    label: "AI agents",
+    id: "leads",
+    label: "Leads & CRM",
     items: [
       {
-        id: "agents",
-        href: ROUTES.agents,
-        label: "Agent marketplace",
-        description: "Activate stacks",
-        icon: Bot,
+        id: "leads_os",
+        href: ROUTES.leadsOs,
+        label: "Leads inbox",
+        description: "New leads & conversations",
+        icon: Inbox,
+      },
+      {
+        id: "leads_os" as const,
+        href: ROUTES.pipeline,
+        label: "Sales pipeline",
+        description: "Stages, deals & next steps",
+        icon: Users,
       },
       {
         id: "approval_center",
         href: ROUTES.approvalCenter,
-        label: "Permissions & approvals",
-        description: "Safety modes",
+        label: "Lead approvals",
+        description: "Review before agents act",
         icon: ShieldAlert,
-      },
-      {
-        id: "automation_center",
-        href: ROUTES.automationCenter,
-        label: "Agent logs",
-        description: "Action history",
-        icon: Webhook,
       },
     ],
   },
@@ -314,56 +271,23 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
       {
         id: "campaign_ops",
         href: ROUTES.campaignOps,
-        label: "All campaigns",
-        description: "Google, Meta & more",
+        label: "Campaign manager",
+        description: "Meta, Google & paid media",
         icon: Radar,
       },
       {
-        id: "approval_center",
+        id: "growth_engine",
+        href: ROUTES.growthEngine,
+        label: "Growth engine",
+        description: "Research → launch pipeline",
+        icon: Sparkles,
+      },
+      {
+        id: "approval_center" as const,
         href: ROUTES.approvalCenter,
         label: "Campaign approvals",
-        description: "Draft → live",
+        description: "Draft → live with guardrails",
         icon: ShieldAlert,
-      },
-    ],
-  },
-  {
-    id: "leads",
-    label: "Leads CRM",
-    items: [
-      {
-        id: "leads_os",
-        href: ROUTES.leadsOs,
-        label: "Lead inbox",
-        description: "Pipeline & hot leads",
-        icon: Users,
-      },
-      {
-        id: "leads_os",
-        href: `${ROUTES.leadsOs}?view=pipeline`,
-        label: "Pipeline",
-        description: "Kanban stages",
-        icon: Target,
-      },
-    ],
-  },
-  {
-    id: "followup",
-    label: "Follow-up",
-    items: [
-      {
-        id: "follow_up",
-        href: ROUTES.followUp,
-        label: "SMS & email",
-        description: "Sequences & rules",
-        icon: MessageSquare,
-      },
-      {
-        id: "calendar",
-        href: ROUTES.calendar,
-        label: "Appointments",
-        description: "Booking & calendar",
-        icon: Calendar,
       },
     ],
   },
@@ -375,51 +299,70 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
         id: "tasks",
         href: ROUTES.tasks,
         label: "Tasks",
-        description: "User & agent tasks",
+        description: "Your work & agent tasks",
         icon: CheckSquare,
       },
       {
         id: "inbox",
         href: ROUTES.inbox,
-        label: "Inbox",
+        label: "Team inbox",
         description: "Replies & AI chat",
-        icon: Inbox,
+        icon: MessageSquare,
       },
       {
         id: "analytics",
         href: ROUTES.analytics,
         label: "Analytics",
-        description: "Traffic & CVR",
+        description: "Traffic, CVR & performance",
         icon: LineChart,
       },
       {
         id: "optimization_lab",
         href: ROUTES.optimizationLab,
-        label: "Optimization",
-        description: "AI recommendations",
+        label: "Optimization lab",
+        description: "AI tuning & experiments",
         icon: FlaskConical,
       },
       {
         id: "reports_intelligence",
         href: ROUTES.reportsIntelligence,
         label: "Reports",
-        description: "PDF & email",
-        icon: Mail,
-      },
-      {
-        id: "growth_engine",
-        href: ROUTES.growthEngine,
-        label: "Growth engine",
-        description: "Strategy → launch",
-        icon: Sparkles,
+        description: "ROAS, pipeline & forecasts",
+        icon: BarChart3,
       },
       {
         id: "organization",
         href: ROUTES.organization,
-        label: "Billing & settings",
-        description: "Plan & team",
+        label: "Team & billing",
+        description: "Plan, seats & settings",
         icon: Zap,
       },
     ],
   },
+  {
+    id: "followup",
+    label: "Follow-up",
+    items: [
+      {
+        id: "follow_up",
+        href: ROUTES.followUp,
+        label: "Follow-up hub",
+        description: "SMS & email sequences",
+        icon: MessageSquare,
+      },
+      {
+        id: "calendar",
+        href: ROUTES.calendar,
+        label: "Appointments",
+        description: "Booking & calendar",
+        icon: Calendar,
+      },
+    ],
+  },
 ];
+
+/** Flat nav list for command palette — mirrors sidebar priority. */
+export const DASHBOARD_NAV: DashboardNavItem[] = GROWTH_SIDEBAR_GROUPS.flatMap((g) => g.items);
+
+/** Grouped view for docs / palettes. */
+export const DASHBOARD_NAV_GROUPS: DashboardNavGroup[] = GROWTH_SIDEBAR_GROUPS;

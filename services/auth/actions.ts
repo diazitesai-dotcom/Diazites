@@ -3,13 +3,23 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { sanitizeAppReturnPath } from "@/lib/ads-oauth-state";
+import { AUTH_BRAND, signupEmailRedirectUrl } from "@/lib/auth/auth-branding";
 import { createUserProfile } from "@/lib/auth/user-profile";
 import { getPublicAppUrl } from "@/lib/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { completePostAuthSignup } from "@/services/auth/post-auth.service";
+import { sendDiazitesWelcomeEmail } from "@/services/auth/welcome-email.service";
 
 export async function signupAction(formData: FormData) {
-  const email = String(formData.get("email") ?? "");
+  const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const promoCode = String(formData.get("promo_code") ?? "").trim();
+
+  if (!email || !password) {
+    redirect("/signup?error=Email%20and%20password%20are%20required");
+  }
 
   let supabase;
   try {
@@ -19,11 +29,19 @@ export async function signupAction(formData: FormData) {
       e instanceof Error ? e.message : "Sign-up is unavailable. Check server configuration.";
     redirect(`/signup?error=${encodeURIComponent(msg)}`);
   }
+
+  const emailRedirectTo = signupEmailRedirectUrl();
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${getPublicAppUrl()}/dashboard`,
+      emailRedirectTo,
+      data: {
+        full_name: fullName || null,
+        promo_code: promoCode || null,
+        app_name: AUTH_BRAND.platformName,
+      },
     },
   });
 
@@ -32,13 +50,23 @@ export async function signupAction(formData: FormData) {
   }
 
   if (data.session?.user) {
-    await createUserProfile(supabase, {
-      userId: data.session.user.id,
-      email,
+    await completePostAuthSignup(supabase, data.session.user, {
+      promoCode,
+      defaultNext: "/onboarding?welcome=trial",
     });
+    revalidatePath("/", "layout");
+    redirect("/onboarding?welcome=trial");
   }
 
-  redirect("/signup?success=check-email");
+  await sendDiazitesWelcomeEmail({
+    to: email,
+    fullName: fullName || null,
+    confirmationPending: true,
+  });
+
+  const successQs = new URLSearchParams({ success: "check-email", email });
+  if (promoCode) successQs.set("promo", promoCode);
+  redirect(`/signup?${successQs.toString()}`);
 }
 
 export async function loginAction(formData: FormData) {
@@ -71,11 +99,21 @@ export async function loginAction(formData: FormData) {
     );
   }
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    await createUserProfile(supabase, {
+      userId: user.id,
+      email: user.email ?? email,
+    });
+  }
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  redirect("/dashboard");
+  const next = sanitizeAppReturnPath(String(formData.get("next") ?? ""), "/dashboard");
+  redirect(next);
 }
 
 export async function forgotPasswordAction(formData: FormData) {

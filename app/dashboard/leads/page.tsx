@@ -8,6 +8,7 @@ import { getLeadsForBoard } from "@/services/leads/lead.service";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
+import { ROUTES } from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils";
 
 export default async function LeadsManagerPage() {
@@ -50,8 +51,15 @@ export default async function LeadsManagerPage() {
       <PageHeader
         eyebrow="Leads OS"
         title="Lead & revenue operations"
-        description="Inbox, CRM, scoring, pipelines, SMS, email, bookings, follow-up, attribution, and AI qualification."
+        description="Inbox, CRM, scoring, SMS, email, bookings, follow-up, attribution, and AI qualification."
       />
+      <p className="text-sm text-muted-foreground">
+        Configure sales pipelines, stage automations, and workflow attachments in{" "}
+        <Link href={ROUTES.automationCenter} className="text-violet-400 hover:underline">
+          Automation Center → Pipelines
+        </Link>
+        .
+      </p>
       <LeadsBoard leads={leads} />
     </div>
   );

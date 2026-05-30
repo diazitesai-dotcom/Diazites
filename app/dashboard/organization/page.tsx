@@ -21,6 +21,7 @@ import {
   type TeamMemberRow,
 } from "@/repositories/cross-cutting.repository";
 import { getUserPlan } from "@/services/billing/billing.service";
+import { getUsageDashboard } from "@/services/billing/usage-metering.service";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,10 @@ export default async function OrganizationPage({
 
   const planRes = await getUserPlan(supabase, user.id);
   const billing = planRes.success ? planRes.data : null;
+  const usageRes =
+    billing && business
+      ? await getUsageDashboard(supabase, business.id, String(billing.plan_name))
+      : null;
   const rawErr = sp.error;
   const errorStr = typeof rawErr === "string" ? rawErr : undefined;
   const stripeReady = Boolean(process.env.STRIPE_SECRET_KEY?.trim());
@@ -109,12 +114,19 @@ export default async function OrganizationPage({
                       plan_name: String(billing.plan_name),
                       amount: Number(billing.amount),
                       payment_status: String(billing.payment_status),
+                      subscription_status:
+                        "subscription_status" in billing
+                          ? (billing.subscription_status as string | null)
+                          : null,
                       stripe_customer_id: billing.stripe_customer_id ?? null,
+                      trial: "trial" in billing ? billing.trial : null,
                     }
                   : null
               }
               stripeReady={stripeReady}
               notice={notice}
+              usageRows={usageRes?.success ? usageRes.data.rows : []}
+              usageOverage={usageRes?.success ? usageRes.data.estimatedOverage : 0}
             />
           ) : null}
           {tab === "settings" ? (

@@ -46,14 +46,15 @@ export async function startGoogleConnectAction(): Promise<ServiceResult<{ url: s
 
 export async function startAdsConnectAction(
   platform: Extract<AdsPlatform, "meta" | "google">,
+  returnTo?: string,
 ): Promise<ServiceResult<{ url: string }>> {
   const ctx = await resolveBusinessId();
-  if (!ctx) redirect("/onboarding?error=Complete+onboarding+first");
+  if (!ctx) redirect("/login?next=/dashboard/integrations");
 
   const link =
     platform === "google"
-      ? await buildGoogleAuthLink({ businessId: ctx.businessId })
-      : await buildMetaAuthLink({ businessId: ctx.businessId });
+      ? await buildGoogleAuthLink({ businessId: ctx.businessId, returnTo })
+      : await buildMetaAuthLink({ businessId: ctx.businessId, returnTo });
   if (!link.success) return fail(link.error);
   return ok({ url: link.data.url });
 }
@@ -88,6 +89,7 @@ export async function disconnectAdsPlatformAction(
 
   revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/ads");
+  revalidatePath("/dashboard/integrations");
   return ok({ ok: true });
 }
 

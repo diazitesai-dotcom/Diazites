@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ChevronRight, GitBranch, TrendingUp } from "lucide-react";
 
 import { GlassCard } from "@/components/dashboard/mission-control/glass-card";
+import { MapModuleCardSkeleton } from "@/components/dashboard/mission-control/map-module-card-skeleton";
 import { useSystemModuleOptional } from "@/components/dashboard/mission-control/system-module-provider";
 import { buildOrchestrationFlow } from "@/lib/dashboard/build-orchestration-flow";
 import type {
@@ -126,12 +127,20 @@ function OrchestrationMapFlow({
   activeModuleId,
   onSelect,
   displayStates,
+  emptyModules,
+  loadingModuleId,
+  moduleSummaries,
 }: {
   steps: OrchestrationFlowStep[];
   activeModuleId: SystemModuleId | null;
   onSelect?: (id: SystemModuleId) => void;
   displayStates: Partial<Record<SystemModuleId, SystemModuleDisplayState>>;
+  emptyModules: Partial<Record<SystemModuleId, boolean>>;
+  loadingModuleId: SystemModuleId | null;
+  moduleSummaries: Partial<Record<SystemModuleId, string>>;
 }) {
+  const interactive = Boolean(onSelect);
+
   return (
     <div className="mx-auto w-full max-w-md space-y-0">
       {steps.map((step, i) => {
@@ -141,11 +150,16 @@ function OrchestrationMapFlow({
           ? displayStates[steps[i + 1].id as SystemModuleId]
           : undefined;
         const isActive = activeModuleId === moduleId;
+        const isLoading = loadingModuleId === moduleId;
+        const isEmpty = emptyModules[moduleId];
         const borderClass =
           (displayState && DISPLAY_BORDER[displayState]) ?? NODE_BORDER[step.status];
         const hint =
+          moduleSummaries[moduleId] ??
           step.healthHint ??
           (displayState === "disconnected" ? "Integration missing." : undefined);
+
+        const CardTag = interactive ? "button" : "div";
 
         return (
           <motion.div
@@ -155,25 +169,34 @@ function OrchestrationMapFlow({
             viewport={{ once: true }}
             transition={{ delay: i * 0.05 }}
           >
-            <button
-              type="button"
-              onClick={() => onSelect?.(moduleId)}
-              aria-label={`Open ${step.label} details`}
-              aria-pressed={isActive}
+            <CardTag
+              {...(interactive
+                ? {
+                    type: "button" as const,
+                    onClick: () => onSelect?.(moduleId),
+                    "aria-label": `Open ${step.label} details`,
+                    "aria-pressed": isActive,
+                  }
+                : {})}
               title={hint}
               className={cn(
-                "group w-full rounded-xl border px-3 py-2.5 text-left transition-all sm:px-4 sm:py-3",
-                "cursor-pointer hover:ring-2 hover:ring-cyan-500/35 hover:shadow-[0_0_24px_-8px_rgba(34,211,238,0.35)]",
-                "active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/50",
+                "group relative w-full rounded-xl border px-3 py-2.5 text-left transition-all sm:px-4 sm:py-3",
+                interactive &&
+                  "cursor-pointer hover:ring-2 hover:ring-cyan-500/35 hover:shadow-[0_0_24px_-8px_rgba(34,211,238,0.35)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/50",
                 borderClass,
-                isActive && "ring-2 ring-violet-400/60",
-                displayState === "failed" && "animate-pulse",
+                isActive && interactive && "ring-2 ring-violet-400/60",
+                displayState === "failed" && "ring-rose-500/30",
+                displayState === "needs_attention" && !isActive && "ring-amber-500/20",
+                isEmpty && !isLoading && "opacity-90",
               )}
             >
+              {isLoading ? <MapModuleCardSkeleton /> : null}
               <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 sm:grid-cols-[1fr_auto_auto]">
                 <div className="flex min-w-0 items-center gap-1.5">
                   <p className="min-w-0 text-sm font-semibold group-hover:text-cyan-100">{step.label}</p>
-                  <ChevronRight className="size-3.5 shrink-0 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100" />
+                  {interactive ? (
+                    <ChevronRight className="size-3.5 shrink-0 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100" />
+                  ) : null}
                 </div>
                 <div className="text-right">
                   <div className="flex items-center justify-end gap-2">
@@ -202,6 +225,11 @@ function OrchestrationMapFlow({
                   displayState={displayState}
                 />
               </div>
+              {isEmpty && !isLoading ? (
+                <p className="mt-2 text-[10px] text-muted-foreground">
+                  No data yet — click to set up
+                </p>
+              ) : null}
               {step.signal ? (
                 <div className="mt-2.5 rounded-lg border border-cyan-500/25 bg-cyan-500/8 px-2.5 py-2 text-[11px] leading-relaxed">
                   <p className="font-semibold text-cyan-100">{step.signal.headline}</p>
@@ -211,7 +239,12 @@ function OrchestrationMapFlow({
                   </p>
                 </div>
               ) : null}
-            </button>
+              {interactive ? (
+                <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-cyan-300/0 transition-colors group-hover:text-cyan-300/80">
+                  Inspect module →
+                </p>
+              ) : null}
+            </CardTag>
             {i < steps.length - 1 ? <AnimatedFlowConnector nextState={nextDisplay} /> : null}
           </motion.div>
         );
@@ -237,14 +270,28 @@ export function OrchestrationMap({
   const systemModule = useSystemModuleOptional();
   const steps = flow?.length ? flow : EMPTY_FLOW;
 
+  const moduleIds = ["traffic", "landing", "qualify", "followup", "crm", "optimize"] as SystemModuleId[];
+
   const displayStates = systemModule
     ? (Object.fromEntries(
-        (Object.keys(systemModule.details) as SystemModuleId[]).map((id) => [
-          id,
-          systemModule.details[id].displayState,
-        ]),
+        moduleIds.map((id) => [id, systemModule.details[id].displayState]),
       ) as Partial<Record<SystemModuleId, SystemModuleDisplayState>>)
     : {};
+
+  const emptyModules = systemModule
+    ? (Object.fromEntries(moduleIds.map((id) => [id, systemModule.details[id].isEmpty])) as Partial<
+        Record<SystemModuleId, boolean>
+      >)
+    : {};
+
+  const moduleSummaries = systemModule
+    ? (Object.fromEntries(moduleIds.map((id) => [id, systemModule.details[id].summary])) as Partial<
+        Record<SystemModuleId, string>
+      >)
+    : {};
+
+  const loadingModuleId =
+    systemModule?.loading && systemModule.activeModule ? systemModule.activeModule : null;
 
   const flowContent = (
     <OrchestrationMapFlow
@@ -252,6 +299,9 @@ export function OrchestrationMap({
       activeModuleId={systemModule?.activeModule ?? null}
       onSelect={systemModule?.openModule}
       displayStates={displayStates}
+      emptyModules={emptyModules}
+      loadingModuleId={loadingModuleId}
+      moduleSummaries={moduleSummaries}
     />
   );
 

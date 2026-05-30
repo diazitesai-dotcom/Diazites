@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { ExternalLink, KeyRound, Link2, Loader2, RotateCcw, ScrollText, Unplug, Wrench, X } from "lucide-react";
+import { ExternalLink, KeyRound, Link2, RotateCcw, ScrollText, Unplug, Wrench, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
@@ -18,14 +18,15 @@ import { Label } from "@/components/ui/label";
 import { AGENT_CAPABILITY_GROUPS } from "@/lib/integrations/growth-integrations-catalog";
 import {
   credentialLabelFor,
+  integrationOAuthPlatform,
+  OAUTH_INTEGRATION_IDS,
   resolveAdPlatform,
-  resolveOAuthAdsPlatform,
-  type AdsOAuthConfigured,
   type LinkedAdAccount,
 } from "@/lib/integrations/integration-connect-config";
 import {
-  startGoogleConnectAction,
-  startMetaConnectAction,
+  disconnectGoogleAction,
+  disconnectMetaAction,
+  startAdsConnectAction,
 } from "@/services/ads/actions";
 import type { GrowthIntegration } from "@/lib/integrations/integration-types";
 import { ROUTES } from "@/lib/navigation/platform-nav";
@@ -43,20 +44,17 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "errors", label: "Errors" },
 ];
 
-const OAUTH_ENV_HINTS: Record<"meta" | "google", string> = {
-  meta: "META_APP_ID, META_APP_SECRET, META_REDIRECT_URL",
-  google: "GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET, GOOGLE_ADS_REDIRECT_URL",
-};
+const INTEGRATIONS_RETURN = "/dashboard/integrations";
 
 export function IntegrationDetailDrawer({
   integration,
   linkedAccount,
-  adsOAuthConfigured = { meta: false, google: false },
+  oauthConfigured = { meta: false, google: false },
   onClose,
 }: {
   integration: GrowthIntegration | null;
   linkedAccount?: LinkedAdAccount | null;
-  adsOAuthConfigured?: AdsOAuthConfigured;
+  oauthConfigured?: { meta: boolean; google: boolean };
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -71,8 +69,15 @@ export function IntegrationDetailDrawer({
   const credentialLabel = integration
     ? credentialLabelFor(integration.id, integration.name)
     : "API key or token";
-  const oauthPlatform = integration ? resolveOAuthAdsPlatform(integration.id) : null;
-  const oauthConfigured = oauthPlatform ? adsOAuthConfigured[oauthPlatform] : false;
+
+  const oauthPlatform = integration ? integrationOAuthPlatform(integration.id) : null;
+  const supportsOAuth = integration ? OAUTH_INTEGRATION_IDS.has(integration.id) : false;
+  const oauthReady =
+    oauthPlatform === "google"
+      ? oauthConfigured.google
+      : oauthPlatform === "meta"
+        ? oauthConfigured.meta
+        : false;
 
   useEffect(() => {
     if (!integration) return;
@@ -129,27 +134,57 @@ export function IntegrationDetailDrawer({
     });
   }
 
+  const reallyConnected = Boolean(linkedAccount);
+
+  function oauthStartUrl(): string | null {
+    if (!oauthPlatform) return null;
+    const params = new URLSearchParams({
+      platform: oauthPlatform,
+      returnTo: INTEGRATIONS_RETURN,
+    });
+    return `/api/ads/oauth/start?${params.toString()}`;
+  }
+
   function handleOAuthConnect() {
-    if (!oauthPlatform) return;
+    if (!integration || !oauthPlatform) return;
+    const startUrl = oauthStartUrl();
+    if (!oauthReady) {
+      setMessage(
+        "Google Ads OAuth is not configured on the server yet. Add GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET, and GOOGLE_ADS_REDIRECT_URL in Vercel, then redeploy.",
+      );
+      setPanelMode("overview");
+      return;
+    }
+    if (startUrl) {
+      window.location.href = startUrl;
+      return;
+    }
     startTransition(async () => {
-      const result =
-        oauthPlatform === "google"
-          ? await startGoogleConnectAction()
-          : await startMetaConnectAction();
+      const result = await startAdsConnectAction(oauthPlatform, INTEGRATIONS_RETURN);
       if (!result.success) {
         setMessage(result.error);
-        openConnectPanel();
         return;
       }
-      if (typeof window !== "undefined") {
-        window.location.href = result.data.url;
-      }
+      window.location.href = result.data.url;
     });
   }
 
   function handleDisconnect() {
-    if (!linkedAccount) return;
+    if (!integration) return;
     startTransition(async () => {
+      if (oauthPlatform && linkedAccount) {
+        const result =
+          oauthPlatform === "google"
+            ? await disconnectGoogleAction()
+            : await disconnectMetaAction();
+        setMessage(result.success ? "Disconnected." : result.error);
+        if (result.success) {
+          setPanelMode("overview");
+          refreshAfterMutation();
+        }
+        return;
+      }
+      if (!linkedAccount) return;
       const result = await disconnectAdAccountAction(linkedAccount.id);
       setMessage(result.ok ? "Disconnected." : result.error);
       if (result.ok) {
@@ -189,7 +224,7 @@ export function IntegrationDetailDrawer({
                     {integration.name}
                   </p>
                   <p className="text-xs capitalize text-muted-foreground">
-                    {integration.status.replace(/_/g, " ")}
+                    {reallyConnected ? "connected" : "not connected"}
                     {linkedAccount?.credentialsHint ? ` · ${linkedAccount.credentialsHint}` : ""}
                   </p>
                 </div>
@@ -233,42 +268,37 @@ export function IntegrationDetailDrawer({
 
               {panelMode === "connect" ? (
                 <div className="space-y-4">
-                  {oauthPlatform ? (
+                  <p className="text-xs text-muted-foreground">
+                    Credentials are encrypted at rest and never shown in full after saving.
+                  </p>
+                  {supportsOAuth ? (
                     <div className="space-y-3 rounded-lg border border-violet-500/25 bg-violet-500/10 p-3">
                       <p className="text-xs text-violet-100/90">
-                        Recommended: sign in with {integration.name} OAuth. Tokens are stored
-                        encrypted; refresh tokens power background sync.
+                        Recommended: sign in with {integration?.name} using your client&apos;s Google
+                        account. Each Diazites business stores its own connection.
                       </p>
-                      {!oauthConfigured ? (
-                        <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-200">
-                          OAuth not configured — set{" "}
-                          <span className="font-mono">{OAUTH_ENV_HINTS[oauthPlatform]}</span>.
-                          Redirect URI:{" "}
-                          <span className="font-mono">/api/ads/oauth/callback</span>
-                        </p>
-                      ) : null}
                       <Button
                         type="button"
                         variant="gradient"
                         size="sm"
                         className="w-full rounded-lg"
-                        disabled={pending || !oauthConfigured}
+                        disabled={pending || !oauthReady}
                         onClick={handleOAuthConnect}
                       >
-                        {pending ? (
-                          <Loader2 className="mr-2 size-3.5 animate-spin" aria-hidden />
-                        ) : (
-                          <ExternalLink className="mr-2 size-3.5" aria-hidden />
-                        )}
-                        Connect with {integration.name}
+                        {pending ? null : <ExternalLink className="mr-1.5 size-3.5" />}
+                        Connect with {integration?.name === "Google Ads" ? "Google" : integration?.name}
                       </Button>
+                      {!oauthReady ? (
+                        <p className="text-[11px] text-amber-200/90">
+                          OAuth env vars are missing on the server — contact your admin or use API key
+                          below.
+                        </p>
+                      ) : null}
+                      <p className="text-center text-[10px] uppercase tracking-wide text-muted-foreground">
+                        or paste a token manually
+                      </p>
                     </div>
                   ) : null}
-                  <p className="text-xs text-muted-foreground">
-                    {oauthPlatform
-                      ? "Or paste an API key manually — encrypted at rest, never shown in full after saving."
-                      : "Credentials are encrypted at rest and never shown in full after saving."}
-                  </p>
                   <div className="space-y-2">
                     <Label htmlFor="integration-account-name">Account label</Label>
                     <Input
@@ -421,9 +451,33 @@ export function IntegrationDetailDrawer({
                           {integration.subchannels.join(" · ")}
                         </p>
                       ) : null}
-                      {integration.status !== "connected" ? (
+                      {supportsOAuth && !reallyConnected ? (
+                        <div className="space-y-3 rounded-lg border border-violet-500/30 bg-violet-500/10 p-4">
+                          <p className="text-xs text-violet-100/90">
+                            Sign in with Google to link this client&apos;s Ads account. You will be
+                            redirected to Google, then returned here.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="gradient"
+                            size="sm"
+                            className="w-full rounded-lg"
+                            disabled={pending}
+                            onClick={handleOAuthConnect}
+                          >
+                            <ExternalLink className="mr-1.5 size-3.5" />
+                            Sign in with Google
+                          </Button>
+                          {!oauthReady ? (
+                            <p className="text-[11px] text-amber-200/90">
+                              Server OAuth is not configured — add GOOGLE_ADS_* env vars in Vercel.
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {!supportsOAuth && integration.status !== "connected" ? (
                         <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-xs">
-                          Connect via OAuth or paste an API key in the secure vault (masked after save).
+                          Paste an API key in the secure vault (masked after save).
                         </div>
                       ) : null}
                     </div>
@@ -474,41 +528,33 @@ export function IntegrationDetailDrawer({
             </div>
 
             <footer className="flex flex-wrap gap-2 border-t border-white/10 p-4">
-              {oauthPlatform && !linkedAccount ? (
-                <Button
-                  type="button"
-                  variant="gradient"
-                  size="sm"
-                  className="rounded-lg"
-                  disabled={pending || !oauthConfigured}
-                  onClick={handleOAuthConnect}
-                >
-                  {pending ? (
-                    <Loader2 className="mr-1 size-3.5 animate-spin" aria-hidden />
-                  ) : (
-                    <ExternalLink className="mr-1 size-3.5" aria-hidden />
-                  )}
-                  OAuth connect
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="gradient"
-                  size="sm"
-                  className="rounded-lg"
-                  disabled={pending}
-                  onClick={() => {
-                    if (credential.trim()) {
-                      handleConnect();
-                      return;
-                    }
-                    openConnectPanel();
-                  }}
-                >
-                  <Link2 className="mr-1 size-3.5" />
-                  {linkedAccount ? "Update connection" : "Connect"}
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="gradient"
+                size="sm"
+                className="rounded-lg"
+                disabled={pending}
+                onClick={() => {
+                  if (credential.trim()) {
+                    handleConnect();
+                    return;
+                  }
+                  if (supportsOAuth) {
+                    handleOAuthConnect();
+                    return;
+                  }
+                  openConnectPanel();
+                }}
+              >
+                <Link2 className="mr-1 size-3.5" />
+                {supportsOAuth
+                  ? reallyConnected
+                    ? "Reconnect with Google"
+                    : "Sign in with Google"
+                  : linkedAccount
+                    ? "Update connection"
+                    : "Connect"}
+              </Button>
               <Button
                 type="button"
                 variant="outline"

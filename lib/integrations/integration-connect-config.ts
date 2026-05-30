@@ -7,11 +7,6 @@ export type LinkedAdAccount = {
   credentialsHint: string | null;
 };
 
-export type AdsOAuthConfigured = {
-  meta: boolean;
-  google: boolean;
-};
-
 /** Maps growth hub integration id → ad_accounts.platform for encrypted vault storage. */
 const INTEGRATION_TO_AD_PLATFORM: Partial<Record<string, AdPlatform>> = {
   meta: "meta",
@@ -35,18 +30,19 @@ export function resolveAdPlatform(integrationId: string): AdPlatform {
   return INTEGRATION_TO_AD_PLATFORM[integrationId] ?? "other";
 }
 
-/** Integrations that use the shared ads OAuth flow (Campaign Ops + hub). */
-const OAUTH_ADS_PLATFORM_BY_INTEGRATION: Partial<Record<string, "meta" | "google">> = {
-  meta: "meta",
-  google_ads: "google",
-};
-
-export function resolveOAuthAdsPlatform(integrationId: string): "meta" | "google" | null {
-  return OAUTH_ADS_PLATFORM_BY_INTEGRATION[integrationId] ?? null;
-}
-
 export function credentialLabelFor(integrationId: string, integrationName: string): string {
   return CREDENTIAL_LABELS[integrationId] ?? `${integrationName} API key or token`;
+}
+
+/** Integrations that support platform OAuth (Meta / Google Ads) from the hub */
+export const OAUTH_INTEGRATION_IDS = new Set(["meta", "google_ads"]);
+
+export function integrationOAuthPlatform(
+  integrationId: string,
+): "meta" | "google" | null {
+  if (integrationId === "meta") return "meta";
+  if (integrationId === "google_ads") return "google";
+  return null;
 }
 
 /** Legacy rows keyed by platform enum instead of external_account_id = integration id. */
@@ -60,7 +56,10 @@ export const LEGACY_PLATFORM_TO_INTEGRATION: Record<string, string> = {
 type AdAccountRow = {
   platform: string;
   external_account_id: string | null;
+  /** Marketing OS vault column */
   connection_status?: string | null;
+  /** Ads engine OAuth column (migration 009) */
+  status?: string | null;
 };
 
 export function resolveLinkedIntegrationId(account: AdAccountRow): string | null {
@@ -72,6 +71,9 @@ export function resolveLinkedIntegrationId(account: AdAccountRow): string | null
 }
 
 export function isAdAccountConnected(account: AdAccountRow): boolean {
-  const status = account.connection_status?.toLowerCase();
-  return status === "connected" || status === "active";
+  const vaultStatus = account.connection_status?.toLowerCase();
+  if (vaultStatus === "connected" || vaultStatus === "active") return true;
+
+  const oauthStatus = account.status?.toLowerCase();
+  return oauthStatus === "connected" || oauthStatus === "pending";
 }

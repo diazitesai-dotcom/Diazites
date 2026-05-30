@@ -36,7 +36,12 @@ export const env = {
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: getEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"),
   STRIPE_PRICE_STARTER: getEnv("STRIPE_PRICE_STARTER"),
   STRIPE_PRICE_GROWTH: getEnv("STRIPE_PRICE_GROWTH"),
+  STRIPE_PRICE_PRO: getEnv("STRIPE_PRICE_PRO"),
   STRIPE_PRICE_DOMINATION: getEnv("STRIPE_PRICE_DOMINATION"),
+  /** Stripe Connect merchant services webhook (falls back to STRIPE_WEBHOOK_SECRET) */
+  STRIPE_CONNECT_WEBHOOK_SECRET: getEnv("STRIPE_CONNECT_WEBHOOK_SECRET"),
+  /** Default platform fee % for merchant transactions (e.g. 1.0 = 1%) */
+  STRIPE_PLATFORM_FEE_PERCENT: getEnv("STRIPE_PLATFORM_FEE_PERCENT", "1.0"),
   /** Optional global Shopify webhook secret (per-store secret can live in business profile) */
   SHOPIFY_WEBHOOK_SECRET: getEnv("SHOPIFY_WEBHOOK_SECRET"),
   /** SMS — Twilio primary */

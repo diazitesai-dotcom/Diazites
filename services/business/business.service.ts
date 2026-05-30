@@ -1,10 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { planMonthlyAmount } from "@/lib/billing/plans";
 import { ok, fail, type ServiceResult } from "@/lib/result";
-import { createBillingRepository } from "@/repositories/billing.repository";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { createProfileRepository } from "@/repositories/profile.repository";
 import type { BusinessUpsertInput } from "@/types/backend";
+import type { BillingPlanName } from "@/types/backend";
+
+import {
+  applyPendingPromoOnBusinessCreate,
+  resolveTrialDaysForUser,
+  startPlatformTrial,
+} from "@/services/billing/trial.service";
 
 export async function getBusinessByUser(
   client: SupabaseClient,
@@ -31,13 +38,13 @@ export async function createBusinessProfile(
     logoUrl?: string | null;
     profileFullName?: string | null;
     profilePhone?: string | null;
-    /** Default Growth plan from product constants */
-    initialPlan?: { name: "Starter" | "Growth" | "Domination"; amount: number };
+    /** Default Growth trial plan */
+    initialPlan?: { name: BillingPlanName; amount?: number };
+    promoCode?: string | null;
   },
 ): Promise<ServiceResult<{ businessId: string }>> {
   const businesses = createBusinessRepository(client);
   const profiles = createProfileRepository(client);
-  const billing = createBillingRepository(client);
 
   const { data: business, error: bErr } = await businesses.insert({
     ownerUserId: input.ownerUserId,
@@ -63,12 +70,15 @@ export async function createBusinessProfile(
     role: "owner",
   });
 
-  const plan = input.initialPlan ?? { name: "Growth" as const, amount: 997 };
-  await billing.upsertPlan({
-    businessId: business.id,
-    planName: plan.name,
-    amount: plan.amount,
-    paymentStatus: "active",
+  const planName = input.initialPlan?.name ?? "Growth";
+  const trialConfig = await resolveTrialDaysForUser(client, input.ownerUserId, input.promoCode);
+  await applyPendingPromoOnBusinessCreate(client, input.ownerUserId, business.id);
+
+  await startPlatformTrial(client, business.id, input.ownerUserId, {
+    trialDays: trialConfig.trialDays,
+    planName,
+    promoCode: trialConfig.promoCode,
+    promoSource: trialConfig.promoSource,
   });
 
   return ok({ businessId: business.id });

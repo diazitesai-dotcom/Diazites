@@ -3,7 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { encodeAdsOAuthState } from "@/lib/ads-oauth-state";
 import { getAdsConfig } from "@/lib/ads-env";
 import { fail, ok, type ServiceResult } from "@/lib/result";
-import { createAdAccountRepository } from "@/repositories/ad-account.repository";
+import {
+  createAdAccountRepository,
+  type AdAccountStatus,
+} from "@/repositories/ad-account.repository";
 
 export type GoogleAuthLink = {
   url: string;
@@ -12,6 +15,7 @@ export type GoogleAuthLink = {
 
 export async function buildGoogleAuthLink(args: {
   businessId: string;
+  returnTo?: string;
 }): Promise<ServiceResult<GoogleAuthLink>> {
   const config = getAdsConfig("google");
   if (!config) {
@@ -20,7 +24,7 @@ export async function buildGoogleAuthLink(args: {
     );
   }
 
-  const state = encodeAdsOAuthState(args.businessId, "google");
+  const state = encodeAdsOAuthState(args.businessId, "google", args.returnTo);
   const u = new URL(config.authUrl);
   u.searchParams.set("client_id", config.appId);
   u.searchParams.set("redirect_uri", config.redirectUrl);
@@ -94,15 +98,17 @@ export async function exchangeGoogleCode(
   const repo = createAdAccountRepository(client);
   const isLive = Boolean(meta.liveToken);
 
+  const engineStatus: AdAccountStatus = isLive ? "connected" : "pending";
   const { error } = await repo.upsert({
     businessId: args.businessId,
     platform: "google",
-    status: isLive ? "connected" : "pending",
+    externalAccountId: "google_ads",
+    status: engineStatus,
     accessToken,
     refreshToken,
     tokenExpiresAt: expiresAt,
     scopes: config.scopes,
-    meta,
+    meta: { ...meta, accountLabel: "Google Ads", liveToken: isLive },
   });
   if (error) return fail(error.message);
   return ok({ status: "connected" });

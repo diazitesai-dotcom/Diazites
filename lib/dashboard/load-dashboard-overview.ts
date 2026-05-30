@@ -37,6 +37,7 @@ import { loadRevenueAttribution } from "@/lib/revenue/load-revenue-attribution";
 import { getDashboardMetrics } from "@/services/reporting/reporting.service";
 import { EVENT_TYPES } from "@/types/backend";
 import type { RevenueAttributionSnapshot } from "@/types/revenue-attribution";
+import { formatAgentActivityTitle } from "@/services/platform/agent-activity.service";
 import { AGENTS } from "@/utils/constants";
 
 function humanizeEventType(eventType: string): string {
@@ -73,6 +74,14 @@ function humanizeEventType(eventType: string): string {
       return "AI optimization recommended";
     case EVENT_TYPES.AGENT_STATUS_CHANGED:
       return "Agent status updated";
+    case EVENT_TYPES.AGENT_ACTIVITY:
+      return "AI agent activity";
+    case EVENT_TYPES.TRIAL_STARTED:
+      return "Trial started";
+    case EVENT_TYPES.PAYMENT_SUCCEEDED:
+      return "Payment received";
+    case EVENT_TYPES.PROMO_REDEEMED:
+      return "Promo code applied";
     default:
       return eventType.replace(/_/g, " ").toLowerCase();
   }
@@ -86,6 +95,8 @@ function activitySeverity(eventType: string): ActivitySeverity {
     case EVENT_TYPES.LANDING_PAGE_PUBLISHED:
     case EVENT_TYPES.AD_CAMPAIGN_PUSHED:
     case EVENT_TYPES.OPTIMIZATION_APPLIED:
+    case EVENT_TYPES.PAYMENT_SUCCEEDED:
+    case EVENT_TYPES.AGENT_ACTIVITY:
       return "success";
     case EVENT_TYPES.CAMPAIGN_UPDATED:
     case EVENT_TYPES.LEAD_STATUS_CHANGED:
@@ -122,6 +133,8 @@ function summarizePayload(payload: Record<string, unknown> | null): string {
   if (typeof payload.planName === "string") parts.push(`Plan: ${payload.planName}`);
   if (typeof payload.platform === "string") parts.push(payload.platform);
   if (typeof payload.status === "string") parts.push(String(payload.status));
+  if (typeof payload.message === "string") parts.push(payload.message);
+  if (typeof payload.agentKey === "string") parts.push(String(payload.agentKey));
   return parts.slice(0, 3).join(" · ") || "System event";
 }
 
@@ -284,7 +297,14 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
   const eventsRepo = createSystemEventRepository(supabase);
   const { data: events } = await eventsRepo.listByBusiness(business.id, 12);
 
-  const activity = (events ?? []).map((ev) => {
+  const { data: agentLogs } = await supabase
+    .from("agent_activity_logs")
+    .select("*")
+    .eq("business_id", business.id)
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  const systemActivity = (events ?? []).map((ev) => {
     const severity = activitySeverity(ev.event_type);
     return {
       id: ev.id,
@@ -295,6 +315,22 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
       category: activityCategory(ev.event_type, severity),
     };
   });
+
+  const agentActivity = (agentLogs ?? []).map((log) => ({
+    id: `agent-${log.id}`,
+    title: formatAgentActivityTitle(log.agent_key, log.action_type),
+    detail:
+      typeof (log.payload as Record<string, unknown>)?.message === "string"
+        ? String((log.payload as Record<string, unknown>).message)
+        : log.action_type.replace(/_/g, " "),
+    time: formatDistanceToNow(new Date(log.created_at), { addSuffix: true }),
+    severity: "success" as ActivitySeverity,
+    category: "ai_actions" as ActivityFeedCategory,
+  }));
+
+  const activity = [...agentActivity, ...systemActivity]
+    .sort((a, b) => 0)
+    .slice(0, 16);
 
   const { data: statusRows } = await supabase
     .from("leads")
@@ -327,12 +363,15 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
 
   const { data: billingRow } = await supabase
     .from("billing")
-    .select("payment_status")
+    .select("payment_status, subscription_status")
     .eq("business_id", business.id)
     .maybeSingle();
 
   const billingActive =
-    billingRow?.payment_status === "active" || billingRow?.payment_status === "trialing";
+    billingRow?.payment_status === "active" ||
+    billingRow?.payment_status === "trialing" ||
+    billingRow?.subscription_status === "trialing" ||
+    billingRow?.subscription_status === "active";
 
   const revenueAttribution = await loadRevenueAttribution(supabase, user.id, business.id);
 

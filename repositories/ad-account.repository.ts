@@ -65,6 +65,7 @@ export function createAdAccountRepository(client: SupabaseClient) {
       businessId: string;
       platform: AdPlatform;
       externalAccountId?: string | null;
+      accountName?: string | null;
       status?: AdAccountStatus;
       accessToken?: string | null;
       refreshToken?: string | null;
@@ -77,6 +78,7 @@ export function createAdAccountRepository(client: SupabaseClient) {
         platform: input.platform,
       };
       if (input.externalAccountId !== undefined) row.external_account_id = input.externalAccountId;
+      if (input.accountName !== undefined) row.account_name = input.accountName;
       if (input.status !== undefined) row.status = input.status;
       if (input.accessToken !== undefined) row.access_token = input.accessToken;
       if (input.refreshToken !== undefined) row.refresh_token = input.refreshToken;

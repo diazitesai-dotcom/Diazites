@@ -1,91 +1,91 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { Building2, DollarSign, Megaphone, Users } from "lucide-react";
+import { requireAdmin } from "@/lib/auth/admin-guard";
+import { createServiceRoleClient } from "@/lib/supabase/server";
+import { getSystemMetrics } from "@/services/admin/admin.service";
+import { loadPlatformAccounts } from "@/services/admin/platform-accounts.service";
+import { Building2, Layers, Network, ShieldAlert, UserCircle2, Zap } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  await requireAdmin();
 
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: adminUser } = await supabase
-    .from("admin_users")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!adminUser) {
-    redirect("/dashboard");
-  }
-
-  const metrics = [
-    {
-      label: "Total clients",
-      value: "42",
-      icon: Building2,
-      hint: "+6 quarter to date",
-      trend: "up" as const,
-    },
-    {
-      label: "Leads",
-      value: "1,248",
-      icon: Users,
-      hint: "Last 30 days",
-      trend: "neutral" as const,
-    },
-    {
-      label: "Campaigns",
-      value: "157",
-      icon: Megaphone,
-      hint: "Across regions",
-      trend: "neutral" as const,
-    },
-    {
-      label: "Revenue",
-      value: "$82,740",
-      icon: DollarSign,
-      hint: "Attributed MRR",
-      trend: "up" as const,
-    },
-  ];
+  const service = createServiceRoleClient();
+  const [{ overview }, metricsRes] = await Promise.all([
+    loadPlatformAccounts(service),
+    getSystemMetrics(service),
+  ]);
+  const metrics = metricsRes.success ? metricsRes.data : { businesses: 0, users: 0, leads: 0 };
 
   const modules: [string, string][] = [
-    ["Client Management", "#"],
+    ["Auth & OAuth setup", "/admin/setup"],
+    ["Platform accounts", "/admin/accounts"],
     ["Agents & MCP", "/admin/agents"],
-    ["Campaigns", "#"],
-    ["Leads", "#"],
-    ["AI Automation", "#"],
-    ["Billing", "#"],
-    ["Templates", "/admin/templates"],
-    ["Reports", "#"],
-    ["Support", "#"],
-    ["Roles", "#"],
-    ["Alerts", "#"],
-    ["Settings", "#"],
+    ["AI Usage", "/admin/usage"],
+    ["Merchant Services", "/admin/merchant-services"],
+    ["Promo codes", "/admin/promo-codes"],
     ["Onboarding Tracker", "/admin/onboarding"],
+    ["Audit Log", "/admin/audit"],
+    ["Templates", "/admin/templates"],
   ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-12">
       <PageHeader
         eyebrow="Internal"
-        title="Admin console"
-        description="Operational oversight across tenants, automation health, and revenue signals."
+        title="Diazites Owner / Admin"
+        description="Operational oversight across tenants, hierarchy, billing, entitlements, and automation health."
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map((m) => (
-          <StatCard key={m.label} {...m} />
-        ))}
+        <StatCard
+          label="Platform accounts"
+          value={String(overview.totalAccounts)}
+          icon={Building2}
+          hint={`${overview.agencies} agencies · ${overview.subAccounts} sub-accounts`}
+          trend="neutral"
+        />
+        <StatCard
+          label="Active trials"
+          value={String(overview.activeTrials)}
+          icon={UserCircle2}
+          hint={`${overview.pendingApproval} pending approval`}
+          trend="neutral"
+        />
+        <StatCard
+          label="Suspended"
+          value={String(overview.suspended)}
+          icon={ShieldAlert}
+          hint={`${overview.merchantActive} merchants active`}
+          trend={overview.suspended > 0 ? "down" : "neutral"}
+        />
+        <StatCard
+          label="Businesses (DB)"
+          value={String(metrics.businesses)}
+          icon={Network}
+          hint={`${metrics.users} users · ${metrics.leads} leads`}
+          trend="up"
+        />
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Agencies" value={String(overview.agencies)} icon={Network} trend="neutral" />
+        <StatCard
+          label="Sub-accounts"
+          value={String(overview.subAccounts)}
+          icon={Layers}
+          trend="neutral"
+        />
+        <StatCard
+          label="Direct accounts"
+          value={String(overview.directAccounts)}
+          icon={Building2}
+          trend="neutral"
+        />
       </section>
 
       <section className="space-y-4">
@@ -96,18 +96,28 @@ export default async function AdminPage() {
               <CardHeader>
                 <CardTitle className="text-base">{name}</CardTitle>
                 <CardDescription>
-                  {href === "#" ? (
-                    "Internal module scaffold ready."
-                  ) : (
-                    <Link className="font-medium text-violet-400 underline-offset-4 hover:underline" href={href}>
-                      Open module
-                    </Link>
-                  )}
+                  <Link
+                    className="font-medium text-violet-400 underline-offset-4 hover:underline"
+                    href={href}
+                  >
+                    Open module
+                  </Link>
                 </CardDescription>
               </CardHeader>
             </Card>
           ))}
         </div>
+      </section>
+
+      <section className="rounded-lg border border-white/[0.06] p-4 text-sm text-muted-foreground">
+        <p>
+          Hierarchy: <strong className="text-foreground">Diazites Owner</strong> → Agency →
+          Sub-account / Client → Users. Manage all accounts from{" "}
+          <Link href="/admin/accounts" className="text-violet-400 hover:underline">
+            Platform accounts
+          </Link>
+          .
+        </p>
       </section>
     </div>
   );

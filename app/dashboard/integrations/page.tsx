@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { GrowthIntegrationsHub } from "@/components/integrations/growth-integrations-hub";
 import { isAdsConfigured } from "@/lib/ads-env";
 import { requireBusinessContext } from "@/lib/auth/business-context";
@@ -18,7 +20,7 @@ export default async function IntegrationsPage() {
 
   const { data: adAccounts } = await supabase
     .from("ad_accounts")
-    .select("id, platform, external_account_id, account_name, credentials_hint, connection_status")
+    .select("id, platform, external_account_id, status, meta, access_token, refresh_token")
     .eq("business_id", ctxResult.ctx.businessId);
 
   const connectedIds: string[] = [];
@@ -29,21 +31,34 @@ export default async function IntegrationsPage() {
     const integrationId = resolveLinkedIntegrationId(acc);
     if (!integrationId) continue;
     connectedIds.push(integrationId);
+    const meta = (acc.meta ?? {}) as Record<string, unknown>;
+    const label =
+      typeof meta.accountLabel === "string" ? meta.accountLabel : integrationId.replace(/_/g, " ");
     linkedAccounts[integrationId] = {
       id: acc.id,
-      accountName: acc.account_name,
-      credentialsHint: acc.credentials_hint,
+      accountName: label,
+      credentialsHint:
+        acc.status === "connected"
+          ? "OAuth connected"
+          : acc.status === "pending"
+            ? "OAuth pending"
+            : null,
     };
   }
 
   return (
-    <GrowthIntegrationsHub
-      connectedIds={connectedIds}
-      linkedAccounts={linkedAccounts}
-      adsOAuthConfigured={{
-        meta: isAdsConfigured("meta"),
-        google: isAdsConfigured("google"),
-      }}
-    />
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-7xl px-4 py-16 text-sm text-muted-foreground">
+          Loading integrations…
+        </div>
+      }
+    >
+      <GrowthIntegrationsHub
+        connectedIds={connectedIds}
+        linkedAccounts={linkedAccounts}
+        oauthConfigured={{ meta: isAdsConfigured("meta"), google: isAdsConfigured("google") }}
+      />
+    </Suspense>
   );
 }

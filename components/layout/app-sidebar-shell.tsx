@@ -6,12 +6,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   Bot,
+  Building2,
   FileText,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
   Shield,
   ShieldCheck,
+  CreditCard,
+  Settings,
   UserCircle2,
   X,
   Zap,
@@ -37,15 +40,20 @@ type NavItem = {
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: Shield },
+  { href: "/admin/accounts", label: "Platform accounts", icon: Building2 },
   { href: "/admin/agents", label: "Agents & MCP", icon: Bot },
   { href: "/admin/usage", label: "AI Usage", icon: Zap },
   { href: "/admin/audit", label: "Audit Log", icon: ShieldCheck },
   { href: "/admin/templates", label: "Templates", icon: FileText },
+  { href: "/admin/promo-codes", label: "Promo codes", icon: Zap },
+  { href: "/admin/merchant-services", label: "Merchant Services", icon: CreditCard },
   { href: "/admin/onboarding", label: "Onboarding", icon: UserCircle2 },
 ];
 
 function isNavItemActive(pathname: string, href: string): boolean {
   if (href === "/admin") return pathname === "/admin";
+  if (href === "/admin/setup") return pathname.startsWith("/admin/setup");
+  if (href === "/admin/accounts") return pathname.startsWith("/admin/accounts");
   if (href === ROUTES.missionControl) return pathname === ROUTES.missionControl;
   if (href === ROUTES.campaignOps) {
     return (
@@ -65,11 +73,28 @@ function isNavItemActive(pathname: string, href: string): boolean {
   if (href === ROUTES.businessProfile) {
     return pathname === ROUTES.businessProfile || pathname.startsWith(`${ROUTES.businessProfile}/`);
   }
+  if (href === ROUTES.onboarding) {
+    return pathname === ROUTES.onboarding || pathname.startsWith(`${ROUTES.onboarding}/`);
+  }
   if (href === ROUTES.tasks) return pathname.startsWith(ROUTES.tasks);
   if (href === ROUTES.followUp) return pathname.startsWith(ROUTES.followUp);
   if (href === ROUTES.inbox) return pathname.startsWith(ROUTES.inbox);
   if (href === ROUTES.calendar) return pathname.startsWith(ROUTES.calendar);
   if (href === ROUTES.analytics) return pathname.startsWith(ROUTES.analytics);
+  if (href === ROUTES.automationCenter) {
+    return (
+      pathname === ROUTES.automationCenter ||
+      pathname.startsWith("/dashboard/automations")
+    );
+  }
+  if (href === ROUTES.automationPipelines) {
+    return pathname.startsWith(ROUTES.automationPipelines);
+  }
+  if (href === ROUTES.workflows) return pathname.startsWith(ROUTES.workflows);
+  if (href === ROUTES.aiCallCommandCenter) return pathname.startsWith(ROUTES.aiCallCommandCenter);
+  if (href === ROUTES.merchantServices) return pathname.startsWith(ROUTES.merchantServices);
+  if (href === ROUTES.aiTextCommandCenter) return pathname.startsWith(ROUTES.aiTextCommandCenter);
+  if (href === ROUTES.emailCampaignCenter) return pathname.startsWith(ROUTES.emailCampaignCenter);
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -148,9 +173,15 @@ export function AppSidebarShell({
 
     return (
       <nav className="flex flex-1 flex-col gap-3 overflow-y-auto px-2 py-3">
-        {GROWTH_SIDEBAR_GROUPS.map((group) => (
-          <div key={group.id}>
-            {!iconOnly ? (
+        {GROWTH_SIDEBAR_GROUPS.map((group, groupIndex) => (
+          <div
+            key={group.id}
+            className={cn(
+              group.standalone && !iconOnly && groupIndex > 0 && "mt-1",
+              group.standalone && !iconOnly && "pb-2",
+            )}
+          >
+            {!iconOnly && !group.standalone ? (
               <p className="mb-1 px-2 text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
                 {group.label}
               </p>
@@ -171,6 +202,9 @@ export function AppSidebarShell({
                 </div>
               ))}
             </div>
+            {group.standalone && !iconOnly ? (
+              <div className="mx-2 mt-3 border-b border-white/[0.08]" aria-hidden />
+            ) : null}
           </div>
         ))}
       </nav>
