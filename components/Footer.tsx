@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { LEGAL_NAV_LINKS } from "@/lib/legal/constants";
+
 const year = new Date().getFullYear();
 
 const colA = [
@@ -17,7 +19,7 @@ const colB = [
 export function Footer() {
   return (
     <footer className="border-t border-white/[0.07] bg-[#050810]/95 px-5 py-20 backdrop-blur-xl sm:px-8">
-      <div className="mx-auto grid max-w-7xl gap-14 md:grid-cols-[1.2fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-7xl gap-14 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
         <div>
           <Link href="#top" className="font-display text-xl font-medium tracking-tight text-white">
             Diazites <span className="text-sky-300/90">AI</span>
@@ -59,6 +61,21 @@ export function Footer() {
                 >
                   {l.label}
                 </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <p className="font-display text-[11px] font-semibold uppercase tracking-[0.28em] text-white/35">
+            Legal
+          </p>
+          <ul className="mt-6 space-y-3">
+            {LEGAL_NAV_LINKS.map((l) => (
+              <li key={l.href}>
+                <Link href={l.href} className="text-sm text-white/55 transition hover:text-white">
+                  {l.label}
+                </Link>
               </li>
             ))}
           </ul>

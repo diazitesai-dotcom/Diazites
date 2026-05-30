@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { SITE_URL } from "@/lib/homepage-data";
+import { LEGAL_NAV_LINKS } from "@/lib/legal/constants";
 
 const footerLinks = [
   { label: "How it works", href: "#how-it-works" },
@@ -63,6 +64,23 @@ export function Footer() {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Legal
+            </p>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {LEGAL_NAV_LINKS.map((l) => (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Social
             </p>
             <ul className="mt-4 space-y-2.5 text-sm">
@@ -86,6 +104,16 @@ export function Footer() {
       <div className="mx-auto mt-14 max-w-6xl border-t border-border/50 px-4 pt-10 sm:px-6">
         <p className="text-center text-xs text-muted-foreground">
           © {year} Diazites AI Marketing Platform. All rights reserved.
+        </p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          {LEGAL_NAV_LINKS.map((l, i) => (
+            <span key={l.href}>
+              {i > 0 ? " · " : null}
+              <Link href={l.href} className="hover:text-foreground hover:underline">
+                {l.label}
+              </Link>
+            </span>
+          ))}
         </p>
       </div>
     </footer>
