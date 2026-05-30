@@ -123,7 +123,8 @@ const PLATFORMS: PlatformDef[] = [
 
 export const GROWTH_INTEGRATION_IDS = new Set(PLATFORMS.map((p) => p.id));
 
-const CONNECTED_BY_DEFAULT = new Set(["meta", "google_ads", "hubspot", "stripe"]);
+/** Demo-only defaults — paid ads must use real OAuth/API connections */
+const CONNECTED_BY_DEFAULT = new Set<string>([]);
 
 export const AGENT_CAPABILITY_GROUPS: AgentCapabilityGroup[] = [
   {

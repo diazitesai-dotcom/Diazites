@@ -27,7 +27,11 @@ import {
   criticalMissingConnections,
   integrationHealthScore,
 } from "@/lib/integrations/growth-integrations-catalog";
-import type { LinkedAdAccount } from "@/lib/integrations/integration-connect-config";
+import {
+  integrationOAuthPlatform,
+  OAUTH_INTEGRATION_IDS,
+  type LinkedAdAccount,
+} from "@/lib/integrations/integration-connect-config";
 import type {
   GrowthIntegration,
   IntegrationCategoryId,
@@ -74,6 +78,28 @@ export function GrowthIntegrationsHub({
   const healthScore = integrationHealthScore(integrations);
   const missingCritical = criticalMissingConnections(integrations);
   const connectedCount = integrations.filter((i) => i.status === "connected").length;
+
+  function handleSelectIntegration(integration: GrowthIntegration) {
+    const linked = linkedAccounts[integration.id];
+    const platform = integrationOAuthPlatform(integration.id);
+    const oauthReady =
+      platform === "google"
+        ? oauthConfigured.google
+        : platform === "meta"
+          ? oauthConfigured.meta
+          : false;
+
+    if (OAUTH_INTEGRATION_IDS.has(integration.id) && !linked && oauthReady && platform) {
+      const params = new URLSearchParams({
+        platform,
+        returnTo: "/dashboard/integrations",
+      });
+      window.location.href = `/api/ads/oauth/start?${params.toString()}`;
+      return;
+    }
+
+    setSelected(integration);
+  }
 
   const filtered = integrations.filter((i) => {
     if (category !== "all" && i.categoryId !== category) return false;
@@ -218,7 +244,11 @@ export function GrowthIntegrationsHub({
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {filtered.map((integration) => (
-          <IntegrationCard key={integration.id} integration={integration} onSelect={setSelected} />
+          <IntegrationCard
+            key={integration.id}
+            integration={integration}
+            onSelect={handleSelectIntegration}
+          />
         ))}
       </div>
 

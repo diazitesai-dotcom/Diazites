@@ -134,12 +134,29 @@ export function IntegrationDetailDrawer({
     });
   }
 
+  const reallyConnected = Boolean(linkedAccount);
+
+  function oauthStartUrl(): string | null {
+    if (!oauthPlatform) return null;
+    const params = new URLSearchParams({
+      platform: oauthPlatform,
+      returnTo: INTEGRATIONS_RETURN,
+    });
+    return `/api/ads/oauth/start?${params.toString()}`;
+  }
+
   function handleOAuthConnect() {
     if (!integration || !oauthPlatform) return;
+    const startUrl = oauthStartUrl();
     if (!oauthReady) {
       setMessage(
-        "Google Ads OAuth is not configured on the server yet. Add GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET, and GOOGLE_ADS_REDIRECT_URL in Vercel.",
+        "Google Ads OAuth is not configured on the server yet. Add GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET, and GOOGLE_ADS_REDIRECT_URL in Vercel, then redeploy.",
       );
+      setPanelMode("overview");
+      return;
+    }
+    if (startUrl) {
+      window.location.href = startUrl;
       return;
     }
     startTransition(async () => {
@@ -207,7 +224,7 @@ export function IntegrationDetailDrawer({
                     {integration.name}
                   </p>
                   <p className="text-xs capitalize text-muted-foreground">
-                    {integration.status.replace(/_/g, " ")}
+                    {reallyConnected ? "connected" : "not connected"}
                     {linkedAccount?.credentialsHint ? ` · ${linkedAccount.credentialsHint}` : ""}
                   </p>
                 </div>
@@ -434,11 +451,33 @@ export function IntegrationDetailDrawer({
                           {integration.subchannels.join(" · ")}
                         </p>
                       ) : null}
-                      {integration.status !== "connected" ? (
+                      {supportsOAuth && !reallyConnected ? (
+                        <div className="space-y-3 rounded-lg border border-violet-500/30 bg-violet-500/10 p-4">
+                          <p className="text-xs text-violet-100/90">
+                            Sign in with Google to link this client&apos;s Ads account. You will be
+                            redirected to Google, then returned here.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="gradient"
+                            size="sm"
+                            className="w-full rounded-lg"
+                            disabled={pending}
+                            onClick={handleOAuthConnect}
+                          >
+                            <ExternalLink className="mr-1.5 size-3.5" />
+                            Sign in with Google
+                          </Button>
+                          {!oauthReady ? (
+                            <p className="text-[11px] text-amber-200/90">
+                              Server OAuth is not configured — add GOOGLE_ADS_* env vars in Vercel.
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {!supportsOAuth && integration.status !== "connected" ? (
                         <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-xs">
-                          {supportsOAuth
-                            ? "Click Connect below to sign in with Google (or Meta). You must be logged into Diazites first."
-                            : "Paste an API key in the secure vault (masked after save)."}
+                          Paste an API key in the secure vault (masked after save).
                         </div>
                       ) : null}
                     </div>
@@ -500,7 +539,7 @@ export function IntegrationDetailDrawer({
                     handleConnect();
                     return;
                   }
-                  if (supportsOAuth && !linkedAccount) {
+                  if (supportsOAuth) {
                     handleOAuthConnect();
                     return;
                   }
@@ -508,10 +547,12 @@ export function IntegrationDetailDrawer({
                 }}
               >
                 <Link2 className="mr-1 size-3.5" />
-                {linkedAccount
-                  ? "Update connection"
-                  : supportsOAuth
-                    ? `Connect ${oauthPlatform === "google" ? "Google" : "Meta"}`
+                {supportsOAuth
+                  ? reallyConnected
+                    ? "Reconnect with Google"
+                    : "Sign in with Google"
+                  : linkedAccount
+                    ? "Update connection"
                     : "Connect"}
               </Button>
               <Button
