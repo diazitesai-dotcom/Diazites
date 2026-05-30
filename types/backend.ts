@@ -23,12 +23,28 @@ export const EVENT_TYPES = {
   OPTIMIZATION_RECOMMENDED: "OPTIMIZATION_RECOMMENDED",
   OPTIMIZATION_APPLIED: "OPTIMIZATION_APPLIED",
   GROWTH_ENGINE_STAGE_CHANGED: "GROWTH_ENGINE_STAGE_CHANGED",
+  PAYMENT_SUCCEEDED: "PAYMENT_SUCCEEDED",
+  PAYMENT_FAILED: "PAYMENT_FAILED",
+  SUBSCRIPTION_STARTED: "SUBSCRIPTION_STARTED",
+  SUBSCRIPTION_CANCELED: "SUBSCRIPTION_CANCELED",
+  TRIAL_STARTED: "TRIAL_STARTED",
+  TRIAL_EXPIRED: "TRIAL_EXPIRED",
+  PROMO_REDEEMED: "PROMO_REDEEMED",
+  AGENT_ACTIVITY: "AGENT_ACTIVITY",
   AUDIT_ACTION: "AUDIT_ACTION",
 } as const;
 
 export type SystemEventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES];
 
-export type BillingPlanName = "Starter" | "Growth" | "Domination";
+export type BillingPlanName = "Starter" | "Growth" | "Pro" | "Enterprise" | "Domination";
+
+export type SubscriptionStatus =
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "expired"
+  | "unpaid";
 
 export type OnboardingStageDb =
   | "signup"

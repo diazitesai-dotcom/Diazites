@@ -8,6 +8,7 @@ import {
   markSubscriptionCanceled,
   syncSubscriptionToBilling,
 } from "@/services/stripe/stripe-subscription-sync.service";
+import { handleStripePaymentAutomation } from "@/services/stripe/payment-automation.service";
 
 export const runtime = "nodejs";
 
@@ -51,6 +52,15 @@ export async function POST(request: Request) {
           if (typeof subId === "string") {
             const subscription = await stripe.subscriptions.retrieve(subId);
             await syncSubscriptionToBilling(supabase, subscription, session.metadata);
+            const businessId = session.metadata?.business_id as string | undefined;
+            if (businessId) {
+              await handleStripePaymentAutomation(
+                supabase,
+                businessId,
+                "subscription_started",
+                subscription,
+              );
+            }
           }
         } else {
           await handleStripeRevenueEvent(supabase, event);
@@ -59,7 +69,12 @@ export async function POST(request: Request) {
       }
       case "payment_intent.succeeded":
       case "invoice.paid": {
+        const invoice = event.data.object as import("stripe").Stripe.Invoice;
         await handleStripeRevenueEvent(supabase, event);
+        const businessId = invoice.metadata?.business_id as string | undefined;
+        if (businessId) {
+          await handleStripePaymentAutomation(supabase, businessId, "invoice_paid", invoice);
+        }
         break;
       }
       case "customer.subscription.created":

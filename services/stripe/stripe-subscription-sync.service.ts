@@ -1,38 +1,36 @@
 import type Stripe from "stripe";
 
 import { env } from "@/lib/env";
+import { planMonthlyAmount, normalizePlanName } from "@/lib/billing/plans";
 import { createBillingRepository } from "@/repositories/billing.repository";
-import type { BillingPlanName } from "@/types/backend";
+import type { BillingPlanName, SubscriptionStatus } from "@/types/backend";
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-const PLAN_AMOUNTS: Record<BillingPlanName, number> = {
-  Starter: 497,
-  Growth: 997,
-  Domination: 1997,
-};
 
 function priceIdToPlanName(priceId: string | undefined): BillingPlanName | null {
   if (!priceId) return null;
-  const a = env.STRIPE_PRICE_STARTER?.trim();
-  const b = env.STRIPE_PRICE_GROWTH?.trim();
-  const c = env.STRIPE_PRICE_DOMINATION?.trim();
-  if (a && priceId === a) return "Starter";
-  if (b && priceId === b) return "Growth";
-  if (c && priceId === c) return "Domination";
+  const starter = env.STRIPE_PRICE_STARTER?.trim();
+  const growth = env.STRIPE_PRICE_GROWTH?.trim();
+  const pro = (env.STRIPE_PRICE_PRO ?? env.STRIPE_PRICE_DOMINATION)?.trim();
+  if (starter && priceId === starter) return "Starter";
+  if (growth && priceId === growth) return "Growth";
+  if (pro && priceId === pro) return "Pro";
   return null;
 }
 
-function mapStripeStatus(status: Stripe.Subscription.Status): string {
+function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionStatus {
   switch (status) {
     case "active":
-    case "trialing":
       return "active";
+    case "trialing":
+      return "trialing";
     case "past_due":
       return "past_due";
     case "unpaid":
       return "unpaid";
-    default:
+    case "canceled":
       return "canceled";
+    default:
+      return "expired";
   }
 }
 
@@ -41,9 +39,6 @@ function customerId(sub: Stripe.Subscription): string {
   return typeof c === "string" ? c : c.id;
 }
 
-/**
- * Persists subscription state from Stripe onto `billing` (service-role Supabase client).
- */
 export async function syncSubscriptionToBilling(
   client: SupabaseClient,
   subscription: Stripe.Subscription,
@@ -60,27 +55,26 @@ export async function syncSubscriptionToBilling(
   const priceId = subscription.items.data[0]?.price?.id;
   const metaPlan = subscription.metadata?.plan_name as BillingPlanName | undefined;
   const sessionPlan = sessionMetadata?.plan_name as BillingPlanName | undefined;
-  const planName =
-    metaPlan ??
-    sessionPlan ??
-    priceIdToPlanName(priceId) ??
-    ("Starter" as BillingPlanName);
+  const planName = normalizePlanName(
+    metaPlan ?? sessionPlan ?? priceIdToPlanName(priceId) ?? "Starter",
+  );
 
   const unitAmount = subscription.items.data[0]?.price?.unit_amount;
   const amount =
-    typeof unitAmount === "number"
-      ? unitAmount / 100
-      : PLAN_AMOUNTS[planName] ?? PLAN_AMOUNTS.Starter;
+    typeof unitAmount === "number" ? unitAmount / 100 : planMonthlyAmount(planName);
 
+  const subscriptionStatus = mapStripeStatus(subscription.status);
   const billing = createBillingRepository(client);
   const { error } = await billing.upsertPlan({
     businessId,
     planName,
     amount,
-    paymentStatus: mapStripeStatus(subscription.status),
+    paymentStatus: subscriptionStatus === "trialing" ? "trialing" : subscriptionStatus,
+    subscriptionStatus,
     stripeCustomerId: customerId(subscription),
     stripeSubscriptionId: subscription.id,
     stripePriceId: priceId ?? null,
+    convertedAt: subscriptionStatus === "active" ? new Date().toISOString() : null,
   });
 
   if (error) {
@@ -97,20 +91,16 @@ export async function markSubscriptionCanceled(
 
   const billing = createBillingRepository(client);
   const priceId = subscription.items.data[0]?.price?.id;
-  const planName = priceIdToPlanName(priceId) ?? ("Starter" as BillingPlanName);
+  const planName = normalizePlanName(priceIdToPlanName(priceId) ?? "Starter");
   const unitAmount = subscription.items.data[0]?.price?.unit_amount;
   const amount =
-    typeof unitAmount === "number"
-      ? unitAmount / 100
-      : PLAN_AMOUNTS[planName] ?? PLAN_AMOUNTS.Starter;
+    typeof unitAmount === "number" ? unitAmount / 100 : planMonthlyAmount(planName);
 
-  await billing.upsertPlan({
-    businessId,
-    planName,
+  await billing.updateSubscriptionFields(businessId, {
+    subscription_status: "canceled",
+    payment_status: "canceled",
+    canceled_at: new Date().toISOString(),
+    plan_name: planName,
     amount,
-    paymentStatus: "canceled",
-    stripeCustomerId: customerId(subscription),
-    stripeSubscriptionId: null,
-    stripePriceId: priceId ?? null,
   });
 }

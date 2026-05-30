@@ -5,11 +5,13 @@ import { redirect } from "next/navigation";
 
 import { createUserProfile } from "@/lib/auth/user-profile";
 import { getPublicAppUrl } from "@/lib/env";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { storeSignupPromoCode } from "@/services/billing/promo-code.service";
 
 export async function signupAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const promoCode = String(formData.get("promo_code") ?? "").trim();
 
   let supabase;
   try {
@@ -36,9 +38,17 @@ export async function signupAction(formData: FormData) {
       userId: data.session.user.id,
       email,
     });
+    if (promoCode) {
+      try {
+        const service = createServiceRoleClient();
+        await storeSignupPromoCode(service, data.session.user.id, promoCode);
+      } catch {
+        /* promo storage best-effort */
+      }
+    }
   }
 
-  redirect("/signup?success=check-email");
+  redirect(promoCode ? `/signup?success=check-email&promo=${encodeURIComponent(promoCode)}` : "/signup?success=check-email");
 }
 
 export async function loginAction(formData: FormData) {

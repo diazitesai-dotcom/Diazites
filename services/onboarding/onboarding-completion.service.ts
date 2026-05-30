@@ -8,6 +8,8 @@ import { seedDefaultTasksIfEmpty } from "@/services/tasks/task.service";
 import { EVENT_TYPES } from "@/types/backend";
 import type { BusinessProfile, OnboardingWizardPayload } from "@/types/platform-growth";
 
+import { bootstrapBusinessSystem } from "@/services/platform/bootstrap-business-system.service";
+import { logAgentActivity } from "@/services/platform/agent-activity.service";
 import { triggerEvent } from "@/services/events/event-dispatcher";
 
 function toBusinessProfile(form: OnboardingWizardPayload): BusinessProfile {
@@ -53,7 +55,7 @@ export async function completeOnboardingProfile(
     monthlyBudget: form.monthlyBudget,
     profileFullName: form.ownerName || null,
     profilePhone: form.phone || null,
-    initialPlan: { name: "Growth", amount: 997 },
+    initialPlan: { name: "Growth" },
   });
 
   if (!businessResult.success) {
@@ -99,6 +101,21 @@ export async function completeOnboardingProfile(
     businessId,
     payload: { stage: "live", campaignGoal: form.campaignGoal },
   });
+
+  const systemGoal =
+    form.campaignGoal?.trim() ||
+    `Grow ${form.businessName} with CRM, follow-up, and appointment booking.`;
+  try {
+    await bootstrapBusinessSystem(client, userId, businessId, systemGoal);
+    await logAgentActivity(client, {
+      businessId,
+      agentKey: "workflow",
+      actionType: "business_system_generated",
+      payload: { message: "Workflow Agent launched onboarding automations." },
+    });
+  } catch {
+    /* bootstrap is best-effort during onboarding */
+  }
 
   return ok({ businessId });
 }

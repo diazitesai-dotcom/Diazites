@@ -4,27 +4,37 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BILLING_PLANS } from "@/utils/constants";
+import { BILLING_PLANS_DISPLAY, getPlanDefinition } from "@/lib/billing/plans";
+import { UsageDashboardPanel } from "@/components/billing/usage-dashboard-panel";
+import { TrialBanner } from "@/components/billing/trial-banner";
 import { openBillingPortal, startSubscriptionCheckout } from "@/actions/billing-stripe.actions";
-import type { BillingPlanName } from "@/types/backend";
+import type { TrialSnapshot } from "@/services/billing/trial.service";
+import type { UsageDashboardRow } from "@/services/billing/usage-metering.service";
 
 type BillingRow = {
   plan_name: string;
   amount: number;
   payment_status: string;
+  subscription_status?: string | null;
   stripe_customer_id: string | null;
+  trial?: TrialSnapshot | null;
 };
 
 export function BillingPageClient({
   billing,
   stripeReady,
   notice,
+  usageRows,
+  usageOverage,
 }: {
   billing: BillingRow | null;
   stripeReady: boolean;
   notice?: string | null;
+  usageRows: UsageDashboardRow[];
+  usageOverage: number;
 }) {
-  const currentName = (billing?.plan_name ?? "Starter") as BillingPlanName;
+  const currentName = billing?.plan_name ?? "Growth";
+  const planDef = getPlanDefinition(currentName);
 
   return (
     <div className="mx-auto max-w-6xl space-y-10">
@@ -39,6 +49,8 @@ export function BillingPageClient({
           {notice}
         </p>
       ) : null}
+
+      <TrialBanner trial={billing?.trial ?? null} shouldShowUpgrade={Boolean(billing?.trial?.daysRemaining != null && billing.trial.daysRemaining <= 3)} />
 
       <Card className="border-white/[0.06]">
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 border-b border-border/60 pb-6">
@@ -58,7 +70,7 @@ export function BillingPageClient({
               /month
             </p>
             <p className="text-sm text-muted-foreground">
-              Payment status: {billing?.payment_status ?? "active"}
+              Status: {billing?.subscription_status ?? billing?.payment_status ?? "trialing"}
             </p>
           </div>
           {stripeReady && billing?.stripe_customer_id ? (
@@ -71,9 +83,15 @@ export function BillingPageClient({
         </CardContent>
       </Card>
 
-      <section className="grid gap-5 md:grid-cols-3">
-        {BILLING_PLANS.map((plan) => {
-          const isCurrent = plan.name === currentName;
+      <UsageDashboardPanel
+        planName={planDef.name}
+        rows={usageRows}
+        estimatedOverage={usageOverage}
+      />
+
+      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {BILLING_PLANS_DISPLAY.filter((p) => p.name !== "Enterprise").map((plan) => {
+          const isCurrent = plan.name === planDef.name;
           return (
             <Card
               key={plan.name}
@@ -81,11 +99,11 @@ export function BillingPageClient({
             >
               <CardHeader>
                 <CardTitle className="text-lg">{plan.name}</CardTitle>
-                <CardDescription>Per month, billed monthly.</CardDescription>
+                <CardDescription>{plan.description}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-3xl font-semibold tracking-tight">${plan.price}</p>
-                {stripeReady ? (
+                <p className="text-3xl font-semibold tracking-tight">${plan.priceMonthly}</p>
+                {stripeReady && plan.name !== "Enterprise" ? (
                   <form action={startSubscriptionCheckout.bind(null, plan.name)}>
                     <Button
                       type="submit"

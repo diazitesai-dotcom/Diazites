@@ -41,6 +41,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/usage", label: "AI Usage", icon: Zap },
   { href: "/admin/audit", label: "Audit Log", icon: ShieldCheck },
   { href: "/admin/templates", label: "Templates", icon: FileText },
+  { href: "/admin/promo-codes", label: "Promo codes", icon: Zap },
   { href: "/admin/onboarding", label: "Onboarding", icon: UserCircle2 },
 ];
 
