@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { AUTH_BRAND, signupEmailRedirectUrl } from "@/lib/auth/auth-branding";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
@@ -12,6 +11,10 @@ import { sendDiazitesWelcomeEmail } from "@/services/auth/welcome-email.service"
 import { createSignupSetupIntent } from "@/services/stripe/signup-setup-intent.service";
 import { attachTrialSubscriptionFromSetupIntent } from "@/services/stripe/signup-subscription.service";
 import type { BillingPlanName } from "@/types/backend";
+
+export type CompleteTrialSignupResult =
+  | { success: true; redirectTo: string }
+  | { success: false; error: string };
 
 export async function createSignupSetupIntentAction(input: {
   email: string;
@@ -44,7 +47,7 @@ export async function completeTrialSignupWithPaymentAction(input: {
   selectedPlan: string;
   promoCode?: string;
   setupIntentId: string;
-}) {
+}): Promise<CompleteTrialSignupResult> {
   const email = input.email.trim();
   const password = input.password;
   const selectedPlan = normalizeSignupPlan(input.selectedPlan) as BillingPlanName;
@@ -106,12 +109,17 @@ export async function completeTrialSignupWithPaymentAction(input: {
   }
 
   if (data.session?.user) {
-    await completePostAuthSignup(supabase, data.session.user, {
+    const postAuth = await completePostAuthSignup(supabase, data.session.user, {
       promoCode,
       defaultNext: "/onboarding?welcome=trial",
     });
     revalidatePath("/", "layout");
-    redirect("/onboarding?welcome=trial&checkout=success");
+    const next = postAuth.redirectPath;
+    const sep = next.includes("?") ? "&" : "?";
+    return {
+      success: true,
+      redirectTo: `${next}${sep}checkout=success`,
+    };
   }
 
   await sendDiazitesWelcomeEmail({
@@ -120,5 +128,8 @@ export async function completeTrialSignupWithPaymentAction(input: {
     confirmationPending: true,
   });
 
-  redirect(`/signup?success=check-email&email=${encodeURIComponent(email)}`);
+  return {
+    success: true,
+    redirectTo: `/signup?success=check-email&email=${encodeURIComponent(email)}`,
+  };
 }

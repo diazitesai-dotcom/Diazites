@@ -469,7 +469,11 @@ function StepTwoStripeForm({
   const [paymentReady, setPaymentReady] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const { confirmPayment, stripeReady } = useTrialSignupPaymentConfirm();
+  const { confirmPayment, stripeReady } = useTrialSignupPaymentConfirm({
+    email,
+    name: fullName,
+    country: "US",
+  });
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -486,25 +490,37 @@ function StepTwoStripeForm({
     }
 
     startTransition(async () => {
-      const payment = await confirmPayment();
-      if (!payment.success) {
-        onError(payment.error);
-        return;
-      }
+      try {
+        const payment = await confirmPayment();
+        if (!payment.success) {
+          onError(payment.error);
+          return;
+        }
 
-      const result = await completeTrialSignupWithPaymentAction({
-        companyName,
-        fullName,
-        email,
-        phone,
-        password,
-        selectedPlan,
-        promoCode,
-        setupIntentId: payment.setupIntentId,
-      });
+        const result = await completeTrialSignupWithPaymentAction({
+          companyName,
+          fullName,
+          email,
+          phone,
+          password,
+          selectedPlan,
+          promoCode,
+          setupIntentId: payment.setupIntentId,
+        });
 
-      if (result && !result.success) {
-        onError(result.error);
+        if (!result.success) {
+          onError(result.error);
+          return;
+        }
+
+        // Full navigation avoids broken redirects when the action is called from a transition.
+        window.location.assign(result.redirectTo);
+      } catch (err) {
+        onError(
+          err instanceof Error
+            ? err.message
+            : "Something went wrong completing signup. Please try again.",
+        );
       }
     });
   }

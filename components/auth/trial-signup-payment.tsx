@@ -107,9 +107,16 @@ export function TrialSignupPaymentElement({
   );
 }
 
-export function useTrialSignupPaymentConfirm() {
+export function useTrialSignupPaymentConfirm(input?: {
+  email?: string;
+  name?: string;
+  country?: string;
+}) {
   const stripe = useStripe();
   const elements = useElements();
+  const country = input?.country?.trim() || "US";
+  const email = input?.email?.trim();
+  const name = input?.name?.trim();
 
   async function confirmPayment(): Promise<
     { success: true; setupIntentId: string } | { success: false; error: string }
@@ -130,6 +137,13 @@ export function useTrialSignupPaymentConfirm() {
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/signup?step=2`,
+        payment_method_data: {
+          billing_details: {
+            address: { country },
+            ...(email ? { email } : {}),
+            ...(name ? { name } : {}),
+          },
+        },
       },
       redirect: "if_required",
     });
