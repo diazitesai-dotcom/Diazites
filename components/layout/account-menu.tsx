@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import {
+  Building2,
   ChevronDown,
   CreditCard,
   LayoutDashboard,
   LogOut,
   Settings,
   Shield,
+  UserCircle2,
   Users,
 } from "lucide-react";
 
@@ -106,9 +108,17 @@ export function AccountMenu({ account, variant }: AccountMenuProps) {
             {account.isPlatformAdmin ? (
               <>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem render={<Link href="/admin/accounts" />}>
+                  <Building2 className="size-4" aria-hidden />
+                  Platform accounts
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/admin/user-control" />}>
+                  <UserCircle2 className="size-4" aria-hidden />
+                  User control
+                </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/admin" />}>
                   <Shield className="size-4" aria-hidden />
-                  Platform admin
+                  Admin overview
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/admin/users" />}>
                   <Users className="size-4" aria-hidden />

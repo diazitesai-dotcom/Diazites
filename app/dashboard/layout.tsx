@@ -59,6 +59,7 @@ export default async function DashboardLayout({
       account={account}
       enabledServiceKeys={enabledServiceKeys}
       isOwnerAdmin={isOwnerAdmin}
+      showPlatformAdminNav={Boolean(account?.isPlatformAdmin || isOwnerAdmin)}
     >
       <Suspense fallback={null}>
         <AdminAccessDeniedBanner />

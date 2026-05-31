@@ -45,6 +45,28 @@ type NavItem = {
   description?: string;
 };
 
+/** Shown on Growth OS sidebar for Diazites platform operators. */
+const PLATFORM_ADMIN_DASHBOARD_NAV: NavItem[] = [
+  {
+    href: "/admin/accounts",
+    label: "Platform accounts",
+    icon: Building2,
+    description: "Agencies, sub-accounts & clients",
+  },
+  {
+    href: "/admin/user-control",
+    label: "User control",
+    icon: UserCircle2,
+    description: "Plans & service access",
+  },
+  {
+    href: "/admin",
+    label: "Admin overview",
+    icon: Shield,
+    description: "Owner dashboard & metrics",
+  },
+];
+
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: Shield },
   { href: "/admin/user-control", label: "User control", icon: UserCircle2 },
@@ -120,6 +142,8 @@ type AppSidebarShellProps = {
   /** Serializable entitlements from server — icons stay client-side. */
   enabledServiceKeys?: PlatformServiceKey[];
   isOwnerAdmin?: boolean;
+  /** Diazites owner — show agency / sub-account admin links on the dashboard sidebar. */
+  showPlatformAdminNav?: boolean;
 };
 
 export function AppSidebarShell({
@@ -131,6 +155,7 @@ export function AppSidebarShell({
   account,
   enabledServiceKeys,
   isOwnerAdmin = false,
+  showPlatformAdminNav = false,
 }: AppSidebarShellProps) {
   const growthNavGroups = useMemo(() => {
     if (isOwnerAdmin) return GROWTH_SIDEBAR_GROUPS;
@@ -200,6 +225,19 @@ export function AppSidebarShell({
 
     return (
       <nav className="flex flex-1 flex-col gap-3 overflow-y-auto px-2 py-3">
+        {showPlatformAdminNav ? (
+          <div className="pb-2">
+            <p className="mb-1 px-2 text-[9px] font-bold uppercase tracking-[0.18em] text-amber-400/80">
+              Platform ops
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {PLATFORM_ADMIN_DASHBOARD_NAV.map((item) =>
+                renderNavLink(item, iconOnly, onNavigate),
+              )}
+            </div>
+            <div className="mx-2 mt-3 border-b border-amber-500/20" aria-hidden />
+          </div>
+        ) : null}
         {growthNavGroups.map((group, groupIndex) => (
           <div
             key={group.id}
