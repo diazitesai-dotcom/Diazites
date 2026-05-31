@@ -12,6 +12,7 @@ import { saveOnboardingDraft } from "@/services/onboarding/draft.service";
 import { completeOnboardingProfile } from "@/services/onboarding/onboarding-completion.service";
 import { autofillOnboardingFromWebsite } from "@/services/onboarding/website-autofill.service";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
+import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
 import type { BillingPlanName } from "@/types/backend";
 import type { CampaignGoalId, OnboardingWizardPayload } from "@/types/platform-growth";
 
@@ -59,7 +60,7 @@ export async function saveOnboardingDraftAction(draft: OnboardingDraft) {
 
   if (!user) return { success: false as const, error: "Not signed in" };
 
-  const result = await saveOnboardingDraft(supabase, user.id, draft);
+  const result = await saveOnboardingDraft(supabase, user.id, draft, user.email);
   if (!result.success) return { success: false as const, error: result.error };
   return { success: true as const };
 }
@@ -74,6 +75,8 @@ export async function autofillOnboardingFromWebsiteAction(
   } = await supabase.auth.getUser();
 
   if (!user) return { success: false as const, error: "Not signed in" };
+
+  await ensurePublicUserRecord(user.id, user.email);
 
   const result = await autofillOnboardingFromWebsite(
     supabase,
@@ -93,6 +96,11 @@ export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) 
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  const ensured = await ensurePublicUserRecord(user.id, user.email);
+  if (!ensured.success) {
+    redirect(`/onboarding?error=${encodeURIComponent(ensured.error)}`);
+  }
 
   if (draft.accountIntent === "sub_account") {
     redirect(

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { draftFromOnboardingRow } from "@/lib/onboarding/draft";
 import { CORE_USER_FLOW } from "@/lib/platform/growth-spec";
 import { getOnboardingRoutingState } from "@/lib/auth/onboarding-routing";
+import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
+import { createUserProfile } from "@/lib/auth/user-profile";
 import { requireAuth } from "@/lib/auth/session";
 import { createOnboardingRepository } from "@/repositories/onboarding.repository";
 import { createProfileRepository } from "@/repositories/profile.repository";
@@ -22,6 +24,17 @@ export default async function OnboardingPage({
 }) {
   const user = await requireAuth();
   const supabase = await createServerSupabaseClient();
+
+  await ensurePublicUserRecord(user.id, user.email);
+  await createUserProfile(supabase, {
+    userId: user.id,
+    email: user.email ?? "",
+    fullName:
+      (user.user_metadata?.full_name as string | undefined) ??
+      (user.user_metadata?.name as string | undefined) ??
+      null,
+  });
+
   const sp = await searchParams;
   const showTrialWelcome = sp.welcome === "trial";
 

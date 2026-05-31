@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { provisionUserAccess } from "@/lib/access-control/access-control.service";
+import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { ok, fail, type ServiceResult } from "@/lib/result";
 
@@ -12,6 +13,11 @@ export async function createUserProfile(
   client: SupabaseClient,
   input: { userId: string; email: string; fullName?: string | null },
 ): Promise<ServiceResult<{ profileId: string }>> {
+  const ensured = await ensurePublicUserRecord(input.userId, input.email);
+  if (!ensured.success) {
+    return fail(ensured.error, ensured.code ?? "PUBLIC_USER_ENSURE_FAILED");
+  }
+
   const { data: existing } = await client
     .from("profiles")
     .select("id")

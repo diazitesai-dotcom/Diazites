@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
 import {
   DEFAULT_POST_SETUP_CHECKLIST,
   POST_SETUP_CHECKLIST_META,
@@ -13,7 +14,11 @@ export async function saveOnboardingDraft(
   client: SupabaseClient,
   userId: string,
   draft: OnboardingDraft,
+  email?: string | null,
 ): Promise<ServiceResult<void>> {
+  const ensured = await ensurePublicUserRecord(userId, email ?? draft.email);
+  if (!ensured.success) return ensured;
+
   const onboarding = createOnboardingRepository(client);
 
   const { error } = await onboarding.saveDraft({
