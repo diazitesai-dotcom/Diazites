@@ -71,16 +71,38 @@ export function TrialSignupPaymentElement({
   className,
   onReadyChange,
   onCompleteChange,
+  defaultEmail,
+  defaultName,
+  defaultPhone,
 }: {
   className?: string;
   onReadyChange?: (ready: boolean) => void;
   onCompleteChange?: (complete: boolean) => void;
+  defaultEmail?: string;
+  defaultName?: string;
+  defaultPhone?: string;
 }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     onReadyChange?.(ready);
   }, [ready, onReadyChange]);
+
+  const email = defaultEmail?.trim();
+  const name = defaultName?.trim();
+  const phone = defaultPhone?.trim();
+
+  const billingDefaults =
+    email || name || phone
+      ? {
+          billingDetails: {
+            ...(email ? { email } : {}),
+            ...(name ? { name } : {}),
+            ...(phone ? { phone } : {}),
+            address: { country: "US" },
+          },
+        }
+      : undefined;
 
   return (
     <div className={cn("rounded-md border border-slate-200 bg-white", className)}>
@@ -96,27 +118,16 @@ export function TrialSignupPaymentElement({
             googlePay: "never",
             link: "auto",
           },
-          fields: {
-            billingDetails: {
-              address: "never",
-            },
-          },
+          ...(billingDefaults ? { defaultValues: billingDefaults } : {}),
         }}
       />
     </div>
   );
 }
 
-export function useTrialSignupPaymentConfirm(input?: {
-  email?: string;
-  name?: string;
-  country?: string;
-}) {
+export function useTrialSignupPaymentConfirm() {
   const stripe = useStripe();
   const elements = useElements();
-  const country = input?.country?.trim() || "US";
-  const email = input?.email?.trim();
-  const name = input?.name?.trim();
 
   async function confirmPayment(): Promise<
     { success: true; setupIntentId: string } | { success: false; error: string }
@@ -137,13 +148,6 @@ export function useTrialSignupPaymentConfirm(input?: {
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/signup?step=2`,
-        payment_method_data: {
-          billing_details: {
-            address: { country },
-            ...(email ? { email } : {}),
-            ...(name ? { name } : {}),
-          },
-        },
       },
       redirect: "if_required",
     });

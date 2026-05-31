@@ -155,8 +155,16 @@ function buildLeadVelocitySeries(rows: { created_at: string }[]) {
   return out;
 }
 
+export type DashboardWorkspaceSummary = {
+  businessName: string;
+  billingPlan: string;
+  accountType: "direct" | "agency" | "sub_account";
+  enabledServiceCount: number;
+};
+
 export type DashboardOverviewData = {
   businessId: string;
+  workspace: DashboardWorkspaceSummary;
   metrics: {
     totalLeads: number;
     activeCampaigns: number;
@@ -363,9 +371,21 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
 
   const { data: billingRow } = await supabase
     .from("billing")
-    .select("payment_status, subscription_status")
+    .select("payment_status, subscription_status, plan_name")
     .eq("business_id", business.id)
     .maybeSingle();
+
+  const { data: accountSettings } = await supabase
+    .from("platform_account_settings")
+    .select("account_type")
+    .eq("business_id", business.id)
+    .maybeSingle();
+
+  const { count: enabledServiceCount } = await supabase
+    .from("user_service_access")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("enabled", true);
 
   const billingActive =
     billingRow?.payment_status === "active" ||
@@ -413,6 +433,16 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
 
   return {
     businessId: business.id,
+    workspace: {
+      businessName: business.name,
+      billingPlan: billingRow?.plan_name ?? "Starter",
+      accountType:
+        accountSettings?.account_type === "agency" ||
+        accountSettings?.account_type === "sub_account"
+          ? accountSettings.account_type
+          : "direct",
+      enabledServiceCount: enabledServiceCount ?? 0,
+    },
     metrics,
     bookedOrWonCount: bookedOrWonCount ?? 0,
     sparkSeries,

@@ -80,11 +80,15 @@ export function SocialAuthButtons({
       });
 
       if (oauthError) {
+        const providerLabel = OAUTH_PROVIDER_META[provider].label;
         setError(
           oauthError.message.includes("not enabled") ||
-            oauthError.message.includes("validation_failed")
-            ? `${OAUTH_PROVIDER_META[provider].label} sign-in is not enabled in Supabase. Enable the provider under Authentication → Providers and set ${OAUTH_PROVIDER_META[provider].envKey}=true in your app env.`
-            : oauthError.message,
+            oauthError.message.includes("validation_failed") ||
+            oauthError.message.includes("Unsupported provider")
+            ? `${providerLabel} is not enabled yet. Use email signup or contact support.`
+            : oauthError.message.includes("{")
+              ? "Sign-in failed. Use email signup or contact support."
+              : oauthError.message,
         );
         setLoading(null);
       }

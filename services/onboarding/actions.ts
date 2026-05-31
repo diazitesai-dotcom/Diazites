@@ -95,20 +95,19 @@ export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) 
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) return { success: false as const, error: "Not signed in." };
 
   const ensured = await ensurePublicUserRecord(user.id, user.email);
   if (!ensured.success) {
-    redirect(`/onboarding?error=${encodeURIComponent(ensured.error)}`);
+    return { success: false as const, error: ensured.error };
   }
 
   if (draft.accountIntent === "sub_account") {
-    redirect(
-      "/onboarding?error=" +
-        encodeURIComponent(
-          "Sub-accounts are created by your agency. Use their invite link or ask them to add you under Platform accounts.",
-        ),
-    );
+    return {
+      success: false as const,
+      error:
+        "Sub-accounts are created by your agency. Use their invite link or ask them to add you under Platform accounts.",
+    };
   }
 
   const selectedPlan = normalizeSignupPlan(
@@ -121,12 +120,12 @@ export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) 
   });
 
   if (!result.success) {
-    redirect(`/onboarding?error=${encodeURIComponent(result.error)}`);
+    return { success: false as const, error: result.error };
   }
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  redirect("/dashboard?onboarding=complete");
+  return { success: true as const, redirectTo: "/dashboard?onboarding=complete" };
 }
 
 /** @deprecated Prefer completeOnboardingFromDraftAction — kept for legacy form posts */

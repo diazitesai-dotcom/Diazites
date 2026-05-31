@@ -19,15 +19,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://diazites.com"),
   title: {
-    default: "Diazites | AI Marketing Automation for Every Niche",
+    default: "Diazites | The AI Growth Operating System",
     template: "%s | Diazites",
   },
   description:
-    "Diazites unifies ads, landing pages, and AI follow-up so any business can capture leads, respond instantly, and grow pipeline—without a bloated martech stack.",
+    "Deploy AI agents to run ads, capture leads, automate follow-up, manage CRM pipelines, launch landing pages, connect payments, and track performance from one command center.",
   openGraph: {
-    title: "Diazites AI Marketing Platform",
+    title: "Diazites — AI Growth Operating System",
     description:
-      "Lead generation, AI follow-up, and funnel automation—built for speed-to-lead and measurable ROI.",
+      "Turn ads, leads, follow-up, payments, and reporting into one automated AI workflow for agencies and businesses.",
     url: "https://diazites.com",
     siteName: "Diazites",
     locale: "en_US",
@@ -35,9 +35,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Diazites AI Marketing Platform",
+    title: "Diazites — AI Growth Operating System",
     description:
-      "Turn attention into revenue with AI-powered marketing automation—works across industries and offers.",
+      "Deploy AI agents to run ads, capture leads, automate follow-up, and scale from one command center.",
   },
 };
 

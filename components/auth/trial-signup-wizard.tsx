@@ -44,14 +44,11 @@ export function TrialSignupWizard({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [stepError, setStepError] = useState<string | null>(null);
 
   function validateStep1(): boolean {
-    if (!companyName.trim()) {
-      setStepError("Company name is required.");
-      return false;
-    }
     if (!fullName.trim()) {
       setStepError("Full name is required.");
       return false;
@@ -62,6 +59,10 @@ export function TrialSignupWizard({
     }
     if (password.length < 8) {
       setStepError("Password must be at least 8 characters.");
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setStepError("Passwords do not match.");
       return false;
     }
     setStepError(null);
@@ -80,21 +81,24 @@ export function TrialSignupWizard({
   const cardRequired = stripeEnabled && Boolean(stripePublishableKey);
 
   return (
-    <div className="w-full max-w-lg overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-900 shadow-xl">
-      <div className="border-b border-slate-100 px-6 py-5">
-        <h1 className="text-center text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-          Start Your {DEFAULT_TRIAL_DAYS_SIGNUP} Day Free Trial Today!
+    <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/[0.08] bg-card/60 text-foreground shadow-[0_24px_80px_-48px_rgba(99,102,241,0.55)] backdrop-blur-xl">
+      <div className="border-b border-white/[0.06] px-6 py-5">
+        <h1 className="text-center text-xl font-bold tracking-tight sm:text-2xl">
+          Start Building Your AI Growth System
         </h1>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
+          {DEFAULT_TRIAL_DAYS_SIGNUP}-day free trial · Step 1 of 6 — Create account
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 border-b-2 border-sky-500 text-center text-sm font-semibold">
+      <div className="grid grid-cols-2 border-b border-white/[0.06] text-center text-sm font-semibold">
         <StepTab active={step === 1} onClick={() => setStep(1)}>
           Step 1
-          <span className="mt-0.5 block text-xs font-normal">Tell Us About Your Business</span>
+          <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Create Account</span>
         </StepTab>
         <StepTab active={step === 2} onClick={() => (validateStep1() ? setStep(2) : undefined)} bordered>
           Step 2
-          <span className="mt-0.5 block text-xs font-normal">Trial Details</span>
+          <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Activate Trial</span>
         </StepTab>
       </div>
 
@@ -112,7 +116,7 @@ export function TrialSignupWizard({
         {stepError ? (
           <p
             role="alert"
-            className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+            className="mb-4 rounded-lg border border-red-500/35 bg-red-500/10 px-3 py-2 text-sm text-red-100"
           >
             {stepError}
           </p>
@@ -120,8 +124,6 @@ export function TrialSignupWizard({
 
         {step === 1 ? (
           <StepOne
-            companyName={companyName}
-            setCompanyName={setCompanyName}
             fullName={fullName}
             setFullName={setFullName}
             email={email}
@@ -130,6 +132,8 @@ export function TrialSignupWizard({
             setPhone={setPhone}
             password={password}
             setPassword={setPassword}
+            confirmPassword={confirmPassword}
+            setConfirmPassword={setConfirmPassword}
             promoCode={promoCode}
             setPromoCode={setPromoCode}
             onContinue={goToStep2}
@@ -173,21 +177,19 @@ function StepTab({
       onClick={onClick}
       className={cn(
         "relative px-4 py-3 transition-colors",
-        bordered && "border-l border-slate-100",
-        active ? "text-sky-600" : "text-slate-400 hover:text-slate-600",
+        bordered && "border-l border-white/[0.06]",
+        active ? "text-violet-400" : "text-muted-foreground hover:text-foreground",
       )}
     >
       {children}
       {active ? (
-        <span className="absolute bottom-0 left-1/2 h-0 w-0 -translate-x-1/2 translate-y-full border-x-8 border-t-8 border-x-transparent border-t-sky-500" />
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-500 to-cyan-500" />
       ) : null}
     </button>
   );
 }
 
 function StepOne({
-  companyName,
-  setCompanyName,
   fullName,
   setFullName,
   email,
@@ -196,14 +198,14 @@ function StepOne({
   setPhone,
   password,
   setPassword,
+  confirmPassword,
+  setConfirmPassword,
   promoCode,
   setPromoCode,
   onContinue,
   nextPath,
   cardRequired,
 }: {
-  companyName: string;
-  setCompanyName: (v: string) => void;
   fullName: string;
   setFullName: (v: string) => void;
   email: string;
@@ -212,6 +214,8 @@ function StepOne({
   setPhone: (v: string) => void;
   password: string;
   setPassword: (v: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (v: string) => void;
   promoCode: string;
   setPromoCode: (v: string) => void;
   onContinue: () => void;
@@ -241,62 +245,67 @@ function StepOne({
     });
   }
 
+  const inputClass =
+    "w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/40";
+
   return (
     <div className="space-y-4">
+      <SocialAuthButtons mode="signup" nextPath={nextPath} promoCode={promoCode || undefined} />
       <input
         type="text"
-        placeholder="Company Name.."
-        value={companyName}
-        onChange={(e) => setCompanyName(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-4 py-3 text-sm outline-none ring-sky-500 placeholder:text-slate-400 focus:border-sky-500 focus:ring-1"
-        autoComplete="organization"
-      />
-      <input
-        type="text"
-        placeholder="Full Name..."
+        placeholder="Full name"
         value={fullName}
         onChange={(e) => setFullName(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-4 py-3 text-sm outline-none ring-sky-500 placeholder:text-slate-400 focus:border-sky-500 focus:ring-1"
+        className={inputClass}
         autoComplete="name"
       />
       <input
         type="email"
-        placeholder="Email Address..."
+        placeholder="Email address"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-4 py-3 text-sm outline-none ring-sky-500 placeholder:text-slate-400 focus:border-sky-500 focus:ring-1"
+        className={inputClass}
         autoComplete="email"
       />
       <input
         type="tel"
-        placeholder="Phone Number..."
+        placeholder="Phone (optional)"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-4 py-3 text-sm outline-none ring-sky-500 placeholder:text-slate-400 focus:border-sky-500 focus:ring-1"
+        className={inputClass}
         autoComplete="tel"
       />
       <input
         type="password"
-        placeholder="Create Password (min. 8 characters)..."
+        placeholder="Password (min. 8 characters)"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         minLength={8}
-        className="w-full rounded-md border border-slate-300 px-4 py-3 text-sm outline-none ring-sky-500 placeholder:text-slate-400 focus:border-sky-500 focus:ring-1"
+        className={inputClass}
+        autoComplete="new-password"
+      />
+      <input
+        type="password"
+        placeholder="Confirm password"
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+        minLength={8}
+        className={inputClass}
         autoComplete="new-password"
       />
       <input
         type="text"
-        placeholder="Promo code (optional)..."
+        placeholder="Promo code (optional)"
         value={promoCode}
         onChange={(e) => setPromoCode(e.target.value)}
         onBlur={(e) => checkPromo(e.target.value)}
-        className="w-full rounded-md border border-slate-300 px-4 py-3 text-sm outline-none ring-sky-500 placeholder:text-slate-400 focus:border-sky-500 focus:ring-1"
+        className={inputClass}
       />
       {promoMessage ? (
-        <p className={`text-xs ${promoValid ? "text-emerald-600" : "text-amber-600"}`}>{promoMessage}</p>
+        <p className={`text-xs ${promoValid ? "text-emerald-400" : "text-amber-400"}`}>{promoMessage}</p>
       ) : null}
       {promoPending ? (
-        <p className="flex items-center gap-1 text-xs text-slate-500">
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
           <Loader2 className="size-3 animate-spin" /> Checking code…
         </p>
       ) : null}
@@ -304,38 +313,21 @@ function StepOne({
       <button
         type="button"
         onClick={onContinue}
-        className="w-full rounded-md bg-sky-500 py-3.5 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-sky-600"
+        className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 py-3.5 text-sm font-semibold text-white transition hover:opacity-95"
       >
         {cardRequired ? "Go To Step #2 — Add Payment" : "Go To Step #2"}
       </button>
 
-      <p className="text-center text-xs text-slate-500">
+      <p className="text-center text-xs text-muted-foreground">
         Receive updates, news, and offers via email and text.
         {cardRequired ? (
-          <>
-            {" "}
-            A valid card is required on Step 2 to start your free trial.
-          </>
+          <> A valid card is required on Step 2 to start your free trial.</>
         ) : null}
       </p>
 
-      {!cardRequired ? (
-        <>
-          <div className="relative py-2">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-slate-200" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-slate-400">or continue with</span>
-            </div>
-          </div>
-          <SocialAuthButtons mode="signup" nextPath={nextPath} promoCode={promoCode} />
-        </>
-      ) : null}
-
-      <p className="text-center text-sm text-slate-500">
+      <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-sky-600 hover:underline">
+        <Link href="/login" className="font-medium text-violet-400 hover:underline">
           Sign in
         </Link>
       </p>
@@ -469,11 +461,7 @@ function StepTwoStripeForm({
   const [paymentReady, setPaymentReady] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const { confirmPayment, stripeReady } = useTrialSignupPaymentConfirm({
-    email,
-    name: fullName,
-    country: "US",
-  });
+  const { confirmPayment, stripeReady } = useTrialSignupPaymentConfirm();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -533,6 +521,9 @@ function StepTwoStripeForm({
         <TrialSignupPaymentElement
           onReadyChange={setPaymentReady}
           onCompleteChange={setPaymentComplete}
+          defaultEmail={email}
+          defaultName={fullName}
+          defaultPhone={phone}
         />
       </PaymentSectionShell>
 

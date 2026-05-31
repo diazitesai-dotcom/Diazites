@@ -29,6 +29,8 @@ export type OnboardingDraft = {
   existingCrm: string;
   leadNotifyEmail: string;
   leadNotifyPhone: string;
+  selectedAgents: string[];
+  skippedConnections: string[];
 };
 
 export type OnboardingChecklistKey =
@@ -78,6 +80,8 @@ export function emptyOnboardingDraft(
     existingCrm: "",
     leadNotifyEmail: "",
     leadNotifyPhone: "",
+    selectedAgents: [],
+    skippedConnections: [],
     ...overrides,
   };
 }
@@ -113,6 +117,8 @@ export function draftToWizardPayload(draft: OnboardingDraft) {
     leadNotifyEmail: draft.leadNotifyEmail || undefined,
     leadNotifyPhone: draft.leadNotifyPhone || undefined,
     accountIntent: draft.accountIntent,
+    selectedAgents: draft.selectedAgents,
+    skippedConnections: draft.skippedConnections,
   };
 }
 
@@ -169,6 +175,12 @@ export function draftFromOnboardingRow(
     existingCrm: String(pd.existingCrm ?? ""),
     leadNotifyEmail: String(pd.leadNotifyEmail ?? ""),
     leadNotifyPhone: String(pd.leadNotifyPhone ?? ""),
+    selectedAgents: Array.isArray(pd.selectedAgents)
+      ? (pd.selectedAgents as string[])
+      : [],
+    skippedConnections: Array.isArray(pd.skippedConnections)
+      ? (pd.skippedConnections as string[])
+      : [],
     ...defaults,
   });
 }

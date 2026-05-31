@@ -1,14 +1,28 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState, useTransition } from "react";
+import {
+  Bot,
+  Building2,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Plug,
+  Sparkles,
+  Users,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { CAMPAIGN_GOALS } from "@/lib/platform/growth-spec";
+import {
+  BUSINESS_TYPE_OPTIONS,
+  ONBOARDING_AI_AGENTS,
+  ONBOARDING_CONNECTIONS,
+} from "@/lib/marketing/platform-data";
 import {
   emptyOnboardingDraft,
   type OnboardingAccountIntent,
@@ -22,32 +36,71 @@ import { OnboardingAiAutofill } from "@/components/onboarding/onboarding-ai-auto
 import { cn } from "@/lib/utils";
 
 const STEPS = [
-  { id: "business", title: "Business", description: "Company identity & contact" },
-  { id: "market", title: "Market", description: "Services, audience & offer" },
-  { id: "brand", title: "Brand & goals", description: "Tone, budget & campaign goal" },
-  { id: "notify", title: "Notifications", description: "Lead alerts & review" },
+  {
+    id: "business",
+    title: "Business Profile",
+    description: "Tell us about your business",
+    icon: Building2,
+    globalStep: 2,
+  },
+  {
+    id: "workspace",
+    title: "Workspace Type",
+    description: "How you'll use Diazites",
+    icon: Users,
+    globalStep: 3,
+  },
+  {
+    id: "agents",
+    title: "Activate AI Stack",
+    description: "Choose agents to deploy",
+    icon: Bot,
+    globalStep: 4,
+  },
+  {
+    id: "connect",
+    title: "Connect Accounts",
+    description: "Optional — connect later",
+    icon: Plug,
+    globalStep: 5,
+  },
+  {
+    id: "generate",
+    title: "Generate Workspace",
+    description: "Build your command center",
+    icon: Sparkles,
+    globalStep: 6,
+  },
 ] as const;
 
-const ACCOUNT_INTENTS: Array<{
+const WORKSPACE_TYPES: Array<{
   value: OnboardingAccountIntent;
   label: string;
   description: string;
 }> = [
   {
     value: "direct",
-    label: "Direct business",
-    description: "You run one brand and want Mission Control for your own leads.",
+    label: "Business Account",
+    description: "For owners running one business with a single growth workspace.",
   },
   {
     value: "agency",
-    label: "Agency / multi-client",
-    description: "You manage client sub-accounts and white-label workspaces.",
+    label: "Agency Account",
+    description: "For agencies managing multiple clients, subaccounts, and white-label workspaces.",
   },
   {
     value: "sub_account",
-    label: "Client sub-account",
-    description: "Your agency invited you — use their link instead of self-serve setup.",
+    label: "Subaccount",
+    description: "For clients, departments, or locations under an agency — invite required.",
   },
+];
+
+const GENERATE_PHASES = [
+  "Provisioning workspace…",
+  "Deploying CRM pipeline…",
+  "Configuring AI agents…",
+  "Setting entitlements…",
+  "Building your AI business command center…",
 ];
 
 export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDraft }) {
@@ -57,10 +110,9 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
   const [step, setStep] = useState(initialDraft?.wizardStep ?? 0);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [generatePhase, setGeneratePhase] = useState(0);
+  const [generating, setGenerating] = useState(false);
 
-  const canBack = step > 0;
-  const isLast = step === STEPS.length - 1;
-  const isAgency = draft.accountIntent === "agency";
   const isSubAccount = draft.accountIntent === "sub_account";
 
   function patch(partial: Partial<OnboardingDraft>) {
@@ -79,7 +131,30 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
     return true;
   }
 
+  function validateStep(): string | null {
+    if (step === 0) {
+      if (!draft.businessName.trim()) return "Business name is required.";
+      if (!draft.industry.trim()) return "Industry is required.";
+      if (!draft.businessType.trim()) return "Business type is required.";
+    }
+    if (step === 2 && draft.selectedAgents.length === 0) {
+      return "Select at least one AI agent to activate.";
+    }
+    return null;
+  }
+
   function handleContinue() {
+    const validationError = validateStep();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    if (isSubAccount && step === 1) {
+      setError(
+        "Sub-accounts are created by your agency. Use their invite link or contact support.",
+      );
+      return;
+    }
     startTransition(async () => {
       const nextStep = Math.min(STEPS.length - 1, step + 1);
       const saved = await persistDraft(nextStep);
@@ -93,398 +168,345 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
     void persistDraft(prev);
   }
 
-  function handleStepJump(target: number) {
+  function handleGenerate() {
+    setError(null);
+    setGenerating(true);
+    setGeneratePhase(0);
+
+    const phaseTimer = window.setInterval(() => {
+      setGeneratePhase((p) => Math.min(p + 1, GENERATE_PHASES.length - 1));
+    }, 900);
+
     startTransition(async () => {
-      const saved = await persistDraft(target);
-      if (saved) setStep(target);
+      try {
+        await new Promise((r) => setTimeout(r, 3200));
+        const result = await completeOnboardingFromDraftAction({
+          ...draft,
+          wizardStep: step,
+          leadNotifyEmail: draft.leadNotifyEmail || draft.email,
+        });
+        window.clearInterval(phaseTimer);
+        if (!result.success) {
+          setGenerating(false);
+          setError(result.error ?? "Could not complete setup.");
+          return;
+        }
+        window.location.assign(result.redirectTo);
+      } catch (err) {
+        window.clearInterval(phaseTimer);
+        setGenerating(false);
+        setError(err instanceof Error ? err.message : "Setup failed.");
+      }
     });
   }
 
-  function handleComplete() {
-    startTransition(async () => {
-      setError(null);
-      await completeOnboardingFromDraftAction({ ...draft, wizardStep: step });
-    });
+  function toggleAgent(key: string) {
+    const selected = draft.selectedAgents.includes(key)
+      ? draft.selectedAgents.filter((k) => k !== key)
+      : [...draft.selectedAgents, key];
+    patch({ selectedAgents: selected });
   }
 
-  function handleAutofillApply(next: OnboardingDraft, meta: { usedAi: boolean }) {
+  function toggleConnectionSkip(key: string) {
+    const skipped = draft.skippedConnections.includes(key)
+      ? draft.skippedConnections.filter((k) => k !== key)
+      : [...draft.skippedConnections, key];
+    patch({ skippedConnections: skipped });
+  }
+
+  function handleAutofillApply(next: OnboardingDraft, _meta: { usedAi: boolean }) {
     setDraft(next);
     setError(null);
-    if (meta.usedAi) {
-      void saveOnboardingDraftAction(next);
-    }
+    void saveOnboardingDraftAction(next);
   }
 
-  const stepDescription =
-    step === 0 && isAgency
-      ? "Agency identity — we'll register your workspace for client sub-accounts after launch."
-      : STEPS[step].description;
+  const StepIcon = STEPS[step]?.icon ?? Building2;
 
   return (
-    <Card className="border-white/[0.06] shadow-[0_24px_80px_-48px_rgba(99,102,241,0.35)]">
-      <CardHeader>
-        <div className="flex flex-wrap gap-2">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-violet-400">
+            Step {STEPS[step]?.globalStep ?? step + 2} of 6
+          </p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">
+            {STEPS[step]?.title}
+          </h2>
+          <p className="text-sm text-muted-foreground">{STEPS[step]?.description}</p>
+        </div>
+        <div className="flex items-center gap-1">
           {STEPS.map((s, i) => (
-            <button
+            <span
               key={s.id}
-              type="button"
-              disabled={isPending}
-              onClick={() => handleStepJump(i)}
               className={cn(
-                "rounded-lg border px-3 py-1.5 text-left text-xs transition-colors",
-                i === step
-                  ? "border-violet-500/40 bg-violet-500/15 text-violet-100"
-                  : "border-white/[0.08] text-muted-foreground hover:border-white/15",
+                "h-1.5 w-8 rounded-full transition-colors",
+                i <= step ? "bg-violet-500" : "bg-white/10",
               )}
-            >
-              <span className="font-semibold">{s.title}</span>
-            </button>
+            />
           ))}
         </div>
-        <CardTitle className="pt-2 text-lg">{STEPS[step].title}</CardTitle>
-        <CardDescription>{stepDescription}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {error ? (
-            <p role="alert" className="rounded-lg border border-red-500/35 bg-red-500/10 px-3 py-2 text-sm text-red-100">
-              {error}
-            </p>
-          ) : null}
+      </div>
 
-          {step === 0 ? (
-            <>
-              <OnboardingAiAutofill draft={draft} onApply={handleAutofillApply} />
-              <StepBusiness draft={draft} patch={patch} />
-            </>
-          ) : null}
-          {step === 1 ? <StepMarket draft={draft} patch={patch} /> : null}
-          {step === 2 ? <StepBrand draft={draft} patch={patch} /> : null}
-          {step === 3 ? <StepNotify draft={draft} patch={patch} isAgency={isAgency} /> : null}
+      {error ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm text-red-100"
+        >
+          {error}
+        </p>
+      ) : null}
 
-          {isSubAccount ? (
-            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
-              Sub-accounts are provisioned by your agency. Switch to Direct business or Agency if
-              you are setting up your own workspace.
-            </p>
-          ) : null}
-
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-xl"
-              disabled={!canBack || isPending}
-              onClick={handleBack}
-            >
-              <ChevronLeft className="mr-1 size-4" />
-              Back
-            </Button>
-            {isLast ? (
-              <Button
-                type="button"
-                variant="gradient"
-                className="rounded-xl px-8"
-                disabled={isPending || isSubAccount}
-                onClick={handleComplete}
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                    Launching…
-                  </>
-                ) : isAgency ? (
-                  "Launch agency workspace"
-                ) : (
-                  "Launch command center"
-                )}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="gradient"
-                className="rounded-xl px-8"
-                disabled={isPending}
-                onClick={handleContinue}
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <ChevronRight className="ml-1 size-4" />
-                  </>
-                )}
-              </Button>
-            )}
+      <Card className="border-white/[0.08] bg-card/40 backdrop-blur-sm">
+        <CardHeader className="border-b border-white/[0.06] pb-4">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-xl border border-violet-500/25 bg-violet-500/10">
+              <StepIcon className="size-5 text-violet-400" aria-hidden />
+            </span>
+            <div>
+              <CardTitle className="text-lg">{STEPS[step]?.title}</CardTitle>
+              <CardDescription>{STEPS[step]?.description}</CardDescription>
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {step === 0 ? (
+            <div className="space-y-5">
+              <OnboardingAiAutofill draft={draft} onApply={handleAutofillApply} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Business name" required>
+                  <Input
+                    value={draft.businessName}
+                    onChange={(e) => patch({ businessName: e.target.value })}
+                    placeholder="Acme Growth Co."
+                  />
+                </Field>
+                <Field label="Website">
+                  <Input
+                    value={draft.website}
+                    onChange={(e) => patch({ website: e.target.value })}
+                    placeholder="https://"
+                  />
+                </Field>
+                <Field label="Industry" required>
+                  <Input
+                    value={draft.industry}
+                    onChange={(e) => patch({ industry: e.target.value })}
+                    placeholder="Marketing, SaaS, Home services…"
+                  />
+                </Field>
+                <Field label="Business type" required>
+                  <select
+                    value={draft.businessType}
+                    onChange={(e) => patch({ businessType: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Select type</option>
+                    {BUSINESS_TYPE_OPTIONS.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </div>
+          ) : null}
+
+          {step === 1 ? (
+            <div className="grid gap-3 sm:grid-cols-1">
+              {WORKSPACE_TYPES.map((type) => {
+                const selected = draft.accountIntent === type.value;
+                return (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() => patch({ accountIntent: type.value })}
+                    className={cn(
+                      "rounded-xl border p-4 text-left transition",
+                      selected
+                        ? "border-violet-500/50 bg-violet-500/10"
+                        : "border-white/[0.08] bg-white/[0.02] hover:border-violet-500/25",
+                    )}
+                  >
+                    <p className="font-medium">{type.label}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{type.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {step === 2 ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {ONBOARDING_AI_AGENTS.map((agent) => {
+                const active = draft.selectedAgents.includes(agent.key);
+                return (
+                  <button
+                    key={agent.key}
+                    type="button"
+                    onClick={() => toggleAgent(agent.key)}
+                    className={cn(
+                      "flex flex-col rounded-xl border p-4 text-left transition",
+                      active
+                        ? "border-violet-500/50 bg-violet-500/10"
+                        : "border-white/[0.08] bg-white/[0.02] hover:border-violet-500/25",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium">{agent.label}</p>
+                      {active ? <Check className="size-4 text-violet-400" /> : null}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{agent.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {step === 3 ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Connect now or skip — you can link accounts anytime from Integrations.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {ONBOARDING_CONNECTIONS.map((conn) => {
+                  const skipped = draft.skippedConnections.includes(conn.key);
+                  return (
+                    <div
+                      key={conn.key}
+                      className="flex flex-col rounded-xl border border-white/[0.08] bg-white/[0.02] p-4"
+                    >
+                      <p className="font-medium">{conn.label}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{conn.description}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Link
+                          href={`/dashboard/integrations?connect=${conn.key}`}
+                          className="text-xs font-medium text-violet-400 hover:underline"
+                        >
+                          Connect in dashboard →
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => toggleConnectionSkip(conn.key)}
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          {skipped ? "Marked skip for now" : "Skip for now"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {step === 4 ? (
+            <div className="space-y-6 text-center">
+              {generating ? (
+                <div className="py-8">
+                  <Loader2 className="mx-auto size-10 animate-spin text-violet-400" />
+                  <p className="mt-4 text-lg font-medium">
+                    {GENERATE_PHASES[generatePhase]}
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Building your AI business command center…
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-muted-foreground">
+                    We&apos;ll provision your workspace, CRM pipeline, selected AI agents, and
+                    Mission Control dashboard.
+                  </p>
+                  <ul className="mx-auto max-w-md space-y-2 text-left text-sm">
+                    <li className="flex items-center gap-2">
+                      <Check className="size-4 text-emerald-400" />
+                      {draft.businessName || "Your business"} workspace
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="size-4 text-emerald-400" />
+                      {draft.selectedAgents.length} AI agent
+                      {draft.selectedAgents.length === 1 ? "" : "s"} selected
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="size-4 text-emerald-400" />
+                      {WORKSPACE_TYPES.find((w) => w.value === draft.accountIntent)?.label ??
+                        "Business"}{" "}
+                      account type
+                    </li>
+                  </ul>
+                </>
+              )}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-between gap-4">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={handleBack}
+          disabled={step === 0 || isPending || generating}
+          className="gap-1"
+        >
+          <ChevronLeft className="size-4" />
+          Back
+        </Button>
+
+        {step < STEPS.length - 1 ? (
+          <Button
+            type="button"
+            variant="gradient"
+            onClick={handleContinue}
+            disabled={isPending}
+            className="gap-1 rounded-xl"
+          >
+            Continue
+            <ChevronRight className="size-4" />
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="gradient"
+            onClick={handleGenerate}
+            disabled={isPending || generating}
+            className="gap-2 rounded-xl"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Generating…
+              </>
+            ) : (
+              <>
+                <Sparkles className="size-4" />
+                Generate workspace
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
 
 function Field({
   label,
-  value,
-  onChange,
-  type = "text",
   required,
-  className,
-  placeholder,
+  children,
 }: {
   label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: string;
   required?: boolean;
-  className?: string;
-  placeholder?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <div className={cn("space-y-2", className)}>
-      <Label>{label}</Label>
-      <Input
-        type={type}
-        required={required}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </div>
-  );
-}
-
-function StepBusiness({
-  draft,
-  patch,
-}: {
-  draft: OnboardingDraft;
-  patch: (partial: Partial<OnboardingDraft>) => void;
-}) {
-  const isAgency = draft.accountIntent === "agency";
-
-  return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <Label>Account type</Label>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {ACCOUNT_INTENTS.map((intent) => (
-            <button
-              key={intent.value}
-              type="button"
-              onClick={() => patch({ accountIntent: intent.value })}
-              className={cn(
-                "rounded-xl border px-3 py-3 text-left text-xs transition-colors",
-                draft.accountIntent === intent.value
-                  ? "border-violet-500/40 bg-violet-500/15"
-                  : "border-white/[0.08] hover:border-white/15",
-              )}
-            >
-              <span className="block font-semibold text-foreground">{intent.label}</span>
-              <span className="mt-1 block text-muted-foreground">{intent.description}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field
-          label={isAgency ? "Agency / brand name" : "Business name"}
-          value={draft.businessName}
-          onChange={(businessName) => patch({ businessName })}
-          required
-        />
-        <Field
-          label="Owner name"
-          value={draft.ownerName}
-          onChange={(ownerName) => patch({ ownerName })}
-          required
-        />
-        <Field
-          label="Business email"
-          type="email"
-          value={draft.businessEmail}
-          onChange={(businessEmail) => patch({ businessEmail })}
-        />
-        <Field
-          label="Login email"
-          type="email"
-          value={draft.email}
-          onChange={(email) => patch({ email })}
-          required
-        />
-        <Field label="Phone number" value={draft.phone} onChange={(phone) => patch({ phone })} />
-        <Field label="Website URL" value={draft.website} onChange={(website) => patch({ website })} />
-        <Field
-          label="Business address"
-          className="md:col-span-2"
-          value={draft.businessAddress}
-          onChange={(businessAddress) => patch({ businessAddress })}
-        />
-        <Field
-          label="Service areas"
-          value={draft.serviceArea}
-          onChange={(serviceArea) => patch({ serviceArea })}
-        />
-        <Field
-          label="City / state"
-          value={draft.cityState}
-          onChange={(cityState) => patch({ cityState })}
-        />
-        <Field
-          label="Business hours"
-          value={draft.businessHours}
-          onChange={(businessHours) => patch({ businessHours })}
-        />
-        <Field
-          label="Industry"
-          value={draft.industry}
-          onChange={(industry) => patch({ industry })}
-        />
-        {draft.accountIntent === "direct" ? (
-          <Field
-            label="Business type"
-            value={draft.businessType}
-            onChange={(businessType) => patch({ businessType })}
-          />
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function StepMarket({
-  draft,
-  patch,
-}: {
-  draft: OnboardingDraft;
-  patch: (partial: Partial<OnboardingDraft>) => void;
-}) {
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <div className="space-y-2 md:col-span-2">
-        <Label>Main services</Label>
-        <Textarea
-          rows={3}
-          placeholder="List primary services you sell"
-          value={draft.services}
-          onChange={(e) => patch({ services: e.target.value })}
-        />
-      </div>
-      <Field
-        label="Target audience"
-        className="md:col-span-2"
-        value={draft.targetAudience}
-        onChange={(targetAudience) => patch({ targetAudience })}
-      />
-      <Field
-        label="Ideal customer"
-        className="md:col-span-2"
-        value={draft.idealCustomer}
-        onChange={(idealCustomer) => patch({ idealCustomer })}
-      />
-      <Field
-        label="Offer / promotion"
-        className="md:col-span-2"
-        value={draft.offerPromotion}
-        onChange={(offerPromotion) => patch({ offerPromotion })}
-      />
-      <Field
-        label="Existing website (if different)"
-        value={draft.existingWebsite}
-        onChange={(existingWebsite) => patch({ existingWebsite })}
-      />
-      <Field
-        label="Existing CRM"
-        value={draft.existingCrm}
-        onChange={(existingCrm) => patch({ existingCrm })}
-      />
-    </div>
-  );
-}
-
-function StepBrand({
-  draft,
-  patch,
-}: {
-  draft: OnboardingDraft;
-  patch: (partial: Partial<OnboardingDraft>) => void;
-}) {
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Field
-        label="Monthly ad budget ($)"
-        type="number"
-        value={draft.monthlyBudget}
-        onChange={(monthlyBudget) => patch({ monthlyBudget })}
-      />
-      <div className="space-y-2">
-        <Label htmlFor="campaign_goal">Campaign goal</Label>
-        <select
-          id="campaign_goal"
-          className="w-full rounded-lg border border-white/10 bg-background px-3 py-2 text-sm"
-          value={draft.campaignGoal}
-          onChange={(e) =>
-            patch({ campaignGoal: e.target.value as OnboardingDraft["campaignGoal"] })
-          }
-        >
-          {CAMPAIGN_GOALS.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <Field
-        label="Brand tone"
-        placeholder="Professional, friendly, bold…"
-        value={draft.brandTone}
-        onChange={(brandTone) => patch({ brandTone })}
-      />
-      <Field
-        label="Brand colors"
-        placeholder="#0f172a, #8b5cf6"
-        value={draft.brandColors}
-        onChange={(brandColors) => patch({ brandColors })}
-      />
-      <p className="text-xs text-muted-foreground md:col-span-2">
-        Logo upload connects after onboarding via Business Setup → Brand Settings (Supabase Storage).
-      </p>
-    </div>
-  );
-}
-
-function StepNotify({
-  draft,
-  patch,
-  isAgency,
-}: {
-  draft: OnboardingDraft;
-  patch: (partial: Partial<OnboardingDraft>) => void;
-  isAgency: boolean;
-}) {
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Field
-        label="Lead notification email"
-        type="email"
-        value={draft.leadNotifyEmail}
-        onChange={(leadNotifyEmail) => patch({ leadNotifyEmail })}
-      />
-      <Field
-        label="Lead notification phone"
-        value={draft.leadNotifyPhone}
-        onChange={(leadNotifyPhone) => patch({ leadNotifyPhone })}
-      />
-      <p className="text-sm text-muted-foreground md:col-span-2">
-        {isAgency
-          ? "After launch you can add client sub-accounts from Platform accounts (admin) or your agency hub. Agents will not spend budget without approval unless you enable Full Auto-Execute."
-          : "Next: connect ad accounts, activate AI agents, and approve your first campaigns from Mission Control. Agents will not spend budget or go live without your approval unless you enable Full Auto-Execute per agent."}
-      </p>
+    <div className="space-y-2">
+      <Label>
+        {label}
+        {required ? <span className="text-red-400"> *</span> : null}
+      </Label>
+      {children}
     </div>
   );
 }

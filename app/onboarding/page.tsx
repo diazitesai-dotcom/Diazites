@@ -100,9 +100,9 @@ export default async function OnboardingPage({
 
         {showTrialWelcome ? <TrialWelcomeBanner /> : null}
         <PageHeader
-          eyebrow="Setup"
-          title="Set up your business"
-          description="Four quick steps — then Mission Control unlocks with your profile, leads, and core tools. Premium services can be enabled by your admin as you grow."
+          eyebrow="Onboarding"
+          title="Build your AI growth system"
+          description="Five guided steps after account creation — business profile, workspace type, AI agents, integrations, and workspace generation. Mission Control unlocks when you're done."
         />
         <OnboardingWizard initialDraft={initialDraft} />
         <details className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-sm text-muted-foreground">

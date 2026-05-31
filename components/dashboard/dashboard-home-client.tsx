@@ -29,6 +29,10 @@ import { RuntimeOverview } from "@/components/dashboard/mission-control/runtime-
 import { StackHealthSection } from "@/components/dashboard/mission-control/stack-health-section";
 import { InboundVelocityChart } from "@/components/dashboard/mission-control/inbound-velocity-chart";
 import type { DashboardOverviewData } from "@/lib/dashboard/load-dashboard-overview";
+import {
+  PremiumEmptyStateHints,
+  WorkspaceStatusPanel,
+} from "@/components/dashboard/workspace-status-panel";
 import type { SystemModuleContext } from "@/lib/dashboard/system-module-types";
 import { fadeItem } from "@/lib/motion";
 
@@ -74,6 +78,7 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
     <RevenueAttributionProvider attribution={data.revenueAttribution}>
       <RevenueBreakdownDrawer />
       <div className="relative mx-auto max-w-7xl space-y-10 pb-20">
+        <WorkspaceStatusPanel data={data} />
         <CeoCockpitHero data={data} />
 
         <MissionControlAlerts data={data} />
@@ -99,7 +104,10 @@ export function DashboardHomeClient({ data }: { data: DashboardOverviewData }) {
         <DeployableStacksPanel />
 
         {zeroCampaigns && zeroSpend ? (
-          <CombinedAcquisitionEmpty />
+          <>
+            <CombinedAcquisitionEmpty />
+            <PremiumEmptyStateHints />
+          </>
         ) : (
           <>
             {zeroCampaigns ? <ZeroCampaignsEmpty /> : null}

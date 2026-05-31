@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const productLinks = [
   { href: "/#platform", label: "Platform" },
-  { href: "/#modules", label: "Modules" },
+  { href: "/#pricing", label: "Pricing" },
   { href: "/docs/agents", label: "Agent API" },
   { href: "/contact", label: "Contact" },
 ];
@@ -20,8 +20,8 @@ export function MarketingFooter() {
         <div className="sm:col-span-2 lg:col-span-1">
           <p className="text-sm font-semibold tracking-tight">Diazites</p>
           <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            AI-powered business growth platform for owners who run ads, leads, and follow-up in one
-            place.
+            The AI Growth Operating System for agencies and businesses — ads, CRM, agents,
+            payments, and reporting in one command center.
           </p>
         </div>
 

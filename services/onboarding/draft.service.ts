@@ -50,6 +50,8 @@ export async function saveOnboardingDraft(
       existingCrm: draft.existingCrm,
       leadNotifyEmail: draft.leadNotifyEmail,
       leadNotifyPhone: draft.leadNotifyPhone,
+      selectedAgents: draft.selectedAgents,
+      skippedConnections: draft.skippedConnections,
     },
   });
 

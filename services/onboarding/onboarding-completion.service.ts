@@ -5,6 +5,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { registerAgencyAccount } from "@/services/admin/platform-accounts.service";
 import { createOnboardingRepository } from "@/repositories/onboarding.repository";
 import { createBusinessRepository } from "@/repositories/business.repository";
+import { createPlatformAdminRepository } from "@/repositories/platform-admin.repository";
 import { createBusinessProfile } from "@/services/business/business.service";
 import { seedDefaultTasksIfEmpty } from "@/services/tasks/task.service";
 import { EVENT_TYPES } from "@/types/backend";
@@ -15,6 +16,19 @@ import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
 import { bootstrapBusinessSystem } from "@/services/platform/bootstrap-business-system.service";
 import { logAgentActivity } from "@/services/platform/agent-activity.service";
 import { triggerEvent } from "@/services/events/event-dispatcher";
+import type { PlatformFeatureFlags } from "@/types/platform-admin";
+
+function agentSelectionsToFeatureFlags(selectedAgents: string[] = []): Partial<PlatformFeatureFlags> {
+  return {
+    ai_agents: selectedAgents.length > 0,
+    ad_accounts: selectedAgents.includes("ads"),
+    sms: selectedAgents.includes("sms"),
+    ai_calls: selectedAgents.includes("sms"),
+    email_campaigns: selectedAgents.includes("email"),
+    workflows: selectedAgents.includes("pipeline"),
+    merchant_services: selectedAgents.includes("merchant"),
+  };
+}
 
 function toBusinessProfile(form: OnboardingWizardPayload): BusinessProfile {
   return {
@@ -72,6 +86,9 @@ export async function completeOnboardingProfile(
   const businesses = createBusinessRepository(client);
   await businesses.updateProfile(businessId, profile);
 
+  const selectedAgents = form.selectedAgents ?? [];
+  const skippedConnections = form.skippedConnections ?? [];
+
   await onboarding.upsertFull({
     userId,
     businessName: form.businessName,
@@ -87,16 +104,19 @@ export async function completeOnboardingProfile(
     profileData: {
       ...profile,
       accountIntent: form.accountIntent ?? "direct",
+      selectedAgents,
+      skippedConnections,
+      wizardStep: 4,
     } as Record<string, unknown>,
     stage: "live",
     status: "completed",
     checklist: {
       profile_complete: true,
-      integrations_connected: false,
-      agents_assigned: false,
+      integrations_connected: skippedConnections.length === 0,
+      agents_assigned: selectedAgents.length > 0,
       campaign_built: false,
-      landing_page_ready: false,
-      ai_active: false,
+      landing_page_ready: selectedAgents.includes("landing"),
+      ai_active: selectedAgents.some((k) => ["sms", "email", "pipeline"].includes(k)),
       team_invited: false,
     },
   });
@@ -110,6 +130,20 @@ export async function completeOnboardingProfile(
       });
     } catch {
       /* agency row is best-effort; admin can fix from Platform accounts */
+    }
+  } else {
+    try {
+      const service = createServiceRoleClient();
+      const platformRepo = createPlatformAdminRepository(service);
+      await platformRepo.upsertAccountSettings({
+        businessId,
+        accountType: form.accountIntent === "sub_account" ? "sub_account" : "direct",
+        status: "active",
+        featureFlags: agentSelectionsToFeatureFlags(selectedAgents) as PlatformFeatureFlags,
+        updatedBy: userId,
+      });
+    } catch {
+      /* platform settings are best-effort */
     }
   }
 
