@@ -109,6 +109,7 @@ export type OnboardingWizardPayload = {
   existingWebsite?: string;
   leadNotifyEmail?: string;
   leadNotifyPhone?: string;
+  accountIntent?: "direct" | "agency" | "sub_account";
 };
 
 export type TaskRecord = {

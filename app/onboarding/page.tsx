@@ -4,9 +4,11 @@ import { PageHeader } from "@/components/layout/page-header";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { TrialWelcomeBanner } from "@/components/onboarding/trial-welcome-banner";
 import { Button } from "@/components/ui/button";
+import { draftFromOnboardingRow } from "@/lib/onboarding/draft";
 import { CORE_USER_FLOW } from "@/lib/platform/growth-spec";
 import { getOnboardingRoutingState } from "@/lib/auth/onboarding-routing";
 import { requireAuth } from "@/lib/auth/session";
+import { createOnboardingRepository } from "@/repositories/onboarding.repository";
 import { createProfileRepository } from "@/repositories/profile.repository";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signOutAction } from "@/services/auth/actions";
@@ -34,6 +36,13 @@ export default async function OnboardingPage({
 
   const profiles = createProfileRepository(supabase);
   const { data: profile } = await profiles.getByUserId(user.id);
+
+  const onboardingRepo = createOnboardingRepository(supabase);
+  const { data: onboardingRow } = await onboardingRepo.getByUserId(user.id);
+  const initialDraft = draftFromOnboardingRow(onboardingRow, {
+    email: user.email ?? "",
+    ownerName: profile?.full_name ?? "",
+  });
 
   const rawError = sp.error;
   const errorMsg =
@@ -77,10 +86,7 @@ export default async function OnboardingPage({
           title="Set up your business"
           description="Four quick steps — then Mission Control unlocks with your profile, leads, and core tools. Premium services can be enabled by your admin as you grow."
         />
-        <OnboardingWizard
-          defaultEmail={user.email ?? ""}
-          defaultOwnerName={profile?.full_name ?? ""}
-        />
+        <OnboardingWizard initialDraft={initialDraft} />
         <details className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-sm text-muted-foreground">
           <summary className="cursor-pointer font-medium text-foreground">
             What happens after setup

@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { ok, fail, type ServiceResult } from "@/lib/result";
+import { createServiceRoleClient } from "@/lib/supabase/server";
+import { registerAgencyAccount } from "@/services/admin/platform-accounts.service";
 import { createOnboardingRepository } from "@/repositories/onboarding.repository";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { createBusinessProfile } from "@/services/business/business.service";
@@ -78,17 +80,34 @@ export async function completeOnboardingProfile(
     services: form.services,
     businessHours: form.businessHours,
     monthlyBudget: form.monthlyBudget,
-    profileData: profile as Record<string, unknown>,
+    profileData: {
+      ...profile,
+      accountIntent: form.accountIntent ?? "direct",
+    } as Record<string, unknown>,
     stage: "live",
     status: "completed",
     checklist: {
       profile_complete: true,
+      integrations_connected: false,
       agents_assigned: false,
       campaign_built: false,
       landing_page_ready: false,
       ai_active: false,
+      team_invited: false,
     },
   });
+
+  if (form.accountIntent === "agency") {
+    try {
+      const service = createServiceRoleClient();
+      await registerAgencyAccount(service, userId, {
+        businessId,
+        agencyName: form.businessName,
+      });
+    } catch {
+      /* agency row is best-effort; admin can fix from Platform accounts */
+    }
+  }
 
   try {
     await seedDefaultTasksIfEmpty(client, businessId);

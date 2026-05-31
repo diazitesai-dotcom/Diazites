@@ -3,12 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  draftToWizardPayload,
+  type OnboardingDraft,
+} from "@/lib/onboarding/draft";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { saveOnboardingDraft } from "@/services/onboarding/draft.service";
 import { completeOnboardingProfile } from "@/services/onboarding/onboarding-completion.service";
 import type { CampaignGoalId, OnboardingWizardPayload } from "@/types/platform-growth";
 
 function parseOnboardingForm(formData: FormData): OnboardingWizardPayload {
   const campaignGoal = String(formData.get("campaign_goal") ?? "generate_leads");
+  const accountIntent = String(formData.get("account_intent") ?? "direct");
   return {
     businessName: String(formData.get("business_name") ?? ""),
     ownerName: String(formData.get("owner_name") ?? ""),
@@ -35,9 +41,56 @@ function parseOnboardingForm(formData: FormData): OnboardingWizardPayload {
     existingWebsite: String(formData.get("existing_website") ?? "") || undefined,
     leadNotifyEmail: String(formData.get("lead_notify_email") ?? "") || undefined,
     leadNotifyPhone: String(formData.get("lead_notify_phone") ?? "") || undefined,
+    accountIntent:
+      accountIntent === "agency" || accountIntent === "sub_account"
+        ? accountIntent
+        : "direct",
   };
 }
 
+export async function saveOnboardingDraftAction(draft: OnboardingDraft) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false as const, error: "Not signed in" };
+
+  const result = await saveOnboardingDraft(supabase, user.id, draft);
+  if (!result.success) return { success: false as const, error: result.error };
+  return { success: true as const };
+}
+
+export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  if (draft.accountIntent === "sub_account") {
+    redirect(
+      "/onboarding?error=" +
+        encodeURIComponent(
+          "Sub-accounts are created by your agency. Use their invite link or ask them to add you under Platform accounts.",
+        ),
+    );
+  }
+
+  const form = draftToWizardPayload(draft);
+  const result = await completeOnboardingProfile(supabase, user.id, form);
+
+  if (!result.success) {
+    redirect(`/onboarding?error=${encodeURIComponent(result.error)}`);
+  }
+
+  revalidatePath("/", "layout");
+  revalidatePath("/dashboard", "layout");
+  redirect("/dashboard?onboarding=complete");
+}
+
+/** @deprecated Prefer completeOnboardingFromDraftAction — kept for legacy form posts */
 export async function saveOnboardingAction(formData: FormData) {
   const supabase = await createServerSupabaseClient();
   const {
@@ -47,6 +100,15 @@ export async function saveOnboardingAction(formData: FormData) {
   if (!user) redirect("/login");
 
   const form = parseOnboardingForm(formData);
+  if (form.accountIntent === "sub_account") {
+    redirect(
+      "/onboarding?error=" +
+        encodeURIComponent(
+          "Sub-accounts are created by your agency. Use their invite link or ask them to add you under Platform accounts.",
+        ),
+    );
+  }
+
   const result = await completeOnboardingProfile(supabase, user.id, form);
 
   if (!result.success) {
