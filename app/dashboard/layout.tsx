@@ -5,11 +5,10 @@ import { AgentDeploymentShell } from "@/components/agents/agent-deployment-shell
 import { AdminAccessDeniedBanner } from "@/components/layout/admin-access-denied-banner";
 import { AppSidebarShell } from "@/components/layout/app-sidebar-shell";
 import { getCurrentUserAccess } from "@/lib/access-control/access-control.service";
-import { filterNavGroupsByAccess } from "@/lib/access-control/nav-filter";
 import { getAccountContext } from "@/lib/auth/account-context";
 import { ensureBootstrapPlatformAdmin } from "@/lib/auth/bootstrap-platform-admin";
-import { GROWTH_SIDEBAR_GROUPS } from "@/lib/navigation/platform-nav";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { PlatformServiceKey } from "@/types/access-control";
 
 /** Avoid prerendering without Supabase env (e.g. Vercel build before env is applied). */
 export const dynamic = "force-dynamic";
@@ -31,7 +30,8 @@ export default async function DashboardLayout({
     }
   }
 
-  let dashboardNavGroups = GROWTH_SIDEBAR_GROUPS;
+  let enabledServiceKeys: PlatformServiceKey[] | undefined;
+  let isOwnerAdmin = false;
 
   if (account) {
     try {
@@ -42,11 +42,8 @@ export default async function DashboardLayout({
         account.email,
       );
       if (accessResult.success) {
-        dashboardNavGroups = filterNavGroupsByAccess(
-          GROWTH_SIDEBAR_GROUPS,
-          accessResult.data.enabledServiceKeys,
-          accessResult.data.isOwnerAdmin,
-        );
+        enabledServiceKeys = accessResult.data.enabledServiceKeys;
+        isOwnerAdmin = accessResult.data.isOwnerAdmin;
       }
     } catch {
       /* fall back to default nav so login never hard-500s */
@@ -60,7 +57,8 @@ export default async function DashboardLayout({
       brandTitle="Diazites"
       footerLink={{ href: "/", label: "Marketing site" }}
       account={account}
-      dashboardNavGroups={dashboardNavGroups}
+      enabledServiceKeys={enabledServiceKeys}
+      isOwnerAdmin={isOwnerAdmin}
     >
       <Suspense fallback={null}>
         <AdminAccessDeniedBanner />

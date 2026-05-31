@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -22,14 +23,15 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { filterNavGroupsByAccess } from "@/lib/access-control/nav-filter";
 import {
   GROWTH_SIDEBAR_GROUPS,
   PRODUCT_TAGLINE,
   ROUTES,
-  type DashboardNavGroup,
   type DashboardNavItem,
 } from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils";
+import type { PlatformServiceKey } from "@/types/access-control";
 
 import type { AccountContext } from "@/lib/auth/account-context";
 
@@ -115,8 +117,9 @@ type AppSidebarShellProps = {
   brandTitle: string;
   footerLink?: { href: string; label: string };
   account?: AccountContext | null;
-  /** When set, overrides default growth sidebar (entitlement-filtered nav). */
-  dashboardNavGroups?: DashboardNavGroup[];
+  /** Serializable entitlements from server — icons stay client-side. */
+  enabledServiceKeys?: PlatformServiceKey[];
+  isOwnerAdmin?: boolean;
 };
 
 export function AppSidebarShell({
@@ -126,9 +129,17 @@ export function AppSidebarShell({
   brandTitle,
   footerLink,
   account,
-  dashboardNavGroups,
+  enabledServiceKeys,
+  isOwnerAdmin = false,
 }: AppSidebarShellProps) {
-  const growthNavGroups = dashboardNavGroups ?? GROWTH_SIDEBAR_GROUPS;
+  const growthNavGroups = useMemo(() => {
+    if (isOwnerAdmin) return GROWTH_SIDEBAR_GROUPS;
+    if (enabledServiceKeys?.length) {
+      return filterNavGroupsByAccess(GROWTH_SIDEBAR_GROUPS, enabledServiceKeys, false);
+    }
+    return GROWTH_SIDEBAR_GROUPS;
+  }, [enabledServiceKeys, isOwnerAdmin]);
+
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
