@@ -18,6 +18,7 @@ import {
   completeOnboardingFromDraftAction,
   saveOnboardingDraftAction,
 } from "@/services/onboarding/actions";
+import { OnboardingAiAutofill } from "@/components/onboarding/onboarding-ai-autofill";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
@@ -106,6 +107,14 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
     });
   }
 
+  function handleAutofillApply(next: OnboardingDraft, meta: { usedAi: boolean }) {
+    setDraft(next);
+    setError(null);
+    if (meta.usedAi) {
+      void saveOnboardingDraftAction(next);
+    }
+  }
+
   const stepDescription =
     step === 0 && isAgency
       ? "Agency identity — we'll register your workspace for client sub-accounts after launch."
@@ -144,7 +153,10 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
           ) : null}
 
           {step === 0 ? (
-            <StepBusiness draft={draft} patch={patch} />
+            <>
+              <OnboardingAiAutofill draft={draft} onApply={handleAutofillApply} />
+              <StepBusiness draft={draft} patch={patch} />
+            </>
           ) : null}
           {step === 1 ? <StepMarket draft={draft} patch={patch} /> : null}
           {step === 2 ? <StepBrand draft={draft} patch={patch} /> : null}

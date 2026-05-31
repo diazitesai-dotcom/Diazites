@@ -9,12 +9,14 @@ type AuthSubmitButtonProps = {
   label: string;
   pendingLabel: string;
   className?: string;
+  disabled?: boolean;
 };
 
 export function AuthSubmitButton({
   label,
   pendingLabel,
   className,
+  disabled = false,
 }: AuthSubmitButtonProps) {
   const { pending } = useFormStatus();
 
@@ -22,7 +24,7 @@ export function AuthSubmitButton({
     <Button
       type="submit"
       variant="gradient"
-      disabled={pending}
+      disabled={pending || disabled}
       className={cn("mt-2 w-full rounded-xl", className)}
       aria-busy={pending}
     >

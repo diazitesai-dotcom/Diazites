@@ -1,10 +1,12 @@
 import Link from "next/link";
 
-import { SignupCard } from "@/components/auth/signup-card";
+import { TrialSignupWizard } from "@/components/auth/trial-signup-wizard";
 import { AUTH_BRAND } from "@/lib/auth/auth-branding";
+import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
 import { buttonVariants } from "@/components/ui/button";
 import { signupAction } from "@/services/auth/actions";
 import { cn } from "@/lib/utils";
+import type { BillingPlanName } from "@/types/backend";
 
 export default async function SignupPage({
   searchParams,
@@ -15,7 +17,14 @@ export default async function SignupPage({
   const rawError = sp.error;
   const rawSuccess = sp.success;
   const rawEmail = sp.email;
-  const rawNext = sp.next;
+  const rawStep = sp.step;
+  const rawPlan = sp.plan;
+
+  const initialStep = rawStep === "2" ? (2 as const) : (1 as const);
+  const initialPlan =
+    typeof rawPlan === "string"
+      ? normalizeSignupPlan(rawPlan)
+      : ("Starter" as BillingPlanName);
 
   const safeDecode = (s: string) => {
     try {
@@ -28,8 +37,7 @@ export default async function SignupPage({
   const errorMsg = typeof rawError === "string" ? safeDecode(rawError) : null;
   const successType = typeof rawSuccess === "string" ? rawSuccess : null;
   const email = typeof rawEmail === "string" ? safeDecode(rawEmail) : null;
-  const nextPath =
-    typeof rawNext === "string" && rawNext.startsWith("/") ? rawNext : "/onboarding?welcome=trial";
+  const nextPath = "/onboarding?welcome=trial";
 
   if (successType === "check-email") {
     return (
@@ -64,7 +72,7 @@ export default async function SignupPage({
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-12">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,rgba(139,92,246,0.2),transparent)]" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_80%_80%,rgba(34,211,238,0.12),transparent)]" />
-      <div className="relative z-[1] w-full max-w-md space-y-4">
+      <div className="relative z-[1] w-full max-w-lg space-y-4">
         {errorMsg ? (
           <p
             role="alert"
@@ -73,14 +81,10 @@ export default async function SignupPage({
             {errorMsg}
           </p>
         ) : null}
-        <SignupCard
-          title={`Create your ${AUTH_BRAND.platformName} account`}
-          submitText="Start free trial"
-          pendingText="Creating account…"
+        <TrialSignupWizard
           action={signupAction}
-          footerHref="/login"
-          footerText="Already have an account?"
-          footerCta="Sign in"
+          initialStep={initialStep}
+          initialPlan={initialPlan}
           nextPath={nextPath}
         />
       </div>

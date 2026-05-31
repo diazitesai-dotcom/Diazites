@@ -10,6 +10,9 @@ import {
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { saveOnboardingDraft } from "@/services/onboarding/draft.service";
 import { completeOnboardingProfile } from "@/services/onboarding/onboarding-completion.service";
+import { autofillOnboardingFromWebsite } from "@/services/onboarding/website-autofill.service";
+import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
+import type { BillingPlanName } from "@/types/backend";
 import type { CampaignGoalId, OnboardingWizardPayload } from "@/types/platform-growth";
 
 function parseOnboardingForm(formData: FormData): OnboardingWizardPayload {
@@ -61,6 +64,28 @@ export async function saveOnboardingDraftAction(draft: OnboardingDraft) {
   return { success: true as const };
 }
 
+export async function autofillOnboardingFromWebsiteAction(
+  websiteUrl: string,
+  currentDraft: OnboardingDraft,
+) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false as const, error: "Not signed in" };
+
+  const result = await autofillOnboardingFromWebsite(
+    supabase,
+    user.id,
+    websiteUrl,
+    currentDraft,
+  );
+
+  if (!result.success) return { success: false as const, error: result.error };
+  return { success: true as const, data: result.data };
+}
+
 export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) {
   const supabase = await createServerSupabaseClient();
   const {
@@ -78,8 +103,14 @@ export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) 
     );
   }
 
+  const selectedPlan = normalizeSignupPlan(
+    (user.user_metadata?.selected_plan as string | undefined) ?? "Starter",
+  ) as BillingPlanName;
+
   const form = draftToWizardPayload(draft);
-  const result = await completeOnboardingProfile(supabase, user.id, form);
+  const result = await completeOnboardingProfile(supabase, user.id, form, {
+    trialPlanName: selectedPlan,
+  });
 
   if (!result.success) {
     redirect(`/onboarding?error=${encodeURIComponent(result.error)}`);
@@ -109,7 +140,13 @@ export async function saveOnboardingAction(formData: FormData) {
     );
   }
 
-  const result = await completeOnboardingProfile(supabase, user.id, form);
+  const selectedPlan = normalizeSignupPlan(
+    (user.user_metadata?.selected_plan as string | undefined) ?? "Starter",
+  ) as BillingPlanName;
+
+  const result = await completeOnboardingProfile(supabase, user.id, form, {
+    trialPlanName: selectedPlan,
+  });
 
   if (!result.success) {
     redirect(`/onboarding?error=${encodeURIComponent(result.error)}`);

@@ -9,6 +9,8 @@ import { createBusinessProfile } from "@/services/business/business.service";
 import { seedDefaultTasksIfEmpty } from "@/services/tasks/task.service";
 import { EVENT_TYPES } from "@/types/backend";
 import type { BusinessProfile, OnboardingWizardPayload } from "@/types/platform-growth";
+import type { BillingPlanName } from "@/types/backend";
+import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
 
 import { bootstrapBusinessSystem } from "@/services/platform/bootstrap-business-system.service";
 import { logAgentActivity } from "@/services/platform/agent-activity.service";
@@ -42,9 +44,11 @@ export async function completeOnboardingProfile(
   client: SupabaseClient,
   userId: string,
   form: OnboardingWizardPayload,
+  options?: { trialPlanName?: BillingPlanName },
 ): Promise<ServiceResult<{ businessId: string }>> {
   const onboarding = createOnboardingRepository(client);
   const profile = toBusinessProfile(form);
+  const trialPlan = normalizeSignupPlan(options?.trialPlanName ?? "Starter");
 
   const businessResult = await createBusinessProfile(client, {
     ownerUserId: userId,
@@ -57,7 +61,7 @@ export async function completeOnboardingProfile(
     monthlyBudget: form.monthlyBudget,
     profileFullName: form.ownerName || null,
     profilePhone: form.phone || null,
-    initialPlan: { name: "Starter" },
+    initialPlan: { name: trialPlan },
   });
 
   if (!businessResult.success) {

@@ -41,7 +41,12 @@ export default async function OnboardingPage({
   const { data: onboardingRow } = await onboardingRepo.getByUserId(user.id);
   const initialDraft = draftFromOnboardingRow(onboardingRow, {
     email: user.email ?? "",
-    ownerName: profile?.full_name ?? "",
+    ownerName:
+      profile?.full_name ??
+      (user.user_metadata?.full_name as string | undefined) ??
+      "",
+    businessName: (user.user_metadata?.company_name as string | undefined) ?? "",
+    phone: (user.user_metadata?.phone as string | undefined) ?? "",
   });
 
   const rawError = sp.error;

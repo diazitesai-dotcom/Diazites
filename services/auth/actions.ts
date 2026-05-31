@@ -12,6 +12,9 @@ import { ensureUserPlatformAccess } from "@/lib/access-control/access-control.se
 import { createUserProfile } from "@/lib/auth/user-profile";
 import { getPublicAppUrl } from "@/lib/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
+import { createSignupTrialCheckoutSession } from "@/services/stripe/signup-checkout.service";
+import type { BillingPlanName } from "@/types/backend";
 import { completePostAuthSignup } from "@/services/auth/post-auth.service";
 import { sendDiazitesWelcomeEmail } from "@/services/auth/welcome-email.service";
 
@@ -19,10 +22,17 @@ export async function signupAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const fullName = String(formData.get("full_name") ?? "").trim();
+  const companyName = String(formData.get("company_name") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const selectedPlan = normalizeSignupPlan(String(formData.get("selected_plan") ?? "Starter"));
   const promoCode = String(formData.get("promo_code") ?? "").trim();
 
   if (!email || !password) {
-    redirect("/signup?error=Email%20and%20password%20are%20required");
+    redirect("/signup?error=Email%20and%20password%20are%20required&step=2");
+  }
+
+  if (password.length < 8) {
+    redirect("/signup?error=Password%20must%20be%20at%20least%208%20characters&step=2");
   }
 
   let supabase;
@@ -43,6 +53,9 @@ export async function signupAction(formData: FormData) {
       emailRedirectTo,
       data: {
         full_name: fullName || null,
+        company_name: companyName || null,
+        phone: phone || null,
+        selected_plan: selectedPlan,
         promo_code: promoCode || null,
         app_name: AUTH_BRAND.platformName,
       },
@@ -50,7 +63,7 @@ export async function signupAction(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+    redirect(`/signup?error=${encodeURIComponent(error.message)}&step=2&plan=${encodeURIComponent(selectedPlan)}`);
   }
 
   if (data.session?.user) {
@@ -59,6 +72,16 @@ export async function signupAction(formData: FormData) {
       defaultNext: "/onboarding?welcome=trial",
     });
     revalidatePath("/", "layout");
+
+    const checkout = await createSignupTrialCheckoutSession({
+      userId: data.session.user.id,
+      email,
+      planName: selectedPlan as BillingPlanName,
+    });
+    if (checkout?.url) {
+      redirect(checkout.url);
+    }
+
     redirect("/onboarding?welcome=trial");
   }
 
