@@ -27,7 +27,7 @@ export function TrustIntegrationsSection() {
           </motion.h2>
           <motion.p variants={fadeUp} className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">
             Diazites is designed to plug into the stack you already use — ads, auth, payments,
-            messaging, and AI — without locking you into a single vendor.
+            email, and AI — without locking you into a single vendor.
           </motion.p>
         </motion.div>
 

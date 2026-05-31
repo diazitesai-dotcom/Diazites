@@ -123,7 +123,7 @@ export function MarketingPlatformSection() {
           <ul className="space-y-3 text-sm text-muted-foreground">
             <li className="flex gap-2">
               <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-gradient-to-br from-violet-400 to-cyan-400" />
-              Unified signals across campaigns, CRM, and AI messaging.
+              Unified signals across campaigns, CRM, and email follow-up.
             </li>
             <li className="flex gap-2">
               <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-gradient-to-br from-violet-400 to-cyan-400" />
@@ -175,7 +175,7 @@ export function MarketingPlatformSection() {
               </p>
             </div>
             <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-4 text-sm text-muted-foreground">
-              Smart message preview appears here with tone controls and compliance
+              Smart email preview appears here with tone controls and compliance
               checks — ready for operator review.
             </div>
           </div>

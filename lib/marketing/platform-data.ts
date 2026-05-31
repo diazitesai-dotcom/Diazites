@@ -32,7 +32,7 @@ export const INTEGRATION_PARTNERS = [
 export const CAPABILITY_METRICS = [
   { label: "AI Agents Available", value: "8+" },
   { label: "Campaign Types Supported", value: "12+" },
-  { label: "Integrations Ready", value: "11+" },
+  { label: "Integrations Ready", value: "10+" },
   { label: "Workspace Types", value: "3" },
   { label: "Automation Modules", value: "8+" },
   { label: "Payment Tools", value: "6+" },
@@ -137,5 +137,5 @@ export const PRICING_PREVIEW_PLANS = BILLING_PLANS_DISPLAY.map((plan) => ({
             ? "Standard"
             : "Email",
   },
-  features: plan.features,
+  features: plan.features.filter((f) => !/sms|text\/sms|twilio/i.test(f)),
 }));

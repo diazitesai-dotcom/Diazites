@@ -84,7 +84,10 @@ export function PricingPreviewSection() {
                 <li>Support: {plan.limits.support}</li>
               </ul>
               <ul className="mt-4 space-y-2 border-t border-white/[0.06] pt-4">
-                {plan.features.slice(0, 4).map((f) => (
+                {plan.features
+                  .filter((f) => !/sms|text\/sms|twilio/i.test(f))
+                  .slice(0, 4)
+                  .map((f) => (
                   <li key={f} className="flex items-start gap-2 text-xs text-foreground/80">
                     <Check className="mt-0.5 size-3.5 shrink-0 text-violet-400" aria-hidden />
                     {f}
