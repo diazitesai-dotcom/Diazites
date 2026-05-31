@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import {
+  ArrowRight,
   Bot,
   Building2,
   Check,
@@ -24,6 +25,7 @@ import {
   ONBOARDING_CONNECTIONS,
 } from "@/lib/marketing/platform-data";
 import {
+  buildLaunchChecklistFromDraft,
   emptyOnboardingDraft,
   type OnboardingAccountIntent,
   type OnboardingDraft,
@@ -33,6 +35,7 @@ import {
   saveOnboardingDraftAction,
 } from "@/services/onboarding/actions";
 import { OnboardingAiAutofill } from "@/components/onboarding/onboarding-ai-autofill";
+import { PostSetupChecklist } from "@/components/onboarding/post-setup-checklist";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
@@ -112,6 +115,9 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
   const [isPending, startTransition] = useTransition();
   const [generatePhase, setGeneratePhase] = useState(0);
   const [generating, setGenerating] = useState(false);
+  const [setupComplete, setSetupComplete] = useState<string | null>(null);
+
+  const launchChecklist = useMemo(() => buildLaunchChecklistFromDraft(draft), [draft]);
 
   const isSubAccount = draft.accountIntent === "sub_account";
 
@@ -191,7 +197,8 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
           setError(result.error ?? "Could not complete setup.");
           return;
         }
-        window.location.assign(result.redirectTo);
+        setGenerating(false);
+        setSetupComplete(result.redirectTo);
       } catch (err) {
         window.clearInterval(phaseTimer);
         setGenerating(false);
@@ -222,8 +229,35 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
 
   const StepIcon = STEPS[step]?.icon ?? Building2;
 
+  if (setupComplete) {
+    return (
+      <div className="space-y-8">
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-8 text-center">
+          <Check className="mx-auto size-10 text-emerald-400" aria-hidden />
+          <h2 className="mt-4 text-2xl font-semibold tracking-tight">Your workspace is ready</h2>
+          <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
+            Mission Control is live for {draft.businessName || "your business"}. Finish the launch
+            steps below, then enter your command center.
+          </p>
+          <Button
+            type="button"
+            variant="gradient"
+            size="lg"
+            className="mt-6 gap-2 rounded-xl"
+            onClick={() => window.location.assign(setupComplete)}
+          >
+            Enter Mission Control
+            <ArrowRight className="size-4" aria-hidden />
+          </Button>
+        </div>
+        <PostSetupChecklist items={launchChecklist} alwaysShow className="border-white/[0.08]" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+      <div className="space-y-8 min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-violet-400">
@@ -487,6 +521,15 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
           </Button>
         )}
       </div>
+      </div>
+
+      <aside className="lg:sticky lg:top-8">
+        <PostSetupChecklist items={launchChecklist} alwaysShow />
+        <p className="mt-3 text-xs text-muted-foreground">
+          Steps update as you move through setup. You can finish the rest anytime from Mission
+          Control.
+        </p>
+      </aside>
     </div>
   );
 }

@@ -56,8 +56,8 @@ export function OnboardingAiAutofill({
           <div>
             <p className="text-sm font-semibold text-foreground">Autofill with AI</p>
             <p className="text-xs text-muted-foreground">
-              Paste your website URL and we&apos;ll pre-fill business name, services, audience, and
-              more.
+              Paste your website URL (include https://) and we&apos;ll pre-fill business name,
+              services, audience, and more.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">

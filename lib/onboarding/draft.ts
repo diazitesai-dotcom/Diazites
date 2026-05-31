@@ -238,3 +238,25 @@ export const POST_SETUP_CHECKLIST_META: Array<{
     href: "/dashboard/automations",
   },
 ];
+
+/** Live launch checklist preview while the onboarding wizard is in progress. */
+export function buildLaunchChecklistFromDraft(draft: OnboardingDraft): PostSetupChecklistItem[] {
+  const flags: Record<OnboardingChecklistKey, boolean> = {
+    profile_complete: Boolean(
+      draft.businessName.trim() && draft.industry.trim() && draft.businessType.trim(),
+    ),
+    integrations_connected: draft.skippedConnections.length === 0,
+    agents_assigned: draft.selectedAgents.length > 0,
+    campaign_built: false,
+    landing_page_ready: draft.selectedAgents.includes("landing"),
+    ai_active: draft.selectedAgents.some((key) =>
+      ["sms", "email", "pipeline"].includes(key),
+    ),
+    team_invited: false,
+  };
+
+  return POST_SETUP_CHECKLIST_META.map((meta) => ({
+    ...meta,
+    done: flags[meta.key],
+  }));
+}

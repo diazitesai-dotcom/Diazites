@@ -1,3 +1,10 @@
+import {
+  BRAND_HEADLINE,
+  BRAND_SUBHEADLINE,
+  ONBOARDING_AI_AGENTS,
+  TRUST_BADGES,
+} from "@/lib/marketing/platform-data";
+
 const READ_BYTES = 350_000;
 const MAX_TEXT_CHARS = 18_000;
 const FETCH_TIMEOUT_MS = 15_000;
@@ -8,6 +15,128 @@ const BLOCKED_HOSTS = new Set([
   "0.0.0.0",
   "[::1]",
 ]);
+
+function hostnameKey(host: string): string {
+  return host.toLowerCase().replace(/^www\./, "");
+}
+
+function isOwnAppHostname(host: string): boolean {
+  const key = hostnameKey(host);
+  const candidates = new Set<string>(["diazites.com", "diazitesai.vercel.app"]);
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (appUrl) {
+    try {
+      candidates.add(hostnameKey(new URL(appUrl).hostname));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const vercelUrl = process.env.VERCEL_URL?.trim();
+  if (vercelUrl) {
+    candidates.add(hostnameKey(vercelUrl.replace(/^https?:\/\//i, "")));
+  }
+
+  return candidates.has(key) || host.toLowerCase().endsWith(".vercel.app");
+}
+
+function builtInMarketingSnapshot(url: string): { text: string; title: string } | null {
+  try {
+    if (!isOwnAppHostname(new URL(url).hostname)) return null;
+  } catch {
+    return null;
+  }
+
+  // Avoid server-side self-fetch loops on Vercel when operators test with diazites.com.
+  const text = [
+    `TITLE: ${BRAND_HEADLINE}`,
+    `DESCRIPTION: ${BRAND_SUBHEADLINE}`,
+    `SERVICES: ${TRUST_BADGES.join(", ")}`,
+    `AGENTS: ${ONBOARDING_AI_AGENTS.map((a) => a.label).join(", ")}`,
+    "INDUSTRY: SaaS, AI automation, marketing technology",
+    "BUSINESS TYPE: SaaS",
+    "TARGET AUDIENCE: Agencies, local businesses, consultants, and growth operators",
+    "CAMPAIGN GOAL: generate leads and automate follow-up",
+  ].join(" ");
+
+  return {
+    title: BRAND_HEADLINE,
+    text: text.slice(0, MAX_TEXT_CHARS),
+  };
+}
+
+function friendlyFetchError(error: unknown): string {
+  const msg = error instanceof Error ? error.message : String(error);
+  const cause =
+    error instanceof Error && "cause" in error && error.cause instanceof Error
+      ? error.cause.message
+      : "";
+
+  const combined = `${msg} ${cause}`.toLowerCase();
+  if (
+    combined.includes("fetch failed") ||
+    combined.includes("econnrefused") ||
+    combined.includes("enotfound") ||
+    combined.includes("etimedout") ||
+    combined.includes("certificate")
+  ) {
+    return "We couldn't reach that website from our servers. Use the full URL (https://…) or try again in a moment.";
+  }
+  return msg || "Failed to fetch website.";
+}
+
+function buildFetchCandidates(url: string): string[] {
+  const parsed = new URL(url);
+  const candidates = new Set<string>([url]);
+
+  const bare = hostnameKey(parsed.hostname);
+  const withWww = parsed.hostname.toLowerCase().startsWith("www.")
+    ? bare
+    : `www.${parsed.hostname.toLowerCase()}`;
+  const withoutWww = bare;
+
+  for (const host of [withWww, withoutWww]) {
+    if (host !== parsed.hostname.toLowerCase()) {
+      candidates.add(`${parsed.protocol}//${host}${parsed.pathname}${parsed.search}`);
+    }
+  }
+
+  if (isOwnAppHostname(parsed.hostname) && process.env.VERCEL_URL?.trim()) {
+    const vercelHost = process.env.VERCEL_URL.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+    candidates.add(`https://${vercelHost}${parsed.pathname}${parsed.search}`);
+  }
+
+  return [...candidates];
+}
+
+async function fetchHtml(url: string, signal: AbortSignal): Promise<Response> {
+  const headers = {
+    "User-Agent":
+      "DiazitesBot/1.0 (+https://www.diazites.com; onboarding-autofill)",
+    Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+  };
+
+  const candidates = buildFetchCandidates(url);
+  let lastError: Error | undefined;
+
+  for (const candidate of candidates) {
+    try {
+      const res = await fetch(candidate, {
+        signal,
+        headers,
+        redirect: "follow",
+        cache: "no-store",
+      });
+      if (res.ok) return res;
+      lastError = new Error(`Could not load website (HTTP ${res.status}).`);
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+
+  throw lastError ?? new Error("Could not reach website.");
+}
 
 function normalizeWebsiteUrl(raw: string): string | null {
   const trimmed = raw.trim();
@@ -173,23 +302,16 @@ export async function fetchWebsiteText(rawUrl: string): Promise<{
     throw new Error("Enter a valid public website URL (https://…).");
   }
 
+  const builtIn = builtInMarketingSnapshot(url);
+  if (builtIn) {
+    return { url, text: builtIn.text, title: builtIn.title };
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "DiazitesBot/1.0 (+https://www.diazites.com; onboarding-autofill)",
-        Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
-      },
-      redirect: "follow",
-    });
-
-    if (!res.ok) {
-      throw new Error(`Could not load website (HTTP ${res.status}).`);
-    }
+    const res = await fetchHtml(url, controller.signal);
 
     const contentType = res.headers.get("content-type") ?? "";
     if (
@@ -222,7 +344,7 @@ export async function fetchWebsiteText(rawUrl: string): Promise<{
     if (e instanceof Error && e.name === "AbortError") {
       throw new Error("Website took too long to respond.");
     }
-    throw e instanceof Error ? e : new Error("Failed to fetch website.");
+    throw new Error(friendlyFetchError(e));
   } finally {
     clearTimeout(timer);
   }

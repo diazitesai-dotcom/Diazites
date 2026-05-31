@@ -77,7 +77,7 @@ export default async function OnboardingPage({
   return (
     <main className="relative min-h-screen px-4 py-10 sm:px-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_45%_at_50%_-10%,rgba(139,92,246,0.15),transparent)]" />
-      <div className="relative mx-auto max-w-4xl space-y-10">
+      <div className="relative mx-auto max-w-6xl space-y-10">
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
             Signed in as <span className="text-foreground">{user.email}</span>

@@ -3,15 +3,24 @@ import { CheckCircle2, Circle } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { PostSetupChecklistItem } from "@/lib/onboarding/draft";
+import { cn } from "@/lib/utils";
 
-export function PostSetupChecklist({ items }: { items: PostSetupChecklistItem[] }) {
+export function PostSetupChecklist({
+  items,
+  alwaysShow = false,
+  className,
+}: {
+  items: PostSetupChecklistItem[];
+  alwaysShow?: boolean;
+  className?: string;
+}) {
   const pending = items.filter((item) => !item.done);
-  if (pending.length === 0) return null;
+  if (!alwaysShow && pending.length === 0) return null;
 
   const doneCount = items.filter((item) => item.done).length;
 
   return (
-    <Card className="border-violet-500/25 bg-violet-500/[0.06]">
+    <Card className={cn("border-violet-500/25 bg-violet-500/[0.06]", className)}>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Finish setting up</CardTitle>
         <CardDescription>
