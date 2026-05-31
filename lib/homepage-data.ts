@@ -13,7 +13,7 @@ export const howItWorksSteps = [
   {
     title: "AI responds first",
     description:
-      "Every inquiry triggers instant SMS, email, or chat sequences so prospects never wait while your team is heads-down.",
+      "Every inquiry triggers instant email sequences so prospects never wait while your team is heads-down.",
     icon: "zap" as const,
   },
   {
@@ -96,7 +96,7 @@ export const pricingTiers: PricingTier[] = [
     features: [
       "2 AI marketing agents",
       "Lead capture + CRM sync",
-      "Email & SMS follow-up",
+      "Email follow-up",
       "Weekly performance digest",
       "Email support",
     ],

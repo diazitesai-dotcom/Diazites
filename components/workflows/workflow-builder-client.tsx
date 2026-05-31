@@ -63,7 +63,7 @@ export function WorkflowBuilderClient({ workflow }: WorkflowBuilderClientProps) 
           label,
           x: lastX,
           y: 120 + (definition.nodes.length % 3) * 60,
-          config: type === "trigger" ? { triggerType: "new_lead_created" } : { actionType: "send_sms" },
+          config: type === "trigger" ? { triggerType: "new_lead_created" } : { actionType: "send_email" },
         },
       ],
     });
@@ -181,7 +181,7 @@ export function WorkflowBuilderClient({ workflow }: WorkflowBuilderClientProps) 
           <Textarea
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
-            placeholder="Refine this workflow: add 24h SMS follow-up and move hot leads to Qualified..."
+            placeholder="Refine this workflow: add 24h email follow-up and move hot leads to Qualified..."
             rows={3}
             className="border-white/10"
           />

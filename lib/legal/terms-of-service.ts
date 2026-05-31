@@ -68,7 +68,7 @@ export const termsOfService: LegalDocument = {
       id: "integrations",
       title: "8. Third-party services",
       paragraphs: [
-        "Integrations (advertising platforms, CRM, email, SMS, payments, etc.) are subject to those providers’ terms. We are not responsible for third-party outages, policy changes, or account actions taken by those providers.",
+        "Integrations (advertising platforms, CRM, email, payments, etc.) are subject to those providers’ terms. We are not responsible for third-party outages, policy changes, or account actions taken by those providers.",
       ],
     },
     {

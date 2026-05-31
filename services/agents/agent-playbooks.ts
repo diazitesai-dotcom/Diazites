@@ -77,7 +77,7 @@ export const AGENT_PLAYBOOKS: Record<AgentType, AgentPlaybook> = {
         actionConfig: {
           source: "agent:ai_follow_up",
           url: "",
-          note: "Built-in AI email/SMS follow-up runs automatically; add a webhook for CRM sync.",
+          note: "Built-in AI email follow-up runs automatically; add a webhook for CRM sync.",
         },
         enabled: false,
       },

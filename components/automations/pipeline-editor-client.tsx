@@ -5,7 +5,6 @@ import { useState, useTransition } from "react";
 import {
   ArrowLeft,
   Mail,
-  MessageSquare,
   Plus,
   Tag,
   Trash2,
@@ -46,7 +45,6 @@ type Props = {
 };
 
 const QUICK_AUTOMATIONS = [
-  { type: "send_sms", label: "Send SMS", icon: MessageSquare },
   { type: "send_email", label: "Send email", icon: Mail },
   { type: "add_tag", label: "Add tag", icon: Tag },
   { type: "create_task", label: "Create task", icon: Plus },
@@ -284,7 +282,7 @@ export function PipelineEditorClient({ detail, allWorkflows }: Props) {
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           {WORKFLOW_ACTION_OPTIONS.filter((a) =>
-            ["move_pipeline_stage", "send_sms", "send_email", "add_tag", "create_task"].includes(
+            ["move_pipeline_stage", "send_email", "add_tag", "create_task"].includes(
               a.id,
             ),
           ).map((a) => (

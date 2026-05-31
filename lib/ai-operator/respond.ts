@@ -213,8 +213,8 @@ export function processOperatorMessage(
   if (intent === "deploy_followup" || /launch follow-?up/i.test(text)) {
     return msg({
       mode: "action",
-      content: "Ready to deploy follow-up automation across SMS, email, and qualification triggers with CRM sync.",
-      bullets: ["Trigger: new lead + qualified status", "Channels: SMS + email sequences", "Agent: AI Follow-Up"],
+      content: "Ready to deploy follow-up automation across email and qualification triggers with CRM sync.",
+      bullets: ["Trigger: new lead + qualified status", "Channels: email sequences", "Agent: AI Follow-Up"],
       actions: [
         deployAction("Deploy follow-up", { goal: "follow_up_leads", step: "stack", source: "control_plane" }, true),
         navAction(ROUTES.automationCenter, "Automation Center"),

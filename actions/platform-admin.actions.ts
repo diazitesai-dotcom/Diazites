@@ -57,7 +57,6 @@ export async function updateAccountAdminAction(
     whiteLabelEnabled?: boolean;
     adminNotes?: string;
     aiCallMinutes?: number;
-    smsPerMonth?: number;
     emailsPerMonth?: number;
     workflowsActive?: number;
     aiAgents?: number;
@@ -69,7 +68,6 @@ export async function updateAccountAdminAction(
 
   const usageOverrides: UsageLimitOverrides = patch.usageLimitOverrides ?? {};
   if (patch.aiCallMinutes != null) usageOverrides.ai_call_minutes = patch.aiCallMinutes;
-  if (patch.smsPerMonth != null) usageOverrides.sms_sent = patch.smsPerMonth;
   if (patch.emailsPerMonth != null) usageOverrides.email_sent = patch.emailsPerMonth;
   if (patch.workflowsActive != null) usageOverrides.workflows_active = patch.workflowsActive;
   if (patch.aiAgents != null) usageOverrides.ai_agents = patch.aiAgents;

@@ -21,18 +21,18 @@ export const SYSTEM_WORKFLOW_TEMPLATES: Array<{
   {
     slug: "new-lead-follow-up",
     name: "New Lead Follow-Up",
-    description: "Welcome SMS, wait, AI follow-up, pipeline moves, and team task.",
+    description: "Welcome email, wait, AI follow-up, pipeline moves, and team task.",
     category: "sales",
     definition: {
       nodes: [
         baseTrigger(),
         { id: "a1", type: "action", label: "Add tag: New Lead", x: 280, y: 80, config: { actionType: "add_tag", tag: "New Lead" } },
-        { id: "a2", type: "action", label: "Send welcome SMS", x: 280, y: 160, config: { actionType: "send_sms" } },
+        { id: "a2", type: "action", label: "Send welcome email", x: 280, y: 160, config: { actionType: "send_email" } },
         { id: "w1", type: "wait", label: "Wait 5 minutes", x: 480, y: 120, config: { minutes: 5 } },
         { id: "a3", type: "action", label: "Trigger AI Follow-Up Agent", x: 680, y: 120, config: { actionType: "trigger_ai_agent", agentKey: "follow_up" } },
         { id: "b1", type: "branch", label: "Replied?", x: 880, y: 120, config: { condition: "lead_replied" } },
         { id: "a4", type: "action", label: "Move to Contacted", x: 1080, y: 60, config: { actionType: "move_pipeline_stage", stage: "Contacted" } },
-        { id: "a5", type: "action", label: "24h follow-up SMS", x: 1080, y: 180, config: { actionType: "send_sms", delayHours: 24 } },
+        { id: "a5", type: "action", label: "24h follow-up email", x: 1080, y: 180, config: { actionType: "send_email", delayHours: 24 } },
       ],
       edges: [
         { id: "e1", from: "trigger-1", to: "a1" },
@@ -47,13 +47,13 @@ export const SYSTEM_WORKFLOW_TEMPLATES: Array<{
   },
   {
     slug: "missed-call-text-back",
-    name: "Missed Call Text Back",
-    description: "Instant SMS after missed call with booking link.",
+    name: "Missed Call Follow-Up",
+    description: "Instant email after missed call with booking link.",
     category: "calls",
     definition: {
       nodes: [
         { id: "t1", type: "trigger", label: "Missed call", x: 80, y: 120, config: { triggerType: "missed_call" } },
-        { id: "a1", type: "action", label: "Send SMS", x: 320, y: 120, config: { actionType: "send_sms" } },
+        { id: "a1", type: "action", label: "Send email", x: 320, y: 120, config: { actionType: "send_email" } },
         { id: "a2", type: "action", label: "Create task", x: 560, y: 120, config: { actionType: "create_task" } },
       ],
       edges: [
@@ -65,13 +65,13 @@ export const SYSTEM_WORKFLOW_TEMPLATES: Array<{
   {
     slug: "appointment-reminder",
     name: "Appointment Reminder",
-    description: "Reminder SMS and email before booked appointments.",
+    description: "Reminder email before booked appointments.",
     category: "appointments",
     definition: {
       nodes: [
         { id: "t1", type: "trigger", label: "Appointment booked", x: 80, y: 120, config: { triggerType: "appointment_booked" } },
         { id: "w1", type: "wait", label: "Wait until 24h before", x: 300, y: 120, config: { hoursBeforeAppointment: 24 } },
-        { id: "a1", type: "action", label: "Send reminder SMS", x: 520, y: 120, config: { actionType: "send_sms" } },
+        { id: "a1", type: "action", label: "Send reminder email", x: 520, y: 120, config: { actionType: "send_email" } },
       ],
       edges: [
         { id: "e1", from: "t1", to: "w1" },
@@ -82,7 +82,7 @@ export const SYSTEM_WORKFLOW_TEMPLATES: Array<{
   {
     slug: "ai-call-follow-up",
     name: "AI Call Follow-Up",
-    description: "Post-call SMS, workflow trigger, and pipeline update.",
+    description: "Post-call email, workflow trigger, and pipeline update.",
     category: "calls",
     definition: {
       nodes: [
@@ -105,7 +105,6 @@ export const WORKFLOW_TRIGGER_OPTIONS = [
   { id: "missed_call", label: "Missed call" },
   { id: "inbound_call", label: "Incoming call" },
   { id: "outbound_call_completed", label: "Outbound call completed" },
-  { id: "sms_received", label: "SMS received" },
   { id: "email_opened", label: "Email opened" },
   { id: "appointment_booked", label: "Appointment booked" },
   { id: "appointment_missed", label: "Appointment missed" },
@@ -116,7 +115,6 @@ export const WORKFLOW_TRIGGER_OPTIONS = [
 ] as const;
 
 export const WORKFLOW_ACTION_OPTIONS = [
-  { id: "send_sms", label: "Send SMS" },
   { id: "send_email", label: "Send email" },
   { id: "add_tag", label: "Add tag" },
   { id: "remove_tag", label: "Remove tag" },

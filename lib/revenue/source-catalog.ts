@@ -19,7 +19,6 @@ export const REVENUE_SOURCE_CATALOG: SourceDefinition[] = [
   { id: "direct", name: "Direct Traffic", platform: "direct", paid: false },
   { id: "referral", name: "Referral Traffic", platform: "referral", paid: false },
   { id: "email", name: "Email", platform: "email", paid: false },
-  { id: "sms", name: "SMS", platform: "sms", paid: false },
   { id: "ai_follow_up", name: "AI Follow-Up Agent", platform: "ai_follow_up", paid: false },
   { id: "retargeting", name: "Retargeting Agent", platform: "retargeting", paid: true },
   { id: "manual_sales", name: "Manual Sales", platform: "manual", paid: false },
@@ -41,7 +40,7 @@ export function mapLeadSourceToCatalogId(source: string | null | undefined): str
   if (s.includes("retarget")) return "retargeting";
   if (s.includes("follow") || s.includes("agent:ai_follow")) return "ai_follow_up";
   if (s.includes("email")) return "email";
-  if (s.includes("sms") || s.includes("twilio")) return "sms";
+  if (s.includes("twilio")) return "email";
   if (s.includes("referral")) return "referral";
   if (s.includes("direct")) return "direct";
   if (s.includes("stripe")) return "stripe";

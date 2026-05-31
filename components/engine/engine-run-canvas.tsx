@@ -567,7 +567,6 @@ function FunnelView({ payload }: { payload: Record<string, unknown> | null }) {
     | { emails?: unknown; sms?: unknown }
     | null;
   const emails = stringArray(followup?.emails);
-  const sms = stringArray(followup?.sms);
 
   return (
     <div className="space-y-5">
@@ -603,12 +602,9 @@ function FunnelView({ payload }: { payload: Record<string, unknown> | null }) {
         </div>
       ) : null}
 
-      {emails.length > 0 || sms.length > 0 ? (
+      {emails.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
-          {emails.length > 0 ? (
-            <ListBlock title="Email follow-ups" items={emails} accent="violet" />
-          ) : null}
-          {sms.length > 0 ? <ListBlock title="SMS follow-ups" items={sms} accent="cyan" /> : null}
+          <ListBlock title="Email follow-ups" items={emails} accent="violet" />
         </div>
       ) : null}
     </div>

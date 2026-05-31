@@ -27,7 +27,7 @@ export const privacyPolicy: LegalDocument = {
         "Account data: name, email address, password hash, organization and business profile details you provide during signup or onboarding.",
         "Customer and lead data: contact details, messages, campaign data, funnel submissions, and CRM records you or your agents store in the Service.",
         "Usage data: pages viewed, features used, device type, browser, IP address, and approximate location derived from IP.",
-        "Integration data: tokens and metadata from connected platforms (e.g., ad accounts, email, SMS, billing) that you authorize.",
+        "Integration data: tokens and metadata from connected platforms (e.g., ad accounts, email, billing) that you authorize.",
         "Communications: support requests and emails you send to us.",
         "Payment data: billing status and subscription identifiers processed by our payment provider (we do not store full card numbers).",
       ],
@@ -61,7 +61,7 @@ export const privacyPolicy: LegalDocument = {
         "We do not sell your personal information. We may share information with:",
       ],
       bullets: [
-        "Service providers (hosting, database, email, SMS, analytics, payments, AI infrastructure) who process data on our instructions.",
+        "Service providers (hosting, database, email, analytics, payments, AI infrastructure) who process data on our instructions.",
         "Integration partners you connect (e.g., Google Ads, Meta, Stripe) according to your authorization.",
         "Professional advisers and authorities when required by law or to protect rights and safety.",
         "Successors in connection with a merger, acquisition, or asset sale, subject to this Policy.",

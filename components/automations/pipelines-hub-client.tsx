@@ -45,7 +45,7 @@ export function PipelinesHubClient({ pipelines, stageCounts }: Props) {
             Pipeline builder (GHL-style)
           </CardTitle>
           <CardDescription>
-            Create pipelines with stages, attach workflows on stage entry, and connect SMS, email,
+            Create pipelines with stages, attach workflows on stage entry, and connect email,
             tags, and tasks — the same automation model as GoHighLevel, native to Diazites.
           </CardDescription>
         </CardHeader>

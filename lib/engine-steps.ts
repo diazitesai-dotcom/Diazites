@@ -45,7 +45,7 @@ export const ENGINE_STEPS: ReadonlyArray<{
     title: "AI Generation Suite",
     subtitle: "AI generates all assets",
     description:
-      "Landing pages, ad images & copy, email sequences, SMS sequences, hooks & headlines, offers & lead magnets, social proof & trust, FAQ & objections.",
+      "Landing pages, ad images & copy, email sequences, hooks & headlines, offers & lead magnets, social proof & trust, FAQ & objections.",
   },
   {
     key: "variants",

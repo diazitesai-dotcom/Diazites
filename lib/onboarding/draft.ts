@@ -250,7 +250,7 @@ export function buildLaunchChecklistFromDraft(draft: OnboardingDraft): PostSetup
     campaign_built: false,
     landing_page_ready: draft.selectedAgents.includes("landing"),
     ai_active: draft.selectedAgents.some((key) =>
-      ["sms", "email", "pipeline"].includes(key),
+      ["email", "pipeline"].includes(key),
     ),
     team_invited: false,
   };

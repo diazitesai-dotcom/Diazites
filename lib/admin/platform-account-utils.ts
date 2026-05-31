@@ -1,6 +1,12 @@
-import { getPlanDefinition, type PlanLimits, type UsageMetricKey } from "@/lib/billing/plans";
+import {
+  getPlanDefinition,
+  HIDDEN_USAGE_METRIC_KEYS,
+  type PlanLimits,
+} from "@/lib/billing/plans";
 import {
   DEFAULT_PLATFORM_FEATURE_FLAGS,
+  FEATURE_FLAG_LABELS,
+  HIDDEN_PLATFORM_FEATURE_FLAGS,
   type PlatformFeatureFlags,
   type UsageLimitOverrides,
 } from "@/types/platform-admin";
@@ -12,15 +18,15 @@ export function mergeFeatureFlags(
 }
 
 export function activeFeatureLabels(flags: PlatformFeatureFlags): string[] {
-  return Object.entries(flags)
-    .filter(([, v]) => v)
-    .map(([k]) => k.replace(/_/g, " "));
+  return (Object.keys(FEATURE_FLAG_LABELS) as (keyof PlatformFeatureFlags)[])
+    .filter((key) => !HIDDEN_PLATFORM_FEATURE_FLAGS.includes(key))
+    .filter((key) => flags[key])
+    .map((key) => FEATURE_FLAG_LABELS[key]);
 }
 
 export function planLimitsToUsageMap(limits: PlanLimits): Record<string, number | null> {
   return {
     ai_call_minutes: limits.aiCallMinutes,
-    sms_sent: limits.smsPerMonth,
     email_sent: limits.emailsPerMonth,
     ai_agents: limits.aiAgents,
     ad_accounts: limits.adAccounts,
@@ -40,6 +46,7 @@ export function mergedUsageLimits(
   const base = planLimitsToUsageMap(getPlanDefinition(planName).limits);
   const merged: Record<string, number | null> = { ...base };
   for (const [k, v] of Object.entries(overrides)) {
+    if (HIDDEN_USAGE_METRIC_KEYS.includes(k)) continue;
     if (v !== undefined) merged[k] = v;
   }
   return merged;
@@ -54,7 +61,6 @@ export function currentPeriodBounds(): { start: string; end: string } {
 
 export const USAGE_METRIC_LABELS: Record<string, string> = {
   ai_call_minutes: "AI call minutes",
-  sms_sent: "SMS sent",
   email_sent: "Emails sent",
   ai_agents: "AI agents",
   ad_accounts: "Ad accounts",
@@ -62,4 +68,7 @@ export const USAGE_METRIC_LABELS: Record<string, string> = {
   contacts: "Contacts",
   users: "Team users",
   ai_tokens: "AI tokens",
+  landing_pages: "Landing pages",
+  forms: "Forms",
+  pipelines: "Pipelines",
 };

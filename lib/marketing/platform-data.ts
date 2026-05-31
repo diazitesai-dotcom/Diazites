@@ -22,7 +22,6 @@ export const INTEGRATION_PARTNERS = [
   { name: "Vercel", slug: "vercel" },
   { name: "Google", slug: "google" },
   { name: "Meta", slug: "meta" },
-  { name: "Twilio", slug: "twilio" },
   { name: "OpenAI", slug: "openai" },
   { name: "Anthropic", slug: "anthropic" },
   { name: "Namecheap", slug: "namecheap" },
@@ -31,7 +30,7 @@ export const INTEGRATION_PARTNERS = [
 ] as const;
 
 export const CAPABILITY_METRICS = [
-  { label: "AI Agents Available", value: "9+" },
+  { label: "AI Agents Available", value: "8+" },
   { label: "Campaign Types Supported", value: "12+" },
   { label: "Integrations Ready", value: "11+" },
   { label: "Workspace Types", value: "3" },
@@ -59,11 +58,6 @@ export const ONBOARDING_AI_AGENTS = [
     key: "ads",
     label: "Ads Agent",
     description: "Build and optimize paid campaigns across Google and Meta.",
-  },
-  {
-    key: "sms",
-    label: "SMS Follow-Up Agent",
-    description: "Respond to new leads with intelligent text sequences.",
   },
   {
     key: "email",
@@ -101,7 +95,6 @@ export const ONBOARDING_CONNECTIONS = [
   { key: "google", label: "Google", description: "Ads, Analytics, and OAuth." },
   { key: "meta", label: "Meta / Facebook", description: "Ad accounts and lead sync." },
   { key: "stripe", label: "Stripe", description: "Payments and subscriptions." },
-  { key: "twilio", label: "Twilio", description: "SMS and voice channels." },
   { key: "email", label: "Email", description: "SMTP or provider inbox." },
   { key: "website", label: "Website", description: "Domain and tracking pixel." },
   { key: "calendar", label: "Calendar", description: "Booking and appointments." },
@@ -133,7 +126,6 @@ export const PRICING_PREVIEW_PLANS = BILLING_PLANS_DISPLAY.map((plan) => ({
     subaccounts: plan.name === "Pro" || plan.name === "Enterprise" ? "Unlimited" : plan.limits.businesses,
     campaigns: plan.limits.adAccounts,
     landingPages: plan.limits.landingPages,
-    sms: plan.limits.smsPerMonth,
     emails: plan.limits.emailsPerMonth,
     merchant: plan.features.some((f) => f.toLowerCase().includes("merchant")),
     support:

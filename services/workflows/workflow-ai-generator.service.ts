@@ -30,7 +30,6 @@ const aiWorkflowSchema = z.object({
       label: z.string().optional(),
     }),
   ),
-  smsCopy: z.array(z.string()).optional(),
   emailSubject: z.string().optional(),
 });
 
@@ -42,7 +41,6 @@ function fallbackFromPrompt(prompt: string): z.infer<typeof aiWorkflowSchema> {
     triggerType: "new_lead_created",
     nodes: tpl.definition.nodes,
     edges: tpl.definition.edges,
-    smsCopy: ["Thanks for reaching out — we'll be in touch shortly."],
     emailSubject: "Thanks for your interest",
   };
 }
@@ -75,7 +73,7 @@ export async function generateWorkflowFromPrompt(
       schema: aiWorkflowSchema,
       system:
         "You build visual automation workflows for Diazites native CRM. Return nodes with x,y layout left-to-right.",
-      prompt: `Business: ${business.name}\nUser request: "${prompt}"\n\nInclude trigger, waits, if/else branches, SMS/email, pipeline moves, tasks, and AI agent steps as appropriate.`,
+      prompt: `Business: ${business.name}\nUser request: "${prompt}"\n\nInclude trigger, waits, if/else branches, email, pipeline moves, tasks, and AI agent steps as appropriate.`,
     });
     parsed = result.success ? result.data : fallbackFromPrompt(prompt);
   } else {

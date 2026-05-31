@@ -15,7 +15,7 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
   { id: "programmatic", label: "Programmatic / DSP", description: "Demand-side platforms" },
   { id: "local_smb", label: "Local / SMB Ads", description: "Local service and community ads" },
   { id: "crm", label: "CRM Integrations", description: "Pipeline and lead management" },
-  { id: "email_sms", label: "Email / SMS / Automation", description: "Outreach and lifecycle" },
+  { id: "email_sms", label: "Email / Automation", description: "Outreach and lifecycle" },
   { id: "analytics", label: "Analytics / Tracking", description: "Attribution and event tracking" },
   { id: "ecommerce_payments", label: "Ecommerce / Payments", description: "Stores and payment rails" },
 ];
@@ -99,9 +99,6 @@ const PLATFORMS: PlatformDef[] = [
   { id: "activecampaign", name: "ActiveCampaign", categoryId: "email_sms", agentType: "email_sms" },
   { id: "brevo", name: "Brevo", categoryId: "email_sms", agentType: "email_sms" },
   { id: "sendgrid", name: "SendGrid", categoryId: "email_sms", agentType: "email_sms", defaultStatus: "expired" },
-  { id: "twilio", name: "Twilio", categoryId: "email_sms", agentType: "email_sms" },
-  { id: "postscript", name: "Postscript", categoryId: "email_sms", agentType: "email_sms" },
-  { id: "attentive", name: "Attentive", categoryId: "email_sms", agentType: "email_sms" },
   { id: "ga4", name: "Google Analytics 4", categoryId: "analytics", agentType: "analytics", defaultStatus: "needs_attention" },
   { id: "gtm", name: "Google Tag Manager", categoryId: "analytics", agentType: "analytics" },
   { id: "meta_pixel", name: "Meta Pixel", categoryId: "analytics", agentType: "analytics", defaultStatus: "error" },
@@ -196,7 +193,7 @@ export const AGENT_CAPABILITY_GROUPS: AgentCapabilityGroup[] = [
   },
   {
     agentType: "email_sms",
-    label: "Email / SMS Agent",
+    label: "Email Agent",
     capabilities: [
       "Send follow-up sequences",
       "Draft messages",

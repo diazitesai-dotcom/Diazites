@@ -103,6 +103,11 @@ export function BillingPageClient({
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-3xl font-semibold tracking-tight">${plan.priceMonthly}</p>
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  {plan.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
                 {stripeReady && plan.name !== "Enterprise" ? (
                   <form action={startSubscriptionCheckout.bind(null, plan.name)}>
                     <Button

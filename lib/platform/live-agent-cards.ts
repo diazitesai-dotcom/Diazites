@@ -32,13 +32,6 @@ export const DEFAULT_LIVE_AGENT_CARDS: LiveAgentCard[] = [
     metric: "12 hot leads",
   },
   {
-    id: "sms",
-    name: "SMS Agent",
-    status: "active",
-    lastAction: "Sent follow-up sequence",
-    metric: "44% response rate",
-  },
-  {
     id: "email",
     name: "Email Agent",
     status: "active",

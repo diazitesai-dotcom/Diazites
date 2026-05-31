@@ -697,13 +697,6 @@ export function buildMissionControlPayload(input: {
       healthDetail: "Platform key active",
     },
     {
-      id: "twilio",
-      name: "Twilio",
-      status: "missing",
-      href: "/dashboard/integrations",
-      category: "comms",
-    },
-    {
       id: "sendgrid",
       name: "SendGrid",
       status: "expired",

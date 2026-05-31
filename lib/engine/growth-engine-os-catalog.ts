@@ -73,7 +73,7 @@ export const ENGINE_AGENTS: EngineAgentDefinition[] = [
   { key: "ads", label: "Ads Agent", purpose: "Campaign structure, budgets, and channel launch", tools: ["Meta", "Google", "Marketplace", "Craigslist"], defaultEnabled: true, estimatedCostUsd: 0.5, riskLevel: "high" },
   { key: "creative", label: "Creative Agent", purpose: "Ad copy, images, hooks, and variant generation", tools: ["Creative Suite"], defaultEnabled: true, estimatedCostUsd: 0.6, riskLevel: "medium" },
   { key: "crm", label: "CRM Agent", purpose: "Lead sync, scoring, pipeline updates", tools: ["HubSpot", "GHL"], defaultEnabled: true, estimatedCostUsd: 0.25, riskLevel: "medium" },
-  { key: "followup", label: "Follow-Up Agent", purpose: "Email/SMS sequences and nurture timing", tools: ["Klaviyo", "Twilio"], defaultEnabled: true, estimatedCostUsd: 0.3, riskLevel: "medium" },
+  { key: "followup", label: "Follow-Up Agent", purpose: "Email sequences and nurture timing", tools: ["Klaviyo", "SendGrid"], defaultEnabled: true, estimatedCostUsd: 0.3, riskLevel: "medium" },
   { key: "analytics", label: "Analytics Agent", purpose: "Pixel validation, events, attribution", tools: ["GA4", "GTM", "Pixels"], defaultEnabled: true, estimatedCostUsd: 0.2, riskLevel: "low" },
   { key: "optimization", label: "Optimization Agent", purpose: "Budget shifts, creative fatigue, ROAS tuning", tools: ["Campaigns"], defaultEnabled: true, estimatedCostUsd: 0.4, riskLevel: "high" },
   { key: "retargeting", label: "Retargeting Agent", purpose: "Warm audience recapture and lookalikes", tools: ["Ads APIs"], defaultEnabled: false, estimatedCostUsd: 0.35, riskLevel: "high" },

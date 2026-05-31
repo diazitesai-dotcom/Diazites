@@ -332,7 +332,7 @@ export const GROWTH_SIDEBAR_GROUPS: DashboardNavGroup[] = [
         id: "follow_up",
         href: ROUTES.followUp,
         label: "Follow-up hub",
-        description: "SMS & email sequences",
+        description: "Email sequences & nurture",
         icon: MessageSquare,
       },
       {

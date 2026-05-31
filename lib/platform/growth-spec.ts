@@ -57,11 +57,6 @@ export const PLATFORM_AI_AGENTS: {
     deployKey: "lead_qualification",
   },
   {
-    id: "sms",
-    name: "SMS Agent",
-    description: "Automated text sequences, reminders, and reply-aware stops",
-  },
-  {
     id: "email",
     name: "Email Agent",
     description: "Nurture campaigns, reminders, and lead notifications",

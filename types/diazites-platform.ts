@@ -223,9 +223,9 @@ export type EmailCampaignDashboardStats = {
 };
 
 export const AI_TEXT_AGENT_PRESETS = [
-  { name: "Lead Nurture SMS", objective: "Warm leads with helpful follow-up texts" },
+  { name: "Lead Nurture Email", objective: "Warm leads with helpful follow-up emails" },
   { name: "Appointment Reminder", objective: "Send reminders and reduce no-shows" },
-  { name: "Missed Lead Recovery", objective: "Text leads who did not answer calls" },
+  { name: "Missed Lead Recovery", objective: "Email leads who did not answer calls" },
   { name: "Review Request", objective: "Ask happy customers for reviews" },
 ] as const;
 

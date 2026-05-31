@@ -2,7 +2,6 @@ import type { BillingPlanName } from "@/types/backend";
 
 export type UsageMetricKey =
   | "ai_call_minutes"
-  | "sms_sent"
   | "email_sent"
   | "ai_tokens"
   | "ai_agents"
@@ -26,7 +25,6 @@ export type PlanLimits = {
   adAccounts: number | null;
   landingPages: number | null;
   forms: number | null;
-  smsPerMonth: number | null;
   emailsPerMonth: number | null;
 };
 
@@ -59,13 +57,12 @@ export const DIAZITES_PLANS: PlanDefinition[] = [
       adAccounts: 1,
       landingPages: 1,
       forms: 5,
-      smsPerMonth: 500,
       emailsPerMonth: 1000,
     },
     features: [
       "CRM & 1 pipeline",
       "5 active workflows",
-      "AI Text/SMS & Email",
+      "Email campaigns",
       "Form builder",
       "Basic merchant services",
     ],
@@ -86,7 +83,6 @@ export const DIAZITES_PLANS: PlanDefinition[] = [
       adAccounts: 2,
       landingPages: 10,
       forms: 25,
-      smsPerMonth: 5000,
       emailsPerMonth: 25000,
     },
     features: [
@@ -112,7 +108,6 @@ export const DIAZITES_PLANS: PlanDefinition[] = [
       adAccounts: 10,
       landingPages: null,
       forms: null,
-      smsPerMonth: 25000,
       emailsPerMonth: 100000,
     },
     features: [
@@ -139,7 +134,6 @@ export const DIAZITES_PLANS: PlanDefinition[] = [
       adAccounts: null,
       landingPages: null,
       forms: null,
-      smsPerMonth: null,
       emailsPerMonth: null,
     },
     features: [
@@ -170,6 +164,9 @@ export function getPlanDefinition(name: string | null | undefined): PlanDefiniti
 export function planMonthlyAmount(name: string | null | undefined): number {
   return getPlanDefinition(name).priceMonthly;
 }
+
+/** Usage metrics hidden from billing UI (legacy / deprecated). */
+export const HIDDEN_USAGE_METRIC_KEYS: readonly string[] = ["sms_sent"];
 
 export const BILLING_PLANS_DISPLAY = DIAZITES_PLANS.filter((p) => p.name !== "Enterprise").concat(
   DIAZITES_PLANS.filter((p) => p.name === "Enterprise"),

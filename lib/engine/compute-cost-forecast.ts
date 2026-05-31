@@ -25,7 +25,7 @@ export function computeCostForecast(
       { label: "AI tokens (run)", amount: `$${tokenCost.toFixed(2)}`, detail: `${enabled.length} agents` },
       { label: "Ad spend", amount: `$${dailyAd}/day`, detail: `~$${monthlyAd}/mo at cap` },
       { label: "Landing hosting", amount: `$${(hosting / 30).toFixed(2)}/day` },
-      { label: "Email / SMS", amount: `$${(emailSms / 30).toFixed(2)}/day` },
+      { label: "Email outreach", amount: `$${(emailSms / 30).toFixed(2)}/day` },
       { label: "CRM usage", amount: crm ? `$${crm}/mo` : "Included", detail: "Native Leads CRM" },
     ],
     projectedMonthly: `$${Math.round(total)}`,

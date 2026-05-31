@@ -281,9 +281,9 @@ export function buildSystemModuleDetails(ctx: SystemModuleContext): Record<Syste
             },
             {
               lead: "Qualified · No reply 24h",
-              channel: "sms",
+              channel: "email",
               status: "Queued",
-              preview: "Quick reminder: your free roof inspection slot is open.",
+              preview: "Quick reminder: your free inspection slot is still open.",
             },
           ]
         : [],
@@ -291,11 +291,11 @@ export function buildSystemModuleDetails(ctx: SystemModuleContext): Record<Syste
     logs: nowLogs("followup", [
       `Follow-up agent: ${followAgent?.status ?? "inactive"}`,
       pendingFollow > 0 ? `${pendingFollow} leads in nurture queue` : "Queue empty",
-      "SMS + email channels within compliance window",
+      "Email channels within compliance window",
     ]),
     aiReasoning:
       pendingFollow > 0
-        ? "Sequences staggered to avoid fatigue — SMS touch follows email open signal."
+        ? "Sequences staggered to avoid fatigue — follow-up email sends after open signal."
         : followAgent?.status === "active"
           ? "Follow-up agent active with empty queue — awaiting new qualified leads."
           : "Deploy follow-up agent to automate nurture after qualification.",

@@ -7,6 +7,7 @@ import { ArrowLeft, Bot } from "lucide-react";
 import { deactivateMerchantAdminAction } from "@/actions/merchant.actions";
 import { updateAccountAdminAction } from "@/actions/platform-admin.actions";
 import { USAGE_METRIC_LABELS } from "@/lib/admin/platform-account-utils";
+import { HIDDEN_USAGE_METRIC_KEYS } from "@/lib/billing/plans";
 import { DIAZITES_PLANS } from "@/lib/billing/plans";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { PlatformAiActivityRow } from "@/services/admin/platform-accounts.service";
 import {
   FEATURE_FLAG_LABELS,
+  HIDDEN_PLATFORM_FEATURE_FLAGS,
   type PlatformAccountView,
   type PlatformFeatureFlags,
 } from "@/types/platform-admin";
@@ -43,7 +45,6 @@ type Props = {
 
 const LIMIT_KEYS = [
   "ai_call_minutes",
-  "sms_sent",
   "email_sent",
   "workflows_active",
   "ai_agents",
@@ -70,7 +71,9 @@ export function PlatformAccountDetailClient({ account, aiActivity }: Props) {
     return init;
   });
 
-  const usageRows = Object.entries(account.currentUsage).map(([key, qty]) => ({
+  const usageRows = Object.entries(account.currentUsage)
+    .filter(([key]) => !HIDDEN_USAGE_METRIC_KEYS.includes(key))
+    .map(([key, qty]) => ({
     key,
     label: USAGE_METRIC_LABELS[key] ?? key,
     qty,
@@ -92,7 +95,6 @@ export function PlatformAccountDetailClient({ account, aiActivity }: Props) {
         whiteLabelEnabled: flags.white_label,
       };
       if (limits.ai_call_minutes) patch.aiCallMinutes = Number(limits.ai_call_minutes);
-      if (limits.sms_sent) patch.smsPerMonth = Number(limits.sms_sent);
       if (limits.email_sent) patch.emailsPerMonth = Number(limits.email_sent);
       if (limits.workflows_active) patch.workflowsActive = Number(limits.workflows_active);
       if (limits.ai_agents) patch.aiAgents = Number(limits.ai_agents);
@@ -292,11 +294,13 @@ export function PlatformAccountDetailClient({ account, aiActivity }: Props) {
           <CardHeader>
             <CardTitle>Feature access</CardTitle>
             <CardDescription>
-              Toggle product modules: AI calls, SMS, email, workflows, agents, ads, white label.
+              Toggle product modules: AI calls, email, workflows, agents, ads, white label.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {(Object.keys(FEATURE_FLAG_LABELS) as (keyof PlatformFeatureFlags)[]).map((key) => (
+            {(Object.keys(FEATURE_FLAG_LABELS) as (keyof PlatformFeatureFlags)[])
+              .filter((key) => !HIDDEN_PLATFORM_FEATURE_FLAGS.includes(key))
+              .map((key) => (
               <label
                 key={key}
                 className="flex cursor-pointer items-center justify-between rounded-md border border-white/[0.06] px-3 py-2 text-sm"

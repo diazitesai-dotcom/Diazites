@@ -298,7 +298,7 @@ export function AiCallCommandCenterClient({
             </DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder="I want AI to call new leads, qualify them, book appointments, and trigger SMS follow-ups..."
+            placeholder="I want AI to call new leads, qualify them, book appointments, and trigger email follow-ups..."
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             rows={5}

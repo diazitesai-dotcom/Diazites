@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Power, Trash2, Webhook, MessageSquare } from "lucide-react";
+import { Plus, Power, Trash2, Webhook } from "lucide-react";
 
 import {
   createAutomationRuleAction,
@@ -33,7 +33,6 @@ type Props = {
 export function AutomationsManager({ rules, recentRuns, triggers }: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [actionType, setActionType] = useState<"webhook" | "sms">("webhook");
 
   function onCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -86,11 +85,7 @@ export function AutomationsManager({ rules, recentRuns, triggers }: Props) {
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    {rule.action_type === "webhook" ? (
-                      <Webhook className="size-3.5 text-violet-300" aria-hidden />
-                    ) : (
-                      <MessageSquare className="size-3.5 text-violet-300" aria-hidden />
-                    )}
+                    <Webhook className="size-3.5 text-violet-300" aria-hidden />
                     <p className="truncate font-medium">{rule.name}</p>
                     {rule.enabled ? (
                       <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
@@ -144,11 +139,12 @@ export function AutomationsManager({ rules, recentRuns, triggers }: Props) {
         <CardHeader>
           <CardTitle className="text-base">New automation rule</CardTitle>
           <CardDescription>
-            When an engine event fires, send a webhook or SMS automatically.
+            When an engine event fires, send a webhook automatically.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onCreate} className="space-y-3">
+            <input type="hidden" name="action_type" value="webhook" />
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="name">Name</Label>
@@ -171,35 +167,14 @@ export function AutomationsManager({ rules, recentRuns, triggers }: Props) {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="action_type">Action</Label>
-                <select
-                  id="action_type"
-                  name="action_type"
-                  className="h-9 w-full rounded-md border border-border/60 bg-background/80 px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
-                  value={actionType}
-                  onChange={(e) => setActionType(e.target.value as "webhook" | "sms")}
-                >
-                  <option value="webhook">Webhook</option>
-                  <option value="sms">SMS</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="target">
-                  {actionType === "webhook" ? "Webhook URL" : "Phone number"}
-                </Label>
-                <Input
-                  id="target"
-                  name="target"
-                  placeholder={
-                    actionType === "webhook"
-                      ? "https://hooks.example.com/abc"
-                      : "+15551234567"
-                  }
-                  required
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="target">Webhook URL</Label>
+              <Input
+                id="target"
+                name="target"
+                placeholder="https://hooks.example.com/abc"
+                required
+              />
             </div>
 
             {error ? (
@@ -267,8 +242,7 @@ function summarizeConfig(
     const url = config["url"];
     return typeof url === "string" ? url : "url not set";
   }
-  const to = config["to"];
-  return typeof to === "string" ? to : "phone not set";
+  return "legacy SMS rule (disabled in UI)";
 }
 
 function runStatusPillClass(status: "success" | "error" | "skipped"): string {

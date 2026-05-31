@@ -298,7 +298,7 @@ export function WorkflowsHubClient({ workflows, stats, recentRuns }: WorkflowsHu
           <DialogHeader>
             <DialogTitle>AI workflow builder</DialogTitle>
             <DialogDescription>
-              Describe what you want — Diazites AI generates triggers, steps, SMS copy, and pipeline rules.
+              Describe what you want — Diazites AI generates triggers, steps, email copy, and pipeline rules.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -324,7 +324,7 @@ export function WorkflowsHubClient({ workflows, stats, recentRuns }: WorkflowsHu
             </DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder="I want to capture leads from my website, follow up by SMS, book appointments, and alert my team..."
+            placeholder="I want to capture leads from my website, follow up by email, book appointments, and alert my team..."
             value={bootstrapGoal}
             onChange={(e) => setBootstrapGoal(e.target.value)}
             rows={5}

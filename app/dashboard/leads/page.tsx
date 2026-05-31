@@ -51,7 +51,7 @@ export default async function LeadsManagerPage() {
       <PageHeader
         eyebrow="Leads OS"
         title="Lead & revenue operations"
-        description="Inbox, CRM, scoring, SMS, email, bookings, follow-up, attribution, and AI qualification."
+        description="Inbox, CRM, scoring, email, bookings, follow-up, attribution, and AI qualification."
       />
       <p className="text-sm text-muted-foreground">
         Configure sales pipelines, stage automations, and workflow attachments in{" "}

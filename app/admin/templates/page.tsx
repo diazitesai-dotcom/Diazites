@@ -7,7 +7,7 @@ const templateGroups = [
   { name: "Ads", items: 24 },
   { name: "Landing Pages", items: 12 },
   { name: "Emails", items: 31 },
-  { name: "SMS", items: 18 },
+  { name: "Workflows", items: 18 },
   { name: "Funnels", items: 9 },
 ];
 

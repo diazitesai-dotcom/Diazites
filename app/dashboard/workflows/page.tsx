@@ -59,7 +59,7 @@ export default async function WorkflowsPage() {
       <PageHeader
         eyebrow="Workflows"
         title="Workflow command center"
-        description="Create, edit, launch, and manage native automations — pipelines, SMS, email, AI agents, and tasks."
+        description="Create, edit, launch, and manage native automations — pipelines, email, AI agents, and tasks."
       />
       <WorkflowsHubClient workflows={workflows} stats={stats} recentRuns={recentRuns} />
     </div>

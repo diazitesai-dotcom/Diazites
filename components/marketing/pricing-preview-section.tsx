@@ -79,7 +79,6 @@ export function PricingPreviewSection() {
                 <li>Subaccounts: {formatLimit(plan.limits.subaccounts)}</li>
                 <li>Ad accounts: {formatLimit(plan.limits.campaigns)}</li>
                 <li>Landing pages: {formatLimit(plan.limits.landingPages)}</li>
-                <li>SMS/mo: {formatLimit(plan.limits.sms)}</li>
                 <li>Email/mo: {formatLimit(plan.limits.emails)}</li>
                 <li>Merchant: {plan.limits.merchant ? "Included" : "Add-on"}</li>
                 <li>Support: {plan.limits.support}</li>

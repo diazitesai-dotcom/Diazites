@@ -31,7 +31,7 @@ export default async function AutomationsPage() {
         <PageHeader
           eyebrow="Automation Center"
           title="Pipelines & automations"
-          description="Build GHL-style pipelines, attach workflows per stage, and orchestrate SMS, email, and AI."
+          description="Build GHL-style pipelines, attach workflows per stage, and orchestrate email and AI."
         />
         <Card className="border-white/[0.06]">
           <CardHeader>
@@ -67,7 +67,7 @@ export default async function AutomationsPage() {
       <PageHeader
         eyebrow="Automation Center"
         title="Pipelines & automations"
-        description="GoHighLevel-style pipelines under Automations — create stages, attach workflows, SMS, email, tags, and tasks on stage entry."
+        description="GoHighLevel-style pipelines under Automations — create stages, attach workflows, email, tags, and tasks on stage entry."
       />
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
         <AutomationHubClient

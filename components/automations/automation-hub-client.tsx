@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   GitBranch,
-  MessageSquare,
   Mails,
   Phone,
   Target,
@@ -49,14 +48,8 @@ const TOOL_LINKS = [
   {
     href: ROUTES.workflows,
     label: "Workflows",
-    description: "Visual builder — triggers, waits, SMS, email, AI agents",
+    description: "Visual builder — triggers, waits, email, AI agents",
     icon: Workflow,
-  },
-  {
-    href: ROUTES.aiTextCommandCenter,
-    label: "AI Text / SMS",
-    description: "Campaigns & sequences tied to pipeline stages",
-    icon: MessageSquare,
   },
   {
     href: ROUTES.emailCampaignCenter,

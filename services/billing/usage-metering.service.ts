@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   getPlanDefinition,
+  HIDDEN_USAGE_METRIC_KEYS,
   normalizePlanName,
   type UsageMetricKey,
 } from "@/lib/billing/plans";
@@ -20,7 +21,6 @@ export type UsageDashboardRow = {
 
 const METRIC_LABELS: Record<string, { label: string; unit: string; limitKey: keyof ReturnType<typeof getPlanDefinition>["limits"] | null }> = {
   ai_call_minutes: { label: "AI call minutes", unit: "min", limitKey: "aiCallMinutes" },
-  sms_sent: { label: "SMS sent", unit: "msgs", limitKey: "smsPerMonth" },
   email_sent: { label: "Emails sent", unit: "emails", limitKey: "emailsPerMonth" },
   contacts: { label: "Contacts", unit: "contacts", limitKey: "contacts" },
   workflows_active: { label: "Active workflows", unit: "workflows", limitKey: "workflowsActive" },
@@ -126,7 +126,9 @@ export async function getUsageDashboard(
   const { data: records } = await usageRepo.listForPeriod(businessId, period.start, period.end);
   const normalized = normalizePlanName(planName);
 
-  const rows: UsageDashboardRow[] = (records ?? []).map((r) => {
+  const rows: UsageDashboardRow[] = (records ?? [])
+    .filter((r) => !HIDDEN_USAGE_METRIC_KEYS.includes(r.metric_key))
+    .map((r) => {
     const meta = METRIC_LABELS[r.metric_key] ?? {
       label: r.metric_key,
       unit: "units",

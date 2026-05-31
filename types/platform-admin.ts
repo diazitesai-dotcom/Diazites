@@ -78,7 +78,7 @@ export type PlatformAdminOverview = {
 export const DEFAULT_PLATFORM_FEATURE_FLAGS: PlatformFeatureFlags = {
   merchant_services: true,
   ai_calls: true,
-  sms: true,
+  sms: false,
   email_campaigns: true,
   workflows: true,
   ai_agents: true,
@@ -100,3 +100,6 @@ export const FEATURE_FLAG_LABELS: Record<keyof PlatformFeatureFlags, string> = {
   funnel_studio: "Funnel Studio",
   integrations: "Integrations",
 };
+
+/** Product modules hidden from admin UI (legacy / deprecated). */
+export const HIDDEN_PLATFORM_FEATURE_FLAGS: (keyof PlatformFeatureFlags)[] = ["sms"];

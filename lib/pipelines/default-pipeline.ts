@@ -14,7 +14,6 @@ export const DEFAULT_PIPELINE_STAGES: Array<{
 
 export const STAGE_AUTOMATION_TYPE_LABELS: Record<string, string> = {
   enroll_workflow: "Enroll in workflow",
-  send_sms: "Send SMS",
   send_email: "Send email",
   add_tag: "Add tag",
   create_task: "Create task",

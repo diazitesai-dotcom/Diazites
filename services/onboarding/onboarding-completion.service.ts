@@ -22,8 +22,7 @@ function agentSelectionsToFeatureFlags(selectedAgents: string[] = []): Partial<P
   return {
     ai_agents: selectedAgents.length > 0,
     ad_accounts: selectedAgents.includes("ads"),
-    sms: selectedAgents.includes("sms"),
-    ai_calls: selectedAgents.includes("sms"),
+    sms: false,
     email_campaigns: selectedAgents.includes("email"),
     workflows: selectedAgents.includes("pipeline"),
     merchant_services: selectedAgents.includes("merchant"),
@@ -116,7 +115,7 @@ export async function completeOnboardingProfile(
       agents_assigned: selectedAgents.length > 0,
       campaign_built: false,
       landing_page_ready: selectedAgents.includes("landing"),
-      ai_active: selectedAgents.some((k) => ["sms", "email", "pipeline"].includes(k)),
+      ai_active: selectedAgents.some((k) => ["email", "pipeline"].includes(k)),
       team_invited: false,
     },
   });

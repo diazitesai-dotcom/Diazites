@@ -359,7 +359,7 @@ export function buildRevenueAttribution(
       ],
       aiActions:
         s.id === "ai_follow_up"
-          ? ["SMS sequence", "Email nurture", "Hot lead alert"]
+          ? ["Email nurture", "Hot lead alert"]
           : s.id === "retargeting"
             ? ["Audience sync", "Creative rotation"]
             : ["Lead scoring", "Follow-up draft"],
