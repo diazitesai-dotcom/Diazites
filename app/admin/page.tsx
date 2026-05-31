@@ -22,6 +22,7 @@ export default async function AdminPage() {
   const metrics = metricsRes.success ? metricsRes.data : { businesses: 0, users: 0, leads: 0 };
 
   const modules: [string, string][] = [
+    ["User control (plans & services)", "/admin/user-control"],
     ["Auth & OAuth setup", "/admin/setup"],
     ["Platform accounts", "/admin/accounts"],
     ["Admin user manager", "/admin/users"],

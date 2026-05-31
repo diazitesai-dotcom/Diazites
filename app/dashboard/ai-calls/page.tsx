@@ -4,6 +4,7 @@ import { AiCallCommandCenterClient } from "@/components/ai-calls/ai-call-command
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireDashboardService } from "@/lib/access-control/guard";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ import type { AiCallingAgentRow } from "@/types/diazites-platform";
 export const dynamic = "force-dynamic";
 
 export default async function AiCallCommandCenterPage() {
+  await requireDashboardService("ai_call");
   const user = await requireAuth();
   const supabase = await createServerSupabaseClient();
   const businesses = createBusinessRepository(supabase);

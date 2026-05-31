@@ -3,7 +3,14 @@ import { type NextRequest, NextResponse } from "next/server";
 
 const protectedRoutes = ["/dashboard", "/admin", "/onboarding"];
 
+/** OAuth callback must read PKCE cookies from the request without middleware mutating them. */
+const AUTH_CALLBACK_PATH = "/auth/callback";
+
 export async function updateSession(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith(AUTH_CALLBACK_PATH)) {
+    return NextResponse.next({ request });
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 

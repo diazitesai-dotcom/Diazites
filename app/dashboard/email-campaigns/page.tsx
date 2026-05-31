@@ -4,6 +4,7 @@ import { EmailCampaignCenterClient } from "@/components/email-campaigns/email-ca
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireDashboardService } from "@/lib/access-control/guard";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ import type { EmailAudienceRow, EmailCampaignRow, EmailTemplateRow } from "@/typ
 export const dynamic = "force-dynamic";
 
 export default async function EmailCampaignCenterPage() {
+  await requireDashboardService("email_campaigns");
   const user = await requireAuth();
   const supabase = await createServerSupabaseClient();
   const businesses = createBusinessRepository(supabase);

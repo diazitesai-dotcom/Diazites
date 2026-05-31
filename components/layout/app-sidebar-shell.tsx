@@ -26,6 +26,7 @@ import {
   GROWTH_SIDEBAR_GROUPS,
   PRODUCT_TAGLINE,
   ROUTES,
+  type DashboardNavGroup,
   type DashboardNavItem,
 } from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ type NavItem = {
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: Shield },
+  { href: "/admin/user-control", label: "User control", icon: UserCircle2 },
   { href: "/admin/accounts", label: "Platform accounts", icon: Building2 },
   { href: "/admin/users", label: "Admin user manager", icon: Users },
   { href: "/admin/agents", label: "Agents & MCP", icon: Bot },
@@ -59,6 +61,7 @@ const ADMIN_NAV: NavItem[] = [
 function isNavItemActive(pathname: string, href: string): boolean {
   if (href === "/admin") return pathname === "/admin";
   if (href === "/admin/setup") return pathname.startsWith("/admin/setup");
+  if (href === "/admin/user-control") return pathname.startsWith("/admin/user-control");
   if (href === "/admin/accounts") return pathname.startsWith("/admin/accounts");
   if (href === "/admin/users") return pathname.startsWith("/admin/users");
   if (href === ROUTES.missionControl) return pathname === ROUTES.missionControl;
@@ -112,6 +115,8 @@ type AppSidebarShellProps = {
   brandTitle: string;
   footerLink?: { href: string; label: string };
   account?: AccountContext | null;
+  /** When set, overrides default growth sidebar (entitlement-filtered nav). */
+  dashboardNavGroups?: DashboardNavGroup[];
 };
 
 export function AppSidebarShell({
@@ -121,7 +126,9 @@ export function AppSidebarShell({
   brandTitle,
   footerLink,
   account,
+  dashboardNavGroups,
 }: AppSidebarShellProps) {
+  const growthNavGroups = dashboardNavGroups ?? GROWTH_SIDEBAR_GROUPS;
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -182,7 +189,7 @@ export function AppSidebarShell({
 
     return (
       <nav className="flex flex-1 flex-col gap-3 overflow-y-auto px-2 py-3">
-        {GROWTH_SIDEBAR_GROUPS.map((group, groupIndex) => (
+        {growthNavGroups.map((group, groupIndex) => (
           <div
             key={group.id}
             className={cn(

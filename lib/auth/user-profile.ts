@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { provisionUserAccess } from "@/lib/access-control/access-control.service";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { ok, fail, type ServiceResult } from "@/lib/result";
 
 /**
@@ -32,6 +34,13 @@ export async function createUserProfile(
 
   if (error || !data) {
     return fail(error?.message ?? "Failed to create profile", "PROFILE_CREATE_FAILED");
+  }
+
+  try {
+    const service = createServiceRoleClient();
+    await provisionUserAccess(service, input.userId);
+  } catch {
+    /* trigger may have already provisioned */
   }
 
   return ok({ profileId: data.id });

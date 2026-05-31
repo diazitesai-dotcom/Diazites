@@ -4,9 +4,11 @@ import { ReportsPageClient } from "@/components/reports/reports-page-client";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireDashboardService } from "@/lib/access-control/guard";
 import { loadReportsPageData } from "@/lib/dashboard/load-reports-page";
 
 export default async function ReportsPage() {
+  await requireDashboardService("workflow_reporting");
   const loaded = await loadReportsPageData();
   if (!loaded || !loaded.hasBusiness) {
     return (

@@ -8,6 +8,7 @@ import { ModulePurpose } from "@/components/layout/module-purpose";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { getPublicAppUrl } from "@/lib/env";
+import { requireDashboardService } from "@/lib/access-control/guard";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getUserAgents } from "@/services/agents/agent.service";
@@ -17,6 +18,7 @@ import type { AgentMcpConnectionPublic } from "@/types/mcp";
 export const dynamic = "force-dynamic";
 
 export default async function AgentManagerPage() {
+  await requireDashboardService("agents");
   const user = await requireAuth();
   const supabase = await createServerSupabaseClient();
   const result = await getUserAgents(supabase, user.id);

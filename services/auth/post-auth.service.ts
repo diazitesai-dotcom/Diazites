@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
+import { provisionUserAccess } from "@/lib/access-control/access-control.service";
 import { createUserProfile } from "@/lib/auth/user-profile";
 import { ensureBootstrapPlatformAdmin } from "@/lib/auth/bootstrap-platform-admin";
 import { createBusinessRepository } from "@/repositories/business.repository";
@@ -32,6 +33,13 @@ export async function completePostAuthSignup(
     email,
     fullName,
   });
+
+  try {
+    const service = createServiceRoleClient();
+    await provisionUserAccess(service, user.id);
+  } catch {
+    /* best-effort — DB trigger also provisions */
+  }
 
   const promoCode =
     options?.promoCode?.trim() ||

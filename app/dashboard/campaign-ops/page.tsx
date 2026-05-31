@@ -10,6 +10,7 @@ import { loadCampaignsPageData } from "@/lib/dashboard/load-campaigns-page";
 import { loadRevenueAttribution } from "@/lib/revenue/load-revenue-attribution";
 import { isZernioConfigured } from "@/lib/zernio";
 import { cn } from "@/lib/utils";
+import { requireDashboardService } from "@/lib/access-control/guard";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
@@ -29,6 +30,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function CampaignOpsPage() {
+  await requireDashboardService("ads_management");
   const user = await requireAuth();
   const supabase = await createServerSupabaseClient();
 
