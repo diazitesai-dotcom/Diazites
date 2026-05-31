@@ -19,8 +19,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ROUTES } from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils";
-import type { AccountEntitlementContext } from "@/services/entitlements/account-entitlements.service";
-import { showUpgradeRequired } from "@/services/entitlements/account-entitlements.service";
+import { showUpgradeRequired } from "@/lib/entitlements/upgrade-messages";
+import type { AccountEntitlementContext } from "@/types/entitlements";
 import type { UpgradePromptContext } from "@/types/entitlements";
 
 const TABS = [

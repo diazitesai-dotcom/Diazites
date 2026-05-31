@@ -45,6 +45,12 @@ export type EntitlementValue = {
 
 export type AccountEntitlementsMap = Partial<Record<EntitlementKey, EntitlementValue>>;
 
+export type AccountEntitlementContext = {
+  businessId: string;
+  planKey: EntitlementPlanKey;
+  entitlements: AccountEntitlementsMap;
+};
+
 export type UpgradePlanTarget = "growth" | "pro" | "enterprise";
 
 export type UpgradePromptContext = {

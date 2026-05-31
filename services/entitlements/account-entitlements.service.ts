@@ -13,17 +13,12 @@ import {
   rowsToEntitlementsMap,
 } from "@/repositories/account-entitlements.repository";
 import type {
+  AccountEntitlementContext,
   AccountEntitlementsMap,
   EntitlementKey,
   EntitlementPlanKey,
   UpgradePromptContext,
 } from "@/types/entitlements";
-
-export type AccountEntitlementContext = {
-  businessId: string;
-  planKey: EntitlementPlanKey;
-  entitlements: AccountEntitlementsMap;
-};
 
 function currentPeriodStart(): string {
   const now = new Date();
@@ -197,4 +192,4 @@ export async function canUseAiVoice(
   return { allowed: true };
 }
 
-export { showUpgradeRequired };
+export type { AccountEntitlementContext } from "@/types/entitlements";
