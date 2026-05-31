@@ -19,7 +19,13 @@ const STEPS = [
   { id: "notify", title: "Notifications", description: "Lead alerts & review" },
 ] as const;
 
-export function OnboardingWizard() {
+export function OnboardingWizard({
+  defaultEmail = "",
+  defaultOwnerName = "",
+}: {
+  defaultEmail?: string;
+  defaultOwnerName?: string;
+}) {
   const [step, setStep] = useState(0);
 
   const canBack = step > 0;
@@ -50,7 +56,9 @@ export function OnboardingWizard() {
       </CardHeader>
       <CardContent>
         <form action={saveOnboardingAction} className="space-y-6">
-          {step === 0 ? <StepBusiness /> : null}
+          {step === 0 ? (
+            <StepBusiness defaultEmail={defaultEmail} defaultOwnerName={defaultOwnerName} />
+          ) : null}
           {step === 1 ? <StepMarket /> : null}
           {step === 2 ? <StepBrand /> : null}
           {step === 3 ? <StepNotify /> : null}
@@ -95,6 +103,7 @@ function Field({
   required,
   className,
   placeholder,
+  defaultValue,
 }: {
   label: string;
   name: string;
@@ -102,22 +111,47 @@ function Field({
   required?: boolean;
   className?: string;
   placeholder?: string;
+  defaultValue?: string;
 }) {
   return (
     <div className={cn("space-y-2", className)}>
       <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} type={type} required={required} placeholder={placeholder} />
+      <Input
+        id={name}
+        name={name}
+        type={type}
+        required={required}
+        placeholder={placeholder}
+        defaultValue={defaultValue}
+      />
     </div>
   );
 }
 
-function StepBusiness() {
+function StepBusiness({
+  defaultEmail,
+  defaultOwnerName,
+}: {
+  defaultEmail: string;
+  defaultOwnerName: string;
+}) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Field label="Business name" name="business_name" required />
-      <Field label="Owner name" name="owner_name" required />
+      <Field
+        label="Owner name"
+        name="owner_name"
+        required
+        defaultValue={defaultOwnerName}
+      />
       <Field label="Business email" name="business_email" type="email" />
-      <Field label="Login email" name="email" type="email" required />
+      <Field
+        label="Login email"
+        name="email"
+        type="email"
+        required
+        defaultValue={defaultEmail}
+      />
       <Field label="Phone number" name="phone" />
       <Field label="Website URL" name="website" />
       <Field label="Business address" name="business_address" className="md:col-span-2" />

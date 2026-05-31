@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { AgentDeploymentShell } from "@/components/agents/agent-deployment-shell";
 import { AdminAccessDeniedBanner } from "@/components/layout/admin-access-denied-banner";
 import { AppSidebarShell } from "@/components/layout/app-sidebar-shell";
+import { OnboardingCompleteBanner } from "@/components/onboarding/onboarding-complete-banner";
 import { getCurrentUserAccess } from "@/lib/access-control/access-control.service";
+import { getOnboardingRoutingState, onboardingEntryPath, shouldRequireOnboarding } from "@/lib/auth/onboarding-routing";
 import { getAccountContext } from "@/lib/auth/account-context";
 import { ensureBootstrapPlatformAdmin } from "@/lib/auth/bootstrap-platform-admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -21,6 +23,16 @@ export default async function DashboardLayout({
   const account = await getAccountContext();
 
   if (account && !account.isPlatformAdmin) {
+    try {
+      const supabase = await createServerSupabaseClient();
+      const routing = await getOnboardingRoutingState(supabase, account.userId);
+      if (shouldRequireOnboarding(routing.hasBusiness, account.isPlatformAdmin)) {
+        redirect(onboardingEntryPath(true));
+      }
+    } catch {
+      /* allow dashboard if routing check fails */
+    }
+
     const granted = await ensureBootstrapPlatformAdmin({
       id: account.userId,
       email: account.email,
@@ -63,6 +75,7 @@ export default async function DashboardLayout({
     >
       <Suspense fallback={null}>
         <AdminAccessDeniedBanner />
+        <OnboardingCompleteBanner />
         <AgentDeploymentShell>{children}</AgentDeploymentShell>
       </Suspense>
     </AppSidebarShell>

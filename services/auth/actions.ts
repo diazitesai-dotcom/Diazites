@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { createBusinessRepository } from "@/repositories/business.repository";
+import { shouldRequireOnboarding, onboardingEntryPath, getOnboardingRoutingState } from "@/lib/auth/onboarding-routing";
 import { sanitizeAppReturnPath } from "@/lib/ads-oauth-state";
 import { AUTH_BRAND, signupEmailRedirectUrl } from "@/lib/auth/auth-branding";
 import { ensureBootstrapPlatformAdmin } from "@/lib/auth/bootstrap-platform-admin";
@@ -105,18 +107,25 @@ export async function loginAction(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) {
-    await createUserProfile(supabase, {
-      userId: user.id,
-      email: user.email ?? email,
-    });
-    await ensureUserPlatformAccess(user.id);
-    await ensureBootstrapPlatformAdmin(user);
+  if (!user) {
+    redirect(
+      `/login?error=${encodeURIComponent("Signed in but account could not be loaded. Try again.")}`,
+    );
   }
+
+  await createUserProfile(supabase, {
+    userId: user.id,
+    email: user.email ?? email,
+  });
+  await ensureUserPlatformAccess(user.id);
+  await ensureBootstrapPlatformAdmin(user);
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  const next = sanitizeAppReturnPath(String(formData.get("next") ?? ""), "/dashboard");
+
+  const { data: business } = await createBusinessRepository(supabase).getByOwnerUserId(user.id);
+  const defaultPath = business ? "/dashboard" : onboardingEntryPath(true);
+  const next = sanitizeAppReturnPath(String(formData.get("next") ?? ""), defaultPath);
   redirect(next);
 }
 

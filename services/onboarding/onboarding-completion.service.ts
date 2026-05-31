@@ -55,7 +55,7 @@ export async function completeOnboardingProfile(
     monthlyBudget: form.monthlyBudget,
     profileFullName: form.ownerName || null,
     profilePhone: form.phone || null,
-    initialPlan: { name: "Growth" },
+    initialPlan: { name: "Starter" },
   });
 
   if (!businessResult.success) {

@@ -1,33 +1,92 @@
+import { redirect } from "next/navigation";
+
 import { PageHeader } from "@/components/layout/page-header";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { TrialWelcomeBanner } from "@/components/onboarding/trial-welcome-banner";
+import { Button } from "@/components/ui/button";
 import { CORE_USER_FLOW } from "@/lib/platform/growth-spec";
+import { getOnboardingRoutingState } from "@/lib/auth/onboarding-routing";
+import { requireAuth } from "@/lib/auth/session";
+import { createProfileRepository } from "@/repositories/profile.repository";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { signOutAction } from "@/services/auth/actions";
+
+export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const user = await requireAuth();
+  const supabase = await createServerSupabaseClient();
   const sp = await searchParams;
   const showTrialWelcome = sp.welcome === "trial";
+
+  const { hasBusiness, onboardingComplete } = await getOnboardingRoutingState(
+    supabase,
+    user.id,
+  );
+
+  if (hasBusiness && onboardingComplete) {
+    redirect("/dashboard");
+  }
+
+  const profiles = createProfileRepository(supabase);
+  const { data: profile } = await profiles.getByUserId(user.id);
+
+  const rawError = sp.error;
+  const errorMsg =
+    typeof rawError === "string"
+      ? (() => {
+          try {
+            return decodeURIComponent(rawError);
+          } catch {
+            return rawError;
+          }
+        })()
+      : null;
 
   return (
     <main className="relative min-h-screen px-4 py-10 sm:px-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_45%_at_50%_-10%,rgba(139,92,246,0.15),transparent)]" />
       <div className="relative mx-auto max-w-4xl space-y-10">
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">
+            Signed in as <span className="text-foreground">{user.email}</span>
+          </p>
+          <form action={signOutAction}>
+            <Button type="submit" variant="ghost" size="sm" className="rounded-lg">
+              Sign out
+            </Button>
+          </form>
+        </div>
+
+        {errorMsg ? (
+          <p
+            role="alert"
+            className="rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm text-red-100"
+          >
+            {errorMsg}
+          </p>
+        ) : null}
+
         {showTrialWelcome ? <TrialWelcomeBanner /> : null}
         <PageHeader
           eyebrow="Setup"
-          title="Business onboarding wizard"
-          description="Four steps to align agents, campaigns, CRM, and follow-up with your market — before you connect ad accounts and go live."
+          title="Set up your business"
+          description="Four quick steps — then Mission Control unlocks with your profile, leads, and core tools. Premium services can be enabled by your admin as you grow."
         />
-        <OnboardingWizard />
+        <OnboardingWizard
+          defaultEmail={user.email ?? ""}
+          defaultOwnerName={profile?.full_name ?? ""}
+        />
         <details className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-sm text-muted-foreground">
           <summary className="cursor-pointer font-medium text-foreground">
-            Core platform flow (19 steps)
+            What happens after setup
           </summary>
           <ol className="mt-3 list-decimal space-y-1 pl-5">
-            {CORE_USER_FLOW.map((step) => (
+            {CORE_USER_FLOW.slice(0, 8).map((step) => (
               <li key={step}>{step}</li>
             ))}
           </ol>

@@ -11,9 +11,9 @@ export function TrialWelcomeBanner() {
         Welcome to {AUTH_BRAND.platformName}
       </p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Your <strong className="text-foreground">{DEFAULT_TRIAL_DAYS_SIGNUP}-day free trial</strong>{" "}
-        starts when you finish setup below. Full platform access — upgrade anytime from Organization →
-        Billing.
+        Your <strong className="text-foreground">{DEFAULT_TRIAL_DAYS_SIGNUP}-day trial</strong>{" "}
+        starts when you finish setup. You begin on the free tier with Mission Control and core
+        business tools — Diazites can enable more services for your account anytime.
       </p>
       <Link
         href="/dashboard/organization?tab=billing"
