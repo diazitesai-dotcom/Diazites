@@ -34,18 +34,22 @@ export default async function DashboardLayout({
   let dashboardNavGroups = GROWTH_SIDEBAR_GROUPS;
 
   if (account) {
-    const supabase = await createServerSupabaseClient();
-    const accessResult = await getCurrentUserAccess(
-      supabase,
-      account.userId,
-      account.email,
-    );
-    if (accessResult.success) {
-      dashboardNavGroups = filterNavGroupsByAccess(
-        GROWTH_SIDEBAR_GROUPS,
-        accessResult.data.enabledServiceKeys,
-        accessResult.data.isOwnerAdmin,
+    try {
+      const supabase = await createServerSupabaseClient();
+      const accessResult = await getCurrentUserAccess(
+        supabase,
+        account.userId,
+        account.email,
       );
+      if (accessResult.success) {
+        dashboardNavGroups = filterNavGroupsByAccess(
+          GROWTH_SIDEBAR_GROUPS,
+          accessResult.data.enabledServiceKeys,
+          accessResult.data.isOwnerAdmin,
+        );
+      }
+    } catch {
+      /* fall back to default nav so login never hard-500s */
     }
   }
 

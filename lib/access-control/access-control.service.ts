@@ -9,6 +9,7 @@ import type {
   PlatformServiceKey,
 } from "@/types/access-control";
 
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createAdminUsersRepository } from "@/repositories/admin-users.repository";
 
 async function isOwnerAdmin(
@@ -17,15 +18,17 @@ async function isOwnerAdmin(
 ): Promise<boolean> {
   const adminRepo = createAdminUsersRepository(client);
   const { isAdmin } = await adminRepo.isAdmin(userId);
-  if (isAdmin) return true;
+  return isAdmin;
+}
 
-  const { data } = await client
-    .from("user_platform_accounts")
-    .select("account_role")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  return data?.account_role === "owner_admin";
+/** Idempotent — uses service role so login/dashboard never depends on user RPC grants. */
+export async function ensureUserPlatformAccess(userId: string): Promise<void> {
+  try {
+    const service = createServiceRoleClient();
+    await provisionUserAccess(service, userId);
+  } catch {
+    /* service key missing locally or already provisioned via trigger */
+  }
 }
 
 export async function provisionUserAccess(
@@ -44,35 +47,55 @@ export async function getCurrentUserAccess(
   userId: string,
   email: string | null,
 ): Promise<ServiceResult<CurrentUserAccess>> {
+  await ensureUserPlatformAccess(userId);
+
   const ownerAdmin = await isOwnerAdmin(client, userId);
 
-  const [{ data: account }, { data: profile }, { data: services }, { data: access }] =
-    await Promise.all([
-      client
-        .from("user_platform_accounts")
-        .select("plan_key, account_role, status")
-        .eq("user_id", userId)
-        .maybeSingle(),
-      client
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", userId)
-        .maybeSingle(),
-      client
-        .from("platform_services")
-        .select("id, key, label, description, is_active, sort_order")
-        .eq("is_active", true)
-        .order("sort_order"),
-      client
-        .from("user_service_access")
-        .select("service_key, enabled")
-        .eq("user_id", userId),
-    ]);
+  const [
+    { data: account, error: accountError },
+    { data: profile },
+    { data: services, error: servicesError },
+    { data: access, error: accessError },
+  ] = await Promise.all([
+    client
+      .from("user_platform_accounts")
+      .select("plan_key, account_role, status")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    client
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    client
+      .from("platform_services")
+      .select("id, key, label, description, is_active, sort_order")
+      .eq("is_active", true)
+      .order("sort_order"),
+    client
+      .from("user_service_access")
+      .select("service_key, enabled")
+      .eq("user_id", userId),
+  ]);
+
+  const accessDenied =
+    accountError?.message?.includes("permission") ||
+    servicesError?.message?.includes("permission") ||
+    accessError?.message?.includes("does not exist") ||
+    accountError?.message?.includes("does not exist");
+
+  if (accessDenied) {
+    return fail(
+      accountError?.message ?? servicesError?.message ?? "Access tables unavailable",
+      "ACCESS_SCHEMA_UNAVAILABLE",
+    );
+  }
 
   if (!account) {
-    const prov = await provisionUserAccess(client, userId);
-    if (!prov.success) return prov as ServiceResult<CurrentUserAccess>;
-    return getCurrentUserAccess(client, userId, email);
+    return fail(
+      "Platform account not provisioned. Apply migration 026/027 on Supabase.",
+      "ACCOUNT_NOT_PROVISIONED",
+    );
   }
 
   const accessMap = new Map(

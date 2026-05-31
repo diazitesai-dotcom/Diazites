@@ -19,6 +19,12 @@ export async function createUserProfile(
     .maybeSingle();
 
   if (existing?.id) {
+    try {
+      const service = createServiceRoleClient();
+      await provisionUserAccess(service, input.userId);
+    } catch {
+      /* best-effort */
+    }
     return ok({ profileId: existing.id });
   }
 

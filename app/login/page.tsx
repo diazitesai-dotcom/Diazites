@@ -1,6 +1,8 @@
 import { AuthCard } from "@/components/auth/auth-card";
 import { loginAction } from "@/services/auth/actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function LoginPage({
   searchParams,
 }: {

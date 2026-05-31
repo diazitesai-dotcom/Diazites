@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { sanitizeAppReturnPath } from "@/lib/ads-oauth-state";
 import { AUTH_BRAND, signupEmailRedirectUrl } from "@/lib/auth/auth-branding";
 import { ensureBootstrapPlatformAdmin } from "@/lib/auth/bootstrap-platform-admin";
+import { ensureUserPlatformAccess } from "@/lib/access-control/access-control.service";
 import { createUserProfile } from "@/lib/auth/user-profile";
 import { getPublicAppUrl } from "@/lib/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -109,6 +110,7 @@ export async function loginAction(formData: FormData) {
       userId: user.id,
       email: user.email ?? email,
     });
+    await ensureUserPlatformAccess(user.id);
     await ensureBootstrapPlatformAdmin(user);
   }
 
