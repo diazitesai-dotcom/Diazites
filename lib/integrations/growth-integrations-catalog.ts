@@ -123,6 +123,9 @@ const PLATFORMS: PlatformDef[] = [
 
 export const GROWTH_INTEGRATION_IDS = new Set(PLATFORMS.map((p) => p.id));
 
+/** Starter accounts: Meta + Google Ads only until more channels are enabled. */
+export const STARTER_INTEGRATION_IDS = new Set(["meta", "google_ads"]);
+
 /** Demo-only defaults — paid ads must use real OAuth/API connections */
 const CONNECTED_BY_DEFAULT = new Set<string>([]);
 
@@ -251,8 +254,15 @@ function resolveStatus(
   return "missing";
 }
 
-export function buildGrowthIntegrations(connectedIds: Set<string> = new Set()): GrowthIntegration[] {
-  return PLATFORMS.map((p) => ({
+export function buildGrowthIntegrations(
+  connectedIds: Set<string> = new Set(),
+  options?: { starterOnly?: boolean },
+): GrowthIntegration[] {
+  const platformDefs = options?.starterOnly
+    ? PLATFORMS.filter((p) => STARTER_INTEGRATION_IDS.has(p.id))
+    : PLATFORMS;
+
+  return platformDefs.map((p) => ({
     id: p.id,
     name: p.name,
     categoryId: p.categoryId,
@@ -279,7 +289,7 @@ export function integrationHealthScore(integrations: GrowthIntegration[]): numbe
 }
 
 export function criticalMissingConnections(integrations: GrowthIntegration[]): string[] {
-  const criticalIds = ["meta", "google_ads", "meta_pixel", "ga4", "hubspot"];
+  const criticalIds = ["meta", "google_ads"];
   return criticalIds
     .filter((id) => {
       const row = integrations.find((i) => i.id === id);

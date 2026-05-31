@@ -15,8 +15,9 @@ On `auth.users` insert, `handle_new_auth_user` calls `provision_user_access`:
 
 - Plan: `free`
 - Role: `user`
-- Enabled: `basic_services`, `mission_control`
-- Disabled: `email_campaigns`, `ai_call`, `agents`, `ads_management`, `workflow_reporting`
+- Enabled: `basic_services`, `mission_control`, `email_campaigns`, `ai_call`, `workflow_reporting`
+- Disabled: `agents`, `ads_management`
+- Integrations UI (non-admin): Meta Ads and Google Ads only
 
 ## Apply migration
 
@@ -57,7 +58,7 @@ npx tsx lib/access-control/verify-access-control.ts
 
 ### Manual
 
-1. **New user** — Sign up as a new email. Sidebar should show onboarding, business profile, Mission Control, and basic ops—not Email campaigns, AI calls, Agents, or Campaign manager.
+1. **New user** — Sign up as a new email. Sidebar should show Mission Control, Automation (center, pipelines, workflows, email, AI call center, Funnel Studio), Integrations, and basic ops—not AI agents or Campaign manager.
 2. **Admin** — Open `/admin/user-control`, open the user, enable `email_campaigns`. User refreshes dashboard; Email campaigns appears; `/dashboard/email-campaigns` loads.
 3. **Self-grant blocked** — As a normal user, direct `update` on `user_service_access` should fail (RLS).
 4. **Disabled route** — Disable `ai_call` for user; visiting `/dashboard/ai-calls` redirects to `/dashboard?error=service_disabled`.

@@ -1,8 +1,3 @@
-/**
- * Pure helpers for access-control verification (no database).
- * Run: npx tsx lib/access-control/verify-access-control.ts
- */
-
 import { DEFAULT_FREE_SERVICE_KEYS } from "@/lib/access-control/constants";
 import { filterNavGroupsByAccess } from "@/lib/access-control/nav-filter";
 import { GROWTH_SIDEBAR_GROUPS } from "@/lib/navigation/platform-nav";
@@ -15,16 +10,21 @@ function assert(condition: boolean, message: string) {
 export function verifyDefaultFreeServices() {
   assert(DEFAULT_FREE_SERVICE_KEYS.includes("basic_services"), "basic_services default");
   assert(DEFAULT_FREE_SERVICE_KEYS.includes("mission_control"), "mission_control default");
-  assert(DEFAULT_FREE_SERVICE_KEYS.length === 2, "only two free defaults");
+  assert(DEFAULT_FREE_SERVICE_KEYS.includes("email_campaigns"), "email_campaigns default");
+  assert(DEFAULT_FREE_SERVICE_KEYS.includes("ai_call"), "ai_call default");
+  assert(DEFAULT_FREE_SERVICE_KEYS.includes("workflow_reporting"), "workflow_reporting default");
+  assert(DEFAULT_FREE_SERVICE_KEYS.length === 5, "five free defaults");
 }
 
 export function verifyNavFilteringHidesPremiumTabs() {
-  const freeOnly: PlatformServiceKey[] = ["basic_services", "mission_control"];
+  const freeOnly: PlatformServiceKey[] = [...DEFAULT_FREE_SERVICE_KEYS];
   const filtered = filterNavGroupsByAccess(GROWTH_SIDEBAR_GROUPS, freeOnly, false);
   const hrefs = filtered.flatMap((g) => g.items.map((i) => i.href));
-  assert(!hrefs.some((h) => h.includes("email-campaigns")), "email hidden");
-  assert(!hrefs.some((h) => h.includes("ai-calls")), "ai calls hidden");
+  assert(hrefs.some((h) => h.includes("email-campaigns")), "email visible for starter");
+  assert(hrefs.some((h) => h.includes("ai-calls")), "ai calls visible for starter");
+  assert(hrefs.some((h) => h.includes("/dashboard/funnel")), "funnel studio under automation");
   assert(!hrefs.some((h) => h.includes("/agents")), "agents hidden");
+  assert(!hrefs.some((h) => h.includes("campaign-ops")), "campaign ops hidden");
   assert(hrefs.some((h) => h === "/dashboard"), "mission control visible");
 }
 

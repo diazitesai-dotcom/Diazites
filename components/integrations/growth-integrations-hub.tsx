@@ -44,15 +44,26 @@ export function GrowthIntegrationsHub({
   connectedIds,
   linkedAccounts = {},
   oauthConfigured = { meta: false, google: false },
+  starterOnly = true,
 }: {
   connectedIds: string[];
   linkedAccounts?: Record<string, LinkedAdAccount>;
   oauthConfigured?: { meta: boolean; google: boolean };
+  /** When true, only Meta and Google Ads are shown (default for new users). */
+  starterOnly?: boolean;
 }) {
   const searchParams = useSearchParams();
   const [banner, setBanner] = useState<string | null>(null);
   const connected = useMemo(() => new Set(connectedIds), [connectedIds]);
-  const integrations = useMemo(() => buildGrowthIntegrations(connected), [connected]);
+  const integrations = useMemo(
+    () => buildGrowthIntegrations(connected, { starterOnly }),
+    [connected, starterOnly],
+  );
+  const visibleCategories = useMemo(() => {
+    if (!starterOnly) return INTEGRATION_CATEGORIES;
+    const ids = new Set(integrations.map((i) => i.categoryId));
+    return INTEGRATION_CATEGORIES.filter((cat) => ids.has(cat.id));
+  }, [integrations, starterOnly]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<IntegrationCategoryId | "all">("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -125,8 +136,9 @@ export function GrowthIntegrationsHub({
           </p>
           <h1 className="text-2xl font-semibold tracking-tight">External systems & credentials</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Connect ad platforms, CRM, analytics, tracking, ecommerce, and comms — agents monitor,
-            recommend, and execute within your guardrails.
+            {starterOnly
+              ? "Connect Meta and Google Ads to launch campaigns. Additional integrations unlock as your plan grows."
+              : "Connect ad platforms, CRM, analytics, tracking, ecommerce, and comms — agents monitor, recommend, and execute within your guardrails."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -227,7 +239,7 @@ export function GrowthIntegrationsHub({
         >
           All categories
         </button>
-        {INTEGRATION_CATEGORIES.map((cat) => (
+        {visibleCategories.map((cat) => (
           <button
             key={cat.id}
             type="button"

@@ -2,7 +2,9 @@ import { Suspense } from "react";
 
 import { GrowthIntegrationsHub } from "@/components/integrations/growth-integrations-hub";
 import { isAdsConfigured } from "@/lib/ads-env";
+import { getCurrentUserAccess } from "@/lib/access-control/access-control.service";
 import { requireBusinessContext } from "@/lib/auth/business-context";
+import { requireAuth } from "@/lib/auth/session";
 import {
   isAdAccountConnected,
   resolveLinkedIntegrationId,
@@ -14,7 +16,11 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 export default async function IntegrationsPage() {
+  const user = await requireAuth();
   const supabase = await createServerSupabaseClient();
+  const accessResult = await getCurrentUserAccess(supabase, user.id, user.email ?? null);
+  const isOwnerAdmin = accessResult.success ? accessResult.data.isOwnerAdmin : false;
+
   const ctxResult = await requireBusinessContext(supabase);
   if (!ctxResult.ok) redirect("/dashboard/organization?tab=settings");
 
@@ -58,6 +64,7 @@ export default async function IntegrationsPage() {
         connectedIds={connectedIds}
         linkedAccounts={linkedAccounts}
         oauthConfigured={{ meta: isAdsConfigured("meta"), google: isAdsConfigured("google") }}
+        starterOnly={!isOwnerAdmin}
       />
     </Suspense>
   );

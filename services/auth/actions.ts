@@ -13,7 +13,6 @@ import { createUserProfile } from "@/lib/auth/user-profile";
 import { getPublicAppUrl } from "@/lib/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
-import { createSignupTrialCheckoutSession } from "@/services/stripe/signup-checkout.service";
 import type { BillingPlanName } from "@/types/backend";
 import { completePostAuthSignup } from "@/services/auth/post-auth.service";
 import { sendDiazitesWelcomeEmail } from "@/services/auth/welcome-email.service";
@@ -72,16 +71,6 @@ export async function signupAction(formData: FormData) {
       defaultNext: "/onboarding?welcome=trial",
     });
     revalidatePath("/", "layout");
-
-    const checkout = await createSignupTrialCheckoutSession({
-      userId: data.session.user.id,
-      email,
-      planName: selectedPlan as BillingPlanName,
-    });
-    if (checkout?.url) {
-      redirect(checkout.url);
-    }
-
     redirect("/onboarding?welcome=trial");
   }
 

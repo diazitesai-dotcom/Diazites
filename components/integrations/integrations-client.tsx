@@ -44,10 +44,6 @@ type PermissionRow = {
 const PLATFORMS: { id: AdPlatform; label: string; credentialLabel: string }[] = [
   { id: "meta", label: "Meta Ads", credentialLabel: "Access token" },
   { id: "google", label: "Google Ads", credentialLabel: "OAuth refresh token" },
-  { id: "tiktok", label: "TikTok Ads", credentialLabel: "API key" },
-  { id: "microsoft", label: "Microsoft Ads", credentialLabel: "Developer token" },
-  { id: "zernio", label: "Zernio API", credentialLabel: "API key" },
-  { id: "zapier", label: "Zapier webhook", credentialLabel: "Webhook URL" },
 ];
 
 export function IntegrationsClient({

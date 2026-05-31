@@ -4,6 +4,9 @@ import type { PlatformServiceKey } from "@/types/access-control";
 export const DEFAULT_FREE_SERVICE_KEYS: PlatformServiceKey[] = [
   "basic_services",
   "mission_control",
+  "email_campaigns",
+  "ai_call",
+  "workflow_reporting",
 ];
 
 /** Premium services admins toggle per user. */

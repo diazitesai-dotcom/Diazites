@@ -3,6 +3,8 @@ import Link from "next/link";
 import { TrialSignupWizard } from "@/components/auth/trial-signup-wizard";
 import { AUTH_BRAND } from "@/lib/auth/auth-branding";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
+import { env } from "@/lib/env";
+import { isStripeBillingConfigured } from "@/lib/stripe/plan-prices";
 import { buttonVariants } from "@/components/ui/button";
 import { signupAction } from "@/services/auth/actions";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,8 @@ export default async function SignupPage({
   const successType = typeof rawSuccess === "string" ? rawSuccess : null;
   const email = typeof rawEmail === "string" ? safeDecode(rawEmail) : null;
   const nextPath = "/onboarding?welcome=trial";
+  const stripeEnabled = isStripeBillingConfigured();
+  const stripePublishableKey = env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
 
   if (successType === "check-email") {
     return (
@@ -86,6 +90,8 @@ export default async function SignupPage({
           initialStep={initialStep}
           initialPlan={initialPlan}
           nextPath={nextPath}
+          stripeEnabled={stripeEnabled}
+          stripePublishableKey={stripePublishableKey}
         />
       </div>
     </main>
