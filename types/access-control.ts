@@ -11,7 +11,7 @@ export type PlatformServiceKey =
   | "ads_management"
   | "workflow_reporting";
 
-export type PlatformPlanKey = "free" | "growth" | "pro" | "enterprise";
+export type PlatformPlanKey = "free" | "trial" | "starter" | "growth" | "pro" | "enterprise";
 
 export type AccessAuditActionType =
   | "plan_changed"

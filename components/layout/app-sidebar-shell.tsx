@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-import { filterNavGroupsByAccess } from "@/lib/access-control/nav-filter";
+import { filterNavGroupsByPlan } from "@/lib/entitlements/nav-filter";
+import type { EntitlementPlanKey } from "@/types/entitlements";
 import {
   GROWTH_SIDEBAR_GROUPS,
   PRODUCT_TAGLINE,
@@ -141,6 +142,7 @@ type AppSidebarShellProps = {
   account?: AccountContext | null;
   /** Serializable entitlements from server — icons stay client-side. */
   enabledServiceKeys?: PlatformServiceKey[];
+  entitlementPlanKey?: EntitlementPlanKey;
   isOwnerAdmin?: boolean;
   /** Diazites owner — show agency / sub-account admin links on the dashboard sidebar. */
   showPlatformAdminNav?: boolean;
@@ -154,29 +156,40 @@ export function AppSidebarShell({
   footerLink,
   account,
   enabledServiceKeys,
+  entitlementPlanKey = "starter",
   isOwnerAdmin = false,
   showPlatformAdminNav = false,
 }: AppSidebarShellProps) {
   const growthNavGroups = useMemo(() => {
-    if (isOwnerAdmin) return GROWTH_SIDEBAR_GROUPS;
+    if (isOwnerAdmin) return filterNavGroupsByPlan(GROWTH_SIDEBAR_GROUPS, [], true, "enterprise");
     if (enabledServiceKeys?.length) {
-      return filterNavGroupsByAccess(GROWTH_SIDEBAR_GROUPS, enabledServiceKeys, false);
+      return filterNavGroupsByPlan(
+        GROWTH_SIDEBAR_GROUPS,
+        enabledServiceKeys,
+        false,
+        entitlementPlanKey,
+      );
     }
-    return GROWTH_SIDEBAR_GROUPS;
-  }, [enabledServiceKeys, isOwnerAdmin]);
+    return filterNavGroupsByPlan(GROWTH_SIDEBAR_GROUPS, [], false, entitlementPlanKey);
+  }, [enabledServiceKeys, entitlementPlanKey, isOwnerAdmin]);
 
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const renderNavLink = (item: NavItem, iconOnly: boolean, onNavigate?: () => void) => {
+  const renderNavLink = (
+    item: NavItem & { locked?: boolean; lockReason?: string },
+    iconOnly: boolean,
+    onNavigate?: () => void,
+  ) => {
     const Icon = item.icon;
     const active = isNavItemActive(pathname, item.href);
+    const locked = item.locked === true;
 
     return (
       <Link
         key={item.href}
-        href={item.href}
+        href={locked ? `${ROUTES.organization}?tab=billing` : item.href}
         title={iconOnly ? item.label : undefined}
         onClick={onNavigate}
         className={cn(
@@ -206,6 +219,11 @@ export function AppSidebarShell({
             {item.description ? (
               <span className="block truncate text-[10px] leading-tight text-muted-foreground/80 group-hover:text-muted-foreground">
                 {item.description}
+              </span>
+            ) : null}
+            {locked && !iconOnly ? (
+              <span className="mt-0.5 inline-flex rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-amber-300">
+                Upgrade
               </span>
             ) : null}
           </span>

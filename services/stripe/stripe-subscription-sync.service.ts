@@ -1,7 +1,9 @@
 import type Stripe from "stripe";
 
 import { env } from "@/lib/env";
+import { billingToEntitlementPlan } from "@/lib/entitlements/plan-catalog";
 import { planMonthlyAmount, normalizePlanName } from "@/lib/billing/plans";
+import { refreshAccountEntitlements } from "@/services/entitlements/account-entitlements.service";
 import { createBillingRepository } from "@/repositories/billing.repository";
 import type { BillingPlanName, SubscriptionStatus } from "@/types/backend";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -79,6 +81,9 @@ export async function syncSubscriptionToBilling(
 
   if (error) {
     console.error("[stripe sync] billing upsert failed", error);
+  } else {
+    const planKey = billingToEntitlementPlan(planName, subscriptionStatus);
+    await refreshAccountEntitlements(client, businessId, planKey);
   }
 }
 

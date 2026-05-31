@@ -11,6 +11,9 @@ import { getAccountContext } from "@/lib/auth/account-context";
 import { ensureBootstrapPlatformAdmin } from "@/lib/auth/bootstrap-platform-admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { PlatformServiceKey } from "@/types/access-control";
+import type { EntitlementPlanKey } from "@/types/entitlements";
+import { getEntitlements } from "@/services/entitlements/account-entitlements.service";
+import { createBusinessRepository } from "@/repositories/business.repository";
 
 /** Avoid prerendering without Supabase env (e.g. Vercel build before env is applied). */
 export const dynamic = "force-dynamic";
@@ -43,6 +46,7 @@ export default async function DashboardLayout({
   }
 
   let enabledServiceKeys: PlatformServiceKey[] | undefined;
+  let entitlementPlanKey: EntitlementPlanKey = "starter";
   let isOwnerAdmin = false;
 
   if (account) {
@@ -56,6 +60,18 @@ export default async function DashboardLayout({
       if (accessResult.success) {
         enabledServiceKeys = accessResult.data.enabledServiceKeys;
         isOwnerAdmin = accessResult.data.isOwnerAdmin;
+        const plan = accessResult.data.planKey;
+        if (plan === "starter" || plan === "trial" || plan === "growth" || plan === "pro" || plan === "enterprise") {
+          entitlementPlanKey = plan;
+        } else if (plan === "free") {
+          entitlementPlanKey = "starter";
+        }
+      }
+      const businesses = createBusinessRepository(supabase);
+      const { data: business } = await businesses.getByOwnerUserId(account.userId);
+      if (business) {
+        const ent = await getEntitlements(supabase, business.id);
+        if (ent.success) entitlementPlanKey = ent.data.planKey;
       }
     } catch {
       /* fall back to default nav so login never hard-500s */
@@ -70,6 +86,7 @@ export default async function DashboardLayout({
       footerLink={{ href: "/", label: "Marketing site" }}
       account={account}
       enabledServiceKeys={enabledServiceKeys}
+      entitlementPlanKey={entitlementPlanKey}
       isOwnerAdmin={isOwnerAdmin}
       showPlatformAdminNav={Boolean(account?.isPlatformAdmin || isOwnerAdmin)}
     >

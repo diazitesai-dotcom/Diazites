@@ -13,6 +13,7 @@ import type { BusinessProfile, OnboardingWizardPayload } from "@/types/platform-
 import type { BillingPlanName } from "@/types/backend";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
 
+import { refreshAccountEntitlements } from "@/services/entitlements/account-entitlements.service";
 import { bootstrapBusinessSystem } from "@/services/platform/bootstrap-business-system.service";
 import { logAgentActivity } from "@/services/platform/agent-activity.service";
 import { triggerEvent } from "@/services/events/event-dispatcher";
@@ -161,6 +162,12 @@ export async function completeOnboardingProfile(
   const systemGoal =
     form.campaignGoal?.trim() ||
     `Grow ${form.businessName} with CRM, follow-up, and appointment booking.`;
+  try {
+    await refreshAccountEntitlements(client, businessId, "starter");
+  } catch {
+    /* entitlements table may not exist until migration 030 */
+  }
+
   try {
     await bootstrapBusinessSystem(client, userId, businessId, systemGoal);
     await logAgentActivity(client, {

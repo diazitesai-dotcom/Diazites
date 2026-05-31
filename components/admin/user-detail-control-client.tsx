@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AdminUserDetails, PlatformPlanKey, PlatformServiceKey } from "@/types/access-control";
 
-const PLAN_OPTIONS: PlatformPlanKey[] = ["free", "growth", "pro", "enterprise"];
+const PLAN_OPTIONS: PlatformPlanKey[] = ["starter", "trial", "growth", "pro", "enterprise"];
 
 type Props = {
   details: AdminUserDetails;
