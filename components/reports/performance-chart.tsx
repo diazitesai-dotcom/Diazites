@@ -50,7 +50,7 @@ export function PerformanceChart({ data }: { data?: PerformanceSeriesRow[] }) {
   const monthly = data && data.length > 0 ? data : demoMonthly;
 
   const chartWrap =
-    "h-72 w-full rounded-2xl border border-white/[0.06] bg-card/40 p-4 backdrop-blur-md shadow-inner";
+    "flex h-72 min-h-72 w-full min-w-0 flex-col rounded-2xl border border-white/[0.06] bg-card/40 p-4 backdrop-blur-md shadow-inner";
 
   const tooltipStyle = {
     background: "var(--popover)",
@@ -62,8 +62,9 @@ export function PerformanceChart({ data }: { data?: PerformanceSeriesRow[] }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className={chartWrap}>
-        <p className="mb-3 text-sm font-medium text-foreground">Leads & spend</p>
-        <ResponsiveContainer width="100%" height="100%">
+        <p className="mb-3 shrink-0 text-sm font-medium text-foreground">Leads & spend</p>
+        <div className="min-h-0 min-w-0 flex-1">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <BarChart data={monthly}>
             <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="month" stroke={axisStroke} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickLine={false} axisLine={false} />
@@ -74,10 +75,12 @@ export function PerformanceChart({ data }: { data?: PerformanceSeriesRow[] }) {
             <Bar dataKey="spend" fill="#38bdf8" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
+        </div>
       </div>
       <div className={chartWrap}>
-        <p className="mb-3 text-sm font-medium text-foreground">CPL, ROI & conversions</p>
-        <ResponsiveContainer width="100%" height="100%">
+        <p className="mb-3 shrink-0 text-sm font-medium text-foreground">CPL, ROI & conversions</p>
+        <div className="min-h-0 min-w-0 flex-1">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart data={monthly}>
             <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
             <XAxis dataKey="month" stroke={axisStroke} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickLine={false} axisLine={false} />
@@ -89,6 +92,7 @@ export function PerformanceChart({ data }: { data?: PerformanceSeriesRow[] }) {
             <Line type="monotone" dataKey="conversions" stroke="#818cf8" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
           </LineChart>
         </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

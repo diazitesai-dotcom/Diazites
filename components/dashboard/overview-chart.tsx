@@ -41,7 +41,7 @@ export function OverviewSparkChart({ data }: { data?: { d: string; v: number }[]
 
   return (
     <motion.div
-      className="relative h-[140px] w-full"
+      className="relative h-[140px] min-h-[140px] w-full min-w-0"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -51,7 +51,7 @@ export function OverviewSparkChart({ data }: { data?: { d: string; v: number }[]
         animate={{ opacity: [0.3, 0.6, 0.3] }}
         transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
       />
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <AreaChart data={series} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <defs>
             <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">

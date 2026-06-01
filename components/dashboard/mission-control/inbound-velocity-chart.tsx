@@ -156,8 +156,8 @@ export function InboundVelocityChart({ data }: { data?: SparkPoint[] }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div className="relative h-[160px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="relative h-[160px] min-h-[160px] w-full min-w-0">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <AreaChart data={series} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
             <defs>
               <linearGradient id="velocityFill" x1="0" y1="0" x2="0" y2="1">
