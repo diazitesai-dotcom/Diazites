@@ -31,6 +31,7 @@ import {
 import type { GrowthIntegration } from "@/lib/integrations/integration-types";
 import { ROUTES } from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils";
+import { ZernioIntegrationPanel } from "@/components/integrations/zernio-integration-panel";
 
 type Tab = "overview" | "metrics" | "logs" | "permissions" | "actions" | "errors";
 type PanelMode = "overview" | "connect" | "manage";
@@ -65,6 +66,7 @@ export function IntegrationDetailDrawer({
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
 
+  const isZernio = integration?.id === "zernio";
   const caps = AGENT_CAPABILITY_GROUPS.find((g) => g.agentType === integration?.agentType);
   const credentialLabel = integration
     ? credentialLabelFor(integration.id, integration.name)
@@ -266,7 +268,16 @@ export function IntegrationDetailDrawer({
                 </p>
               ) : null}
 
-              {panelMode === "connect" ? (
+              {isZernio ? (
+                <ZernioIntegrationPanel
+                  linkedAccount={linkedAccount ?? null}
+                  panelMode={panelMode}
+                  onPanelModeChange={setPanelMode}
+                  onMessage={setMessage}
+                />
+              ) : null}
+
+              {!isZernio && panelMode === "connect" ? (
                 <div className="space-y-4">
                   <p className="text-xs text-muted-foreground">
                     Credentials are encrypted at rest and never shown in full after saving.
@@ -351,7 +362,7 @@ export function IntegrationDetailDrawer({
                 </div>
               ) : null}
 
-              {panelMode === "manage" && linkedAccount ? (
+              {!isZernio && panelMode === "manage" && linkedAccount ? (
                 <div className="space-y-4">
                   <dl className="grid gap-2 text-xs">
                     <div className="rounded-lg border border-white/[0.06] p-2">
@@ -422,7 +433,7 @@ export function IntegrationDetailDrawer({
                 </div>
               ) : null}
 
-              {panelMode === "overview" ? (
+              {!isZernio && panelMode === "overview" ? (
                 <>
                   {tab === "overview" ? (
                     <div className="space-y-3">
@@ -528,6 +539,25 @@ export function IntegrationDetailDrawer({
             </div>
 
             <footer className="flex flex-wrap gap-2 border-t border-white/10 p-4">
+              {isZernio ? (
+                <Button
+                  type="button"
+                  variant="gradient"
+                  size="sm"
+                  className="rounded-lg"
+                  disabled={pending}
+                  onClick={() => {
+                    if (reallyConnected) {
+                      setPanelMode("manage");
+                    } else {
+                      setPanelMode("connect");
+                    }
+                  }}
+                >
+                  <Link2 className="mr-1 size-3.5" />
+                  {reallyConnected ? "Manage Zernio" : "Connect Zernio"}
+                </Button>
+              ) : (
               <Button
                 type="button"
                 variant="gradient"
@@ -555,6 +585,7 @@ export function IntegrationDetailDrawer({
                     ? "Update connection"
                     : "Connect"}
               </Button>
+              )}
               <Button
                 type="button"
                 variant="outline"

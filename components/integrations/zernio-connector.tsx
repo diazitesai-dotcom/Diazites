@@ -65,7 +65,11 @@ export function ZernioConnector({ configured }: ZernioConnectorProps) {
         setMessage(res.error);
         return;
       }
-      setMessage("Zernio connected for this business.");
+      setMessage(
+        res.data?.accountCount != null
+          ? `Zernio connected — ${res.data.accountCount} app account(s) detected.`
+          : "Zernio connected for this business.",
+      );
       router.refresh();
     });
   }
@@ -87,8 +91,11 @@ export function ZernioConnector({ configured }: ZernioConnectorProps) {
           >
             Zernio
           </a>
-          . Add <code className="text-xs">ZERNIO_API_KEY</code> to .env.local for server calls, or save a
-          per-business key below. For Cursor MCP, see <code className="text-xs">.cursor/mcp.json</code>.
+          . Prefer connecting on{" "}
+          <a href="/dashboard/integrations?focus=zernio" className="text-violet-300 underline">
+            Integrations → Zernio
+          </a>{" "}
+          next to Google Ads.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -106,9 +113,9 @@ export function ZernioConnector({ configured }: ZernioConnectorProps) {
 
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" disabled={pending} onClick={testConnection}>
-            Test env key
+            Test connection
           </Button>
-          <Button type="button" variant="outline" size="sm" disabled={pending || !configured} onClick={loadCampaigns}>
+          <Button type="button" variant="outline" size="sm" disabled={pending} onClick={loadCampaigns}>
             List campaigns
           </Button>
         </div>

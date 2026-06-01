@@ -11,6 +11,7 @@ export type LinkedAdAccount = {
 const INTEGRATION_TO_AD_PLATFORM: Partial<Record<string, AdPlatform>> = {
   meta: "meta",
   google_ads: "google",
+  zernio: "zernio",
   tiktok_ads: "tiktok",
   microsoft_ads: "microsoft",
   linkedin_ads: "other",
@@ -20,6 +21,7 @@ const INTEGRATION_TO_AD_PLATFORM: Partial<Record<string, AdPlatform>> = {
 const CREDENTIAL_LABELS: Partial<Record<string, string>> = {
   meta: "Access token",
   google_ads: "OAuth refresh token or API credential",
+  zernio: "Zernio API key (sk_…)",
   openai_ads: "OpenAI Ads API key",
   sendgrid: "SendGrid API key",
   stripe: "Stripe secret key",
@@ -49,6 +51,7 @@ export function integrationOAuthPlatform(
 export const LEGACY_PLATFORM_TO_INTEGRATION: Record<string, string> = {
   meta: "meta",
   google: "google_ads",
+  zernio: "zernio",
   tiktok: "tiktok_ads",
   microsoft: "microsoft_ads",
 };

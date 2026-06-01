@@ -40,15 +40,22 @@ export default async function IntegrationsPage() {
     const meta = (acc.meta ?? {}) as Record<string, unknown>;
     const label =
       typeof meta.accountLabel === "string" ? meta.accountLabel : integrationId.replace(/_/g, " ");
+    const connectedAppCount =
+      typeof meta.connectedAppCount === "number" ? meta.connectedAppCount : null;
+
     linkedAccounts[integrationId] = {
       id: acc.id,
       accountName: label,
       credentialsHint:
-        acc.status === "connected"
-          ? "OAuth connected"
-          : acc.status === "pending"
-            ? "OAuth pending"
-            : null,
+        integrationId === "zernio"
+          ? connectedAppCount != null
+            ? `${connectedAppCount} app(s) via Zernio`
+            : "API key connected"
+          : acc.status === "connected"
+            ? "OAuth connected"
+            : acc.status === "pending"
+              ? "OAuth pending"
+              : null,
     };
   }
 

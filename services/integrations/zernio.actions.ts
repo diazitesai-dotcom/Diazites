@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
+import { resolveZernioApiKeyForBusiness } from "@/lib/integrations/resolve-zernio-api-key";
 import { requireAuth } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit/log";
+import { requireBusinessContext } from "@/lib/auth/business-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import {
@@ -13,39 +15,45 @@ import {
   testZernioConnection,
 } from "@/services/integrations/zernio.service";
 
+async function getBusinessZernioKey() {
+  const user = await requireAuth();
+  const supabase = await createServerSupabaseClient();
+  const ctx = await requireBusinessContext(supabase);
+  if (!ctx.ok) return { ok: false as const, error: ctx.error };
+  const key = await resolveZernioApiKeyForBusiness(supabase, ctx.ctx.businessId);
+  return { ok: true as const, supabase, user, businessId: ctx.ctx.businessId, key };
+}
+
 export async function testZernioConnectionAction() {
-  const result = await testZernioConnection();
-  if (!result.success) {
-    return { success: false as const, error: result.error };
-  }
+  const ctx = await getBusinessZernioKey();
+  if (!ctx.ok) return { success: false as const, error: ctx.error };
+  const result = await testZernioConnection(ctx.key);
+  if (!result.success) return { success: false as const, error: result.error };
   return { success: true as const, data: result.data };
 }
 
 export async function listZernioCampaignsAction() {
-  const result = await listZernioAdCampaigns();
-  if (!result.success) {
-    return { success: false as const, error: result.error };
-  }
+  const ctx = await getBusinessZernioKey();
+  if (!ctx.ok) return { success: false as const, error: ctx.error };
+  const result = await listZernioAdCampaigns(ctx.key);
+  if (!result.success) return { success: false as const, error: result.error };
   return { success: true as const, data: result.data };
 }
 
 export async function listZernioAccountsAction() {
-  const result = await listZernioAccountsForUi();
-  if (!result.success) {
-    return { success: false as const, error: result.error };
-  }
+  const ctx = await getBusinessZernioKey();
+  if (!ctx.ok) return { success: false as const, error: ctx.error };
+  const result = await listZernioAccountsForUi(ctx.key);
+  if (!result.success) return { success: false as const, error: result.error };
   return { success: true as const, data: result.data };
 }
 
 export async function publishZernioPostAction(formData: FormData) {
-  await requireAuth();
-  const supabase = await createServerSupabaseClient();
+  const ctx = await getBusinessZernioKey();
+  if (!ctx.ok) return { success: false as const, error: ctx.error };
 
   const content = String(formData.get("content") ?? "").trim();
-  const mode = String(formData.get("schedule_mode") ?? "now") as
-    | "now"
-    | "scheduled"
-    | "draft";
+  const mode = String(formData.get("schedule_mode") ?? "now") as "now" | "scheduled" | "draft";
   const targetsRaw = String(formData.get("targets") ?? "[]");
   const scheduledFor = String(formData.get("scheduled_for") ?? "").trim();
 
@@ -60,23 +68,22 @@ export async function publishZernioPostAction(formData: FormData) {
     return { success: false as const, error: "Invalid targets payload." };
   }
 
-  const result = await publishZernioPost({
-    content,
-    targets,
-    mode,
-    scheduledFor: scheduledFor || undefined,
-  });
+  const result = await publishZernioPost(
+    { content, targets, mode, scheduledFor: scheduledFor || undefined },
+    ctx.key,
+  );
 
   if (!result.success) {
     return { success: false as const, error: result.error };
   }
 
-  await logAudit(supabase, {
+  await logAudit(ctx.supabase, {
     action: "zernio.post_published",
     metadata: { postId: result.data.postId, mode },
   });
 
-  revalidatePath("/dashboard/ads");
+  revalidatePath("/dashboard/integrations");
+  revalidatePath("/dashboard/campaign-ops");
   return { success: true as const, data: result.data };
 }
 
@@ -94,9 +101,13 @@ export async function connectZernioWithApiKeyAction(formData: FormData) {
     return { success: false as const, error: "API key is required." };
   }
 
-  const { verifyApiKey } = await import("@/lib/zernio");
+  const { verifyApiKey, listAccounts } = await import("@/lib/zernio");
+  let accountCount = 0;
   try {
-    await verifyApiKey(apiKey);
+    const verified = await verifyApiKey(apiKey);
+    accountCount = verified.accountCount;
+    const accounts = await listAccounts(apiKey);
+    accountCount = Math.max(accountCount, accounts.length);
   } catch (e) {
     return {
       success: false as const,
@@ -109,13 +120,40 @@ export async function connectZernioWithApiKeyAction(formData: FormData) {
   const { error } = await accounts.upsert({
     businessId: business.id,
     platform: "zernio",
+    externalAccountId: "zernio",
+    accountName: "Zernio",
     accessToken: apiKey,
     status: "connected",
+    meta: {
+      accountLabel: "Zernio",
+      connectedAppCount: accountCount,
+      lastVerifiedAt: new Date().toISOString(),
+    },
   });
   if (error) {
     return { success: false as const, error: error.message };
   }
 
-  revalidatePath("/dashboard/ads");
+  revalidatePath("/dashboard/integrations");
+  revalidatePath("/dashboard/campaign-ops");
+  return { success: true as const, data: { accountCount } };
+}
+
+export async function disconnectZernioAction() {
+  const ctx = await getBusinessZernioKey();
+  if (!ctx.ok) return { success: false as const, error: ctx.error };
+
+  const { createAdAccountRepository } = await import("@/repositories/ad-account.repository");
+  const accounts = createAdAccountRepository(ctx.supabase);
+  const { data: row } = await accounts.getByPlatform(ctx.businessId, "zernio");
+  if (!row) {
+    return { success: true as const };
+  }
+
+  const { error } = await ctx.supabase.from("ad_accounts").delete().eq("id", row.id);
+  if (error) return { success: false as const, error: error.message };
+
+  revalidatePath("/dashboard/integrations");
+  revalidatePath("/dashboard/campaign-ops");
   return { success: true as const };
 }

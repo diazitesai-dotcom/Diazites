@@ -7,6 +7,7 @@ import {
   CreditCard,
   LayoutDashboard,
   LogOut,
+  Plug,
   Settings,
   Shield,
   UserCircle2,
@@ -93,6 +94,10 @@ export function AccountMenu({ account, variant }: AccountMenuProps) {
 
         {variant === "dashboard" ? (
           <>
+            <DropdownMenuItem render={<Link href={ROUTES.integrationsHub} />}>
+              <Plug className="size-4" aria-hidden />
+              Integrations
+            </DropdownMenuItem>
             <DropdownMenuItem render={<Link href={`${ROUTES.organization}?tab=settings`} />}>
               <Settings className="size-4" aria-hidden />
               Workspace settings

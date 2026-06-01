@@ -73,6 +73,7 @@ export function GrowthIntegrationsHub({
   useEffect(() => {
     const connected = searchParams.get("connected");
     const error = searchParams.get("error");
+    const focus = searchParams.get("focus");
     if (connected === "google_ads") {
       setBanner("Google Ads connected successfully.");
       const match = integrations.find((i) => i.id === "google_ads");
@@ -80,6 +81,9 @@ export function GrowthIntegrationsHub({
     } else if (connected === "meta") {
       setBanner("Meta Ads connected successfully.");
       const match = integrations.find((i) => i.id === "meta");
+      if (match) setSelected(match);
+    } else if (focus === "zernio") {
+      const match = integrations.find((i) => i.id === "zernio");
       if (match) setSelected(match);
     } else if (error) {
       setBanner(`Connection failed: ${error.replace(/_/g, " ")}`);
@@ -137,7 +141,7 @@ export function GrowthIntegrationsHub({
           <h1 className="text-2xl font-semibold tracking-tight">External systems & credentials</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             {starterOnly
-              ? "Connect Meta and Google Ads to launch campaigns. Additional integrations unlock as your plan grows."
+              ? "Connect Meta, Google Ads, and Zernio to run and manage campaigns across social and ad platforms. Additional integrations unlock as your plan grows."
               : "Connect ad platforms, CRM, analytics, tracking, ecommerce, and comms — agents monitor, recommend, and execute within your guardrails."}
           </p>
         </div>

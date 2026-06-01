@@ -36,6 +36,22 @@ const PLATFORMS: PlatformDef[] = [
   { id: "meta", name: "Meta Ads", categoryId: "paid_ads", agentType: "paid_ads", subchannels: ["Facebook", "Instagram", "Messenger", "WhatsApp"] },
   { id: "google_ads", name: "Google Ads", categoryId: "paid_ads", agentType: "google_youtube", subchannels: ["Search", "Display", "Shopping", "Performance Max", "YouTube", "Gmail", "Discovery", "Local Service Ads"] },
   {
+    id: "zernio",
+    name: "Zernio",
+    categoryId: "paid_ads",
+    agentType: "paid_ads",
+    subchannels: [
+      "Facebook",
+      "Instagram",
+      "TikTok",
+      "LinkedIn",
+      "YouTube",
+      "X",
+      "+ 9 more",
+    ],
+    docsUrl: "https://docs.zernio.com/",
+  },
+  {
     id: "openai_ads",
     name: "OpenAI Ads API",
     categoryId: "paid_ads",
@@ -120,8 +136,8 @@ const PLATFORMS: PlatformDef[] = [
 
 export const GROWTH_INTEGRATION_IDS = new Set(PLATFORMS.map((p) => p.id));
 
-/** Starter accounts: Meta + Google Ads only until more channels are enabled. */
-export const STARTER_INTEGRATION_IDS = new Set(["meta", "google_ads"]);
+/** Starter accounts: Meta, Google Ads, and Zernio ads broker. */
+export const STARTER_INTEGRATION_IDS = new Set(["meta", "google_ads", "zernio"]);
 
 /** Demo-only defaults — paid ads must use real OAuth/API connections */
 const CONNECTED_BY_DEFAULT = new Set<string>([]);

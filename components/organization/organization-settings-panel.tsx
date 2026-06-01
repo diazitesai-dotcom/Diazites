@@ -1,4 +1,9 @@
+import Link from "next/link";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { ROUTES } from "@/lib/navigation/platform-nav";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -21,6 +26,23 @@ export function OrganizationSettingsPanel({
         profile={profile}
         appUrl={appUrl}
       />
+
+      <Card className="border-white/[0.06]">
+        <CardHeader>
+          <CardTitle className="text-lg">Connected services</CardTitle>
+          <CardDescription>
+            Link Meta, Google Ads, and Zernio so agents can run and manage campaigns.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link
+            href={`${ROUTES.integrationsHub}?focus=zernio`}
+            className={cn(buttonVariants({ variant: "outline" }), "rounded-xl border-white/10")}
+          >
+            Open Integrations hub
+          </Link>
+        </CardContent>
+      </Card>
 
       <Card className="border-white/[0.06]">
         <CardHeader>
