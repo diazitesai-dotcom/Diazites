@@ -14,15 +14,13 @@ export function isAdAccountRowConnected(row: AdAccountConnectionRow): boolean {
   if (isAdAccountConnected(row)) return true;
 
   const platform = String(row.platform).toLowerCase();
-  if (platform === "zernio" && row.access_token?.trim()) {
-    const st = row.status?.toLowerCase();
-    if (!st || st === "disconnected" || st === "error") {
-      return false;
-    }
-    return true;
-  }
+  if (platform !== "zernio" || !row.access_token?.trim()) return false;
 
-  return false;
+  const st = row.status?.toLowerCase();
+  const cs = row.connection_status?.toLowerCase();
+  if (st === "disconnected" || st === "error") return false;
+  if (cs === "not_connected" || cs === "disconnected") return false;
+  return true;
 }
 
 export function isZernioAdAccountRow(row: AdAccountConnectionRow): boolean {

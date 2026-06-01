@@ -6,7 +6,11 @@ import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildAdopsPayload } from "@/lib/ads/build-adops-payload";
-import { loadZernioAccountsForAdops } from "@/lib/integrations/load-zernio-accounts-for-adops";
+import { markIntegrationsConnectedForUser } from "@/lib/integrations/integration-connection-status";
+import {
+  loadZernioAccountsForAdops,
+  persistZernioConnectedPlatforms,
+} from "@/lib/integrations/load-zernio-accounts-for-adops";
 import { loadCampaignsPageData } from "@/lib/dashboard/load-campaigns-page";
 import { loadRevenueAttribution } from "@/lib/revenue/load-revenue-attribution";
 import { isZernioConfigured } from "@/lib/zernio";
@@ -89,6 +93,15 @@ export default async function CampaignOpsPage() {
   }
 
   const zernioAccounts = await loadZernioAccountsForAdops(supabase, business.id);
+  if (zernioAccounts.length > 0) {
+    await persistZernioConnectedPlatforms(
+      supabase,
+      business.id,
+      zernioAccounts.map((a) => a.platform),
+      zernioAccounts.length,
+    );
+    await markIntegrationsConnectedForUser(supabase, user.id);
+  }
 
   const payload = buildAdopsPayload({
     businessName: business.name,

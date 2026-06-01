@@ -1,7 +1,9 @@
 import { ADOPS_PLATFORMS, DEFAULT_SAFETY_POLICY } from "@/lib/ads/adops-catalog";
+import { isAdAccountRowConnected } from "@/lib/integrations/ad-account-connection";
 import {
   adopsPlatformLinkedViaZernio,
   mapZernioAccountsToWorkspaceAccounts,
+  zernioAccountsFromAdAccountMeta,
 } from "@/lib/ads/zernio-adops-bridge";
 import type {
   AdopsAgentView,
@@ -354,7 +356,11 @@ export function buildAdopsPayload(input: {
   hasWinningAd?: boolean;
   winningAdMeta?: AdopsPagePayload["winningAdMeta"];
 }): AdopsPagePayload {
-  const zernioAccounts = input.zernioAccounts ?? [];
+  let zernioAccounts = input.zernioAccounts ?? [];
+  const zernioRow = input.accounts.find((a) => a.platform === "zernio");
+  if (!zernioAccounts.length && zernioRow && isAdAccountRowConnected(zernioRow)) {
+    zernioAccounts = zernioAccountsFromAdAccountMeta(zernioRow.meta);
+  }
   const zernioLinkedPlatforms: AdopsPlatformId[] = [];
   const liveCampaigns = buildLiveCampaignRows(input.campaigns, input.businessName);
   const totalSpend = liveCampaigns.reduce((s, c) => s + c.spend, 0);

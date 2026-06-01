@@ -10,6 +10,7 @@ import {
   resolveLinkedIntegrationId,
   type LinkedAdAccount,
 } from "@/lib/integrations/integration-connect-config";
+import { markIntegrationsConnectedForUser } from "@/lib/integrations/integration-connection-status";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -26,7 +27,9 @@ export default async function IntegrationsPage() {
 
   const { data: adAccounts } = await supabase
     .from("ad_accounts")
-    .select("id, platform, external_account_id, status, meta, access_token, refresh_token")
+    .select(
+      "id, platform, external_account_id, status, connection_status, meta, access_token, refresh_token",
+    )
     .eq("business_id", ctxResult.ctx.businessId);
 
   const connectedIds: string[] = [];
@@ -57,6 +60,10 @@ export default async function IntegrationsPage() {
               ? "OAuth pending"
               : null,
     };
+  }
+
+  if (connectedIds.length > 0) {
+    await markIntegrationsConnectedForUser(supabase, user.id);
   }
 
   return (
