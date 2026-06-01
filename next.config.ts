@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
       { source: "/register", destination: "/signup", permanent: true },
       { source: "/dashboard/pipeline", destination: "/dashboard/leads", permanent: true },
       { source: "/dashboard/landing-pages", destination: "/dashboard/funnel", permanent: true },
+      { source: "/dashboard/landingpages", destination: "/dashboard/funnel", permanent: true },
+      { source: "/dashboard/landing", destination: "/dashboard/funnel", permanent: true },
+      { source: "/dashboard/campaigns", destination: "/dashboard/campaign-ops", permanent: true },
       { source: "/dashboard/ai-text", destination: "/dashboard/email-campaigns", permanent: true },
     ];
   },

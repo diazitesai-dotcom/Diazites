@@ -85,6 +85,78 @@ function buildSystemPrompt(ctx: OperatorPlatformContext): string {
   return lines.filter(Boolean).join("\n");
 }
 
+/** Valid in-app dashboard routes the operator is allowed to send users to. */
+const VALID_DASHBOARD_ROUTES = new Set<string>([
+  "/dashboard",
+  "/dashboard/engine",
+  "/dashboard/campaign-ops",
+  "/dashboard/leads",
+  "/dashboard/funnel",
+  "/dashboard/agents",
+  "/dashboard/optimization",
+  "/dashboard/integrations",
+  "/dashboard/automations",
+  "/dashboard/automations/pipelines",
+  "/dashboard/workflows",
+  "/dashboard/ai-calls",
+  "/dashboard/merchant-services",
+  "/dashboard/email-campaigns",
+  "/dashboard/approvals",
+  "/dashboard/reports",
+  "/dashboard/organization",
+  "/dashboard/business",
+  "/dashboard/settings",
+  "/dashboard/ads",
+  "/onboarding",
+]);
+
+/** Corrects common LLM-hallucinated routes (e.g. /dashboard/landingpages → /dashboard/funnel). */
+const HREF_ALIASES: Record<string, string> = {
+  "/dashboard/landingpages": "/dashboard/funnel",
+  "/dashboard/landing-pages": "/dashboard/funnel",
+  "/dashboard/landing": "/dashboard/funnel",
+  "/dashboard/landing-page": "/dashboard/funnel",
+  "/dashboard/funnels": "/dashboard/funnel",
+  "/dashboard/campaigns": "/dashboard/campaign-ops",
+  "/dashboard/campaign": "/dashboard/campaign-ops",
+  "/dashboard/campaign-manager": "/dashboard/campaign-ops",
+  "/dashboard/agent": "/dashboard/agents",
+  "/dashboard/integration": "/dashboard/integrations",
+  "/dashboard/integrations-hub": "/dashboard/integrations",
+  "/dashboard/lead": "/dashboard/leads",
+  "/dashboard/leads-os": "/dashboard/leads",
+  "/dashboard/pipeline": "/dashboard/leads",
+  "/dashboard/automation": "/dashboard/automations",
+  "/dashboard/workflow": "/dashboard/workflows",
+  "/dashboard/report": "/dashboard/reports",
+  "/dashboard/reporting": "/dashboard/reports",
+  "/dashboard/ai-text": "/dashboard/email-campaigns",
+  "/dashboard/email": "/dashboard/email-campaigns",
+  "/dashboard/home": "/dashboard",
+  "/dashboard/overview": "/dashboard",
+};
+
+/**
+ * Maps an operator-provided href to a real route. The LLM sometimes invents
+ * paths that 404 (e.g. /dashboard/landingpages); we alias known mistakes and
+ * fall back to Mission Control for anything unrecognized.
+ */
+export function normalizeDashboardHref(href: string): string {
+  const trimmed = href.trim();
+  if (!trimmed.startsWith("/")) return "/dashboard";
+
+  const [rawPath, query] = trimmed.split("?");
+  const path = rawPath.replace(/\/+$/, "").toLowerCase() || "/dashboard";
+  const suffix = query ? `?${query}` : "";
+
+  if (VALID_DASHBOARD_ROUTES.has(path)) return `${path}${suffix}`;
+  if (HREF_ALIASES[path]) return `${HREF_ALIASES[path]}${suffix}`;
+
+  // Unknown /dashboard/* path — keep the user inside the app rather than 404.
+  if (path.startsWith("/dashboard")) return `/dashboard${suffix}`;
+  return `${path}${suffix}`;
+}
+
 function mapActions(
   raw: z.infer<typeof operatorReplySchema>["actions"],
 ): OperatorAction[] | undefined {
@@ -98,7 +170,7 @@ function mapActions(
     } as OperatorAction;
 
     if ((a.kind === "navigate" || a.kind === "open_diagnostics" || a.kind === "approve") && a.href) {
-      return { ...base, href: a.href };
+      return { ...base, href: normalizeDashboardHref(a.href) };
     }
     if (a.kind === "deploy") {
       const goal = normalizeDeploymentGoalId(a.deployGoal);
@@ -278,7 +350,7 @@ Return JSON with:
 - bullets: optional string array of key points
 - breadcrumb: optional UI breadcrumb
 - actions: optional array of { kind, label, href?, deployGoal?, deployPreset?, requiresApproval? }
-  - navigate: include href like /dashboard/ads
+  - navigate: href MUST be one of these exact routes (do not invent others): /dashboard, /dashboard/engine, /dashboard/campaign-ops, /dashboard/leads, /dashboard/funnel (landing pages live here), /dashboard/agents, /dashboard/optimization, /dashboard/integrations, /dashboard/automations, /dashboard/workflows, /dashboard/email-campaigns, /dashboard/approvals, /dashboard/reports, /dashboard/organization, /dashboard/business
   - deploy: deployGoal e.g. generate_leads, launch_ads, follow_up_leads; deployPreset optional retargeting
 - logLine: optional short log for operator console`,
     schema: operatorReplySchema,
