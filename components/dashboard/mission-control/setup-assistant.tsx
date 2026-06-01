@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 
 import {
-  runCompleteFunnelAction,
+  generateFunnelPlanAction,
+  launchFunnelStepAction,
   runSetupStepAction,
+  type FunnelStepKind,
   type SetupArtifact,
   type SetupStepResult,
 } from "@/actions/mission-control-setup.actions";
@@ -25,6 +27,10 @@ import { sendOperatorMessageAction } from "@/actions/operator.actions";
 import { useAgentDeploymentOptional } from "@/components/agents/agent-deployment-provider";
 import { OperatorMessageBubble } from "@/components/ai-operator/operator-message-bubble";
 import { SetupArtifactCard } from "@/components/dashboard/mission-control/setup-artifact-card";
+import {
+  FunnelPreview,
+  type LiveFunnelStep,
+} from "@/components/dashboard/mission-control/funnel-preview";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { OnboardingChecklistKey, PostSetupChecklistItem } from "@/lib/onboarding/draft";
@@ -72,6 +78,27 @@ function loadStoredMessages(key: string): ChatMessage[] | null {
   return null;
 }
 
+function loadStoredFunnel(key: string): LiveFunnelStep[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(`${key}:funnel`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed as LiveFunnelStep[];
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/** Maps a checklist asset to the funnel step it seeds. */
+const CHECKLIST_TO_FUNNEL: Partial<Record<OnboardingChecklistKey, FunnelStepKind>> = {
+  landing_page_ready: "landing_page",
+  campaign_built: "campaign",
+  agents_assigned: "ad_setup",
+  ai_active: "follow_up",
+};
+
 export function SetupAssistant({ items, businessName, focused = false }: SetupAssistantProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -98,18 +125,21 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
+  const [funnel, setFunnel] = useState<LiveFunnelStep[] | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(0);
   // Only persist once we've attempted to restore, so we never clobber saved chat.
   const hydratedRef = useRef(false);
 
-  // Restore any saved conversation after mount (avoids SSR hydration mismatch).
+  // Restore any saved conversation + funnel after mount (avoids SSR mismatch).
   useEffect(() => {
     const stored = loadStoredMessages(storageKey);
     if (stored) {
       idRef.current = stored.length;
       setMessages(stored);
     }
+    const storedFunnel = loadStoredFunnel(storageKey);
+    if (storedFunnel) setFunnel(storedFunnel);
     hydratedRef.current = true;
     scrollToBottom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -125,6 +155,20 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
     }
   }, [messages, storageKey]);
 
+  // Persist the funnel plan so it survives navigation too.
+  useEffect(() => {
+    if (!hydratedRef.current || typeof window === "undefined") return;
+    try {
+      if (funnel && funnel.length > 0) {
+        window.localStorage.setItem(`${storageKey}:funnel`, JSON.stringify(funnel));
+      } else {
+        window.localStorage.removeItem(`${storageKey}:funnel`);
+      }
+    } catch {
+      // non-fatal
+    }
+  }, [funnel, storageKey]);
+
   function nextId(prefix: string) {
     idRef.current += 1;
     return `${prefix}-${idRef.current}`;
@@ -132,10 +176,12 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
 
   function clearConversation() {
     setMessages([welcomeMessage]);
+    setFunnel(null);
     idRef.current = 0;
     if (typeof window !== "undefined") {
       try {
         window.localStorage.removeItem(storageKey);
+        window.localStorage.removeItem(`${storageKey}:funnel`);
       } catch {
         // ignore
       }
@@ -217,38 +263,105 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
     };
   }
 
-  /** Builds an entire funnel inline and renders it as a card in the chat. */
-  async function runCompleteFunnel() {
+  function pushAssistant(content: string, mode: "operator" | "support" = "operator") {
+    setMessages((m) => [...m, { id: nextId("a"), role: "assistant", mode, content } as ChatMessage]);
+  }
+
+  /** Auto-generates a complete funnel plan around the (optional) seed asset. */
+  async function startFunnel(seedKind?: FunnelStepKind, seedLabel?: string) {
     if (pending) return;
     setMessages((m) => [
       ...m,
-      { id: nextId("u"), role: "user", content: "Create a complete funnel" },
+      {
+        id: nextId("u"),
+        role: "user",
+        content: seedLabel ? `Create ${seedLabel}` : "Create a complete funnel",
+      },
     ]);
     setPending(true);
     scrollToBottom();
 
     try {
-      const result = await runCompleteFunnelAction();
-      setMessages((m) => [...m, resultToMessage(result)]);
-      if (result.status === "manual") {
-        router.push(withSetupReturn(result.href));
-      } else {
-        router.refresh();
+      const result = await generateFunnelPlanAction(seedKind);
+      if (!result.ok) {
+        pushAssistant(`I couldn't draft the funnel — ${result.error}`, "support");
+        return;
       }
+      const live: LiveFunnelStep[] = result.steps.map((s) => ({ ...s, status: "suggested" }));
+      setFunnel(live);
+      pushAssistant(
+        `Here's the complete funnel I'd build for ${result.businessName}. Review it below — reorder, edit any step, then launch them one at a time or all at once.`,
+      );
     } catch {
-      setMessages((m) => [
-        ...m,
-        {
-          id: nextId("e"),
-          role: "assistant",
-          mode: "support",
-          content: "I hit a snag building the funnel. Try again in a moment.",
-        } as ChatMessage,
-      ]);
+      pushAssistant("I hit a snag drafting the funnel. Try again in a moment.", "support");
     } finally {
       setPending(false);
       scrollToBottom();
     }
+  }
+
+  function patchStep(id: string, patch: Partial<LiveFunnelStep>) {
+    setFunnel((prev) => (prev ? prev.map((s) => (s.id === id ? { ...s, ...patch } : s)) : prev));
+  }
+
+  /** Launches a single funnel step inline; updates its status + artifact. */
+  async function launchStep(step: LiveFunnelStep): Promise<boolean> {
+    patchStep(step.id, { status: "building", error: undefined });
+    try {
+      const result = await launchFunnelStepAction(step.kind, {
+        budget: step.budget,
+        platform: step.platform,
+      });
+      if (result.status === "done") {
+        patchStep(step.id, { status: "ready", artifact: result.artifact });
+        router.refresh();
+        return true;
+      }
+      if (result.status === "manual") {
+        patchStep(step.id, { status: "suggested" });
+        pushAssistant(`${result.title} — ${result.detail}`);
+        router.push(withSetupReturn(result.href));
+        return false;
+      }
+      patchStep(step.id, { status: "error", error: result.detail });
+      return false;
+    } catch {
+      patchStep(step.id, { status: "error", error: "Something went wrong. Try again." });
+      return false;
+    }
+  }
+
+  async function launchStepWithPending(step: LiveFunnelStep) {
+    if (pending) return;
+    setPending(true);
+    try {
+      await launchStep(step);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  /** Launches every not-yet-built step in order. */
+  async function launchAllSteps() {
+    if (pending || !funnel) return;
+    setPending(true);
+    try {
+      const queue = funnel.filter((s) => s.status !== "ready");
+      for (const step of queue) {
+        await launchStep(step);
+      }
+      pushAssistant("Your funnel is live — every step is set up and connected. 🚀");
+    } finally {
+      setPending(false);
+      scrollToBottom();
+    }
+  }
+
+  function discardStep(id: string) {
+    setFunnel((prev) => {
+      const next = prev ? prev.filter((s) => s.id !== id) : prev;
+      return next && next.length > 0 ? next : null;
+    });
   }
 
   /** Runs a single setup step inline on Mission Control (no navigation). */
@@ -397,7 +510,7 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
               <button
                 type="button"
                 disabled={pending}
-                onClick={runCompleteFunnel}
+                onClick={() => startFunnel()}
                 className="group relative w-full overflow-hidden rounded-xl border border-violet-400/40 bg-gradient-to-r from-violet-600/30 via-fuchsia-600/25 to-cyan-500/25 px-4 py-3 text-left transition-all hover:border-violet-300/60 disabled:opacity-60"
               >
                 <span
@@ -433,20 +546,27 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
                     <Wand2 className="mr-1 size-3.5" />
                     Set up step by step
                   </Button>
-                  {remaining.map((item) => (
-                    <Button
-                      key={item.key}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-8 rounded-lg border-white/10 text-xs"
-                      disabled={pending}
-                      onClick={() => runStep(item.key, item.label)}
-                    >
-                      <Circle className="mr-1 size-3 text-muted-foreground" />
-                      {SETUP_STEP_PROMPTS[item.key]?.cta ?? item.label}
-                    </Button>
-                  ))}
+                  {remaining.map((item) => {
+                    const seedKind = CHECKLIST_TO_FUNNEL[item.key];
+                    return (
+                      <Button
+                        key={item.key}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg border-white/10 text-xs"
+                        disabled={pending}
+                        onClick={() =>
+                          seedKind
+                            ? startFunnel(seedKind, item.label.toLowerCase())
+                            : runStep(item.key, item.label)
+                        }
+                      >
+                        <Circle className="mr-1 size-3 text-muted-foreground" />
+                        {SETUP_STEP_PROMPTS[item.key]?.cta ?? item.label}
+                      </Button>
+                    );
+                  })}
                 </div>
               ) : null}
 
@@ -489,6 +609,18 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
                   </div>
                 ) : null}
               </div>
+
+              {funnel && funnel.length > 0 ? (
+                <FunnelPreview
+                  steps={funnel}
+                  pending={pending}
+                  onReorder={(next) => setFunnel(next)}
+                  onLaunch={launchStepWithPending}
+                  onLaunchAll={launchAllSteps}
+                  onDiscard={discardStep}
+                  onEdit={patchStep}
+                />
+              ) : null}
 
               <form
                 className="flex gap-2"

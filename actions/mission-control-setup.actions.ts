@@ -51,6 +51,29 @@ export type SetupArtifact =
   | AgentsArtifact
   | FunnelArtifact;
 
+/** A single node in an auto-generated funnel plan. */
+export type FunnelStepKind =
+  | "landing_page"
+  | "campaign"
+  | "ad_setup"
+  | "follow_up"
+  | "qualification";
+
+export type FunnelStepPlan = {
+  id: string;
+  kind: FunnelStepKind;
+  title: string;
+  summary: string;
+  /** Editable hints surfaced inline in the preview. */
+  headline?: string;
+  platform?: string;
+  budget?: number;
+};
+
+export type FunnelPlanResult =
+  | { ok: true; businessName: string; steps: FunnelStepPlan[] }
+  | { ok: false; error: string };
+
 /**
  * Result of running a setup step from the Mission Control assistant.
  * - `done`   → completed inline, no navigation needed (may include an artifact).
@@ -150,9 +173,15 @@ async function buildLandingPage(
 
 async function buildCampaign(
   ctx: BusinessCtx,
+  overrides?: { budget?: number; platform?: string },
 ): Promise<{ ok: true; artifact: CampaignArtifact } | { ok: false; error: string }> {
-  const platform = await pickCampaignPlatform(ctx.supabase, ctx.businessId);
-  const budget = ctx.monthlyBudget > 0 ? Math.round(ctx.monthlyBudget / 30) : 20;
+  const platform = overrides?.platform ?? (await pickCampaignPlatform(ctx.supabase, ctx.businessId));
+  const budget =
+    overrides?.budget && overrides.budget > 0
+      ? Math.round(overrides.budget)
+      : ctx.monthlyBudget > 0
+        ? Math.round(ctx.monthlyBudget / 30)
+        : 20;
   const created = await createCampaign(ctx.supabase, ctx.userId, {
     businessId: ctx.businessId,
     platform,
@@ -334,6 +363,135 @@ export async function runCompleteFunnelAction(): Promise<SetupStepResult> {
     return {
       status: "error",
       title: "Funnel build hit a snag",
+      detail: err instanceof Error ? err.message : "Unexpected error — please try again.",
+    };
+  }
+}
+
+/**
+ * Auto-generates a complete funnel plan around whatever the user is creating.
+ * Returns suggested (not yet built) steps so the copilot can render an editable,
+ * interactive preview. If a seed asset is given, it's surfaced first.
+ */
+export async function generateFunnelPlanAction(
+  seedKind?: FunnelStepKind,
+): Promise<FunnelPlanResult> {
+  const resolved = await resolveBusinessCtx();
+  if ("error" in resolved) return { ok: false, error: resolved.error.detail };
+  const ctx = resolved;
+
+  const platform = await pickCampaignPlatform(ctx.supabase, ctx.businessId);
+  const budget = ctx.monthlyBudget > 0 ? Math.round(ctx.monthlyBudget / 30) : 20;
+
+  const steps: FunnelStepPlan[] = [
+    {
+      id: "step-landing",
+      kind: "landing_page",
+      title: "Landing page",
+      summary: `A unique, AI-designed capture page for ${ctx.businessName}.`,
+      headline: `${ctx.businessName} — Get Started Today`,
+    },
+    {
+      id: "step-campaign",
+      kind: "campaign",
+      title: "Ad campaign",
+      summary: `Lead-gen campaign on ${platform} driving traffic to your page.`,
+      platform,
+      budget,
+    },
+    {
+      id: "step-ads",
+      kind: "ad_setup",
+      title: "Ad creative & targeting",
+      summary: "AI ad agents generate creatives and dial in audience targeting.",
+    },
+    {
+      id: "step-followup",
+      kind: "follow_up",
+      title: "Follow-up automation",
+      summary: "Every new lead is contacted instantly and nurtured automatically.",
+    },
+  ];
+
+  if (seedKind) {
+    steps.sort((a, b) => Number(b.kind === seedKind) - Number(a.kind === seedKind));
+  }
+
+  return { ok: true, businessName: ctx.businessName, steps };
+}
+
+/** Builds a single funnel step inline and returns its artifact. */
+export async function launchFunnelStepAction(
+  kind: FunnelStepKind,
+  overrides?: { budget?: number; platform?: string },
+): Promise<SetupStepResult> {
+  const resolved = await resolveBusinessCtx();
+  if ("error" in resolved) return resolved.error;
+  const ctx = resolved;
+
+  try {
+    switch (kind) {
+      case "landing_page": {
+        const res = await buildLandingPage(ctx);
+        if (!res.ok) return { status: "error", title: "Landing page failed", detail: res.error };
+        revalidateSetup();
+        return {
+          status: "done",
+          title: "Landing page published",
+          detail: "Your AI-designed capture page is live.",
+          artifact: res.artifact,
+        };
+      }
+      case "campaign": {
+        const res = await buildCampaign(ctx, overrides);
+        if (!res.ok) return { status: "error", title: "Campaign failed", detail: res.error };
+        revalidateSetup();
+        return {
+          status: "done",
+          title: "Campaign drafted",
+          detail: `A ${res.artifact.platform} campaign is drafted at ~$${res.artifact.budget}/day.`,
+          artifact: res.artifact,
+        };
+      }
+      case "ad_setup": {
+        const res = await buildAgents(ctx, ["social_ads", "search_ads"]);
+        if (!res.ok) return { status: "error", title: "Ad setup failed", detail: res.error };
+        revalidateSetup();
+        return {
+          status: "done",
+          title: "Ad creative & targeting ready",
+          detail: "Your ad agents are generating creatives and targeting.",
+          artifact: { type: "agents", agents: res.agents },
+        };
+      }
+      case "qualification": {
+        const res = await buildAgents(ctx, ["lead_qualification"]);
+        if (!res.ok) return { status: "error", title: "Qualification failed", detail: res.error };
+        revalidateSetup();
+        return {
+          status: "done",
+          title: "Lead qualification live",
+          detail: "Incoming leads are scored and prioritized automatically.",
+          artifact: { type: "agents", agents: res.agents },
+        };
+      }
+      case "follow_up":
+      default: {
+        const res = await buildAgents(ctx, ["ai_follow_up"]);
+        if (!res.ok) return { status: "error", title: "Follow-up failed", detail: res.error };
+        revalidateSetup();
+        return {
+          status: "done",
+          title: "Follow-up automation live",
+          detail: "New leads are contacted instantly and nurtured automatically.",
+          artifact: { type: "agents", agents: res.agents },
+        };
+      }
+    }
+  } catch (err) {
+    return {
+      status: "error",
+      title: "Step hit a snag",
       detail: err instanceof Error ? err.message : "Unexpected error — please try again.",
     };
   }
