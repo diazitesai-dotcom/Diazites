@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Circle,
   Loader2,
+  RotateCcw,
   Send,
   Sparkles,
   Wand2,
@@ -46,6 +47,27 @@ function withSetupReturn(href: string): string {
   return `${path}?${params.toString()}`;
 }
 
+/** Scope persisted chat per workspace so it survives navigation but not account switches. */
+function storageKeyFor(businessName?: string): string {
+  const slug = (businessName ?? "default").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return `diazites:setup-assistant:${slug}`;
+}
+
+function loadStoredMessages(key: string): OperatorMessage[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed as OperatorMessage[];
+    }
+  } catch {
+    // ignore malformed storage
+  }
+  return null;
+}
+
 export function SetupAssistant({ items, businessName, focused = false }: SetupAssistantProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -57,25 +79,63 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
   const allDone = remaining.length === 0;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
+  const storageKey = storageKeyFor(businessName);
+
+  const welcomeMessage: OperatorAssistantMessage = {
+    id: "setup-welcome",
+    role: "assistant",
+    mode: "operator",
+    content: allDone
+      ? `Nice work${businessName ? `, ${businessName}` : ""} — your workspace is fully set up. Ask me anything or tell me what you want to launch next.`
+      : `Hi${businessName ? ` ${businessName}` : ""} — I'm your setup specialist. I'll get your workspace fully launched. Pick a step below or hit "Set everything up for me" and I'll handle it with you.`,
+  };
+
   const [open, setOpen] = useState(focused || !allDone);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
-  const [messages, setMessages] = useState<OperatorMessage[]>([
-    {
-      id: "setup-welcome",
-      role: "assistant",
-      mode: "operator",
-      content: allDone
-        ? `Nice work${businessName ? `, ${businessName}` : ""} — your workspace is fully set up. Ask me anything or tell me what you want to launch next.`
-        : `Hi${businessName ? ` ${businessName}` : ""} — I'm your setup specialist. I'll get your workspace fully launched. Pick a step below or hit "Set everything up for me" and I'll handle it with you.`,
-    } as OperatorAssistantMessage,
-  ]);
+  const [messages, setMessages] = useState<OperatorMessage[]>([welcomeMessage]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(0);
+  // Only persist once we've attempted to restore, so we never clobber saved chat.
+  const hydratedRef = useRef(false);
+
+  // Restore any saved conversation after mount (avoids SSR hydration mismatch).
+  useEffect(() => {
+    const stored = loadStoredMessages(storageKey);
+    if (stored) {
+      idRef.current = stored.length;
+      setMessages(stored);
+    }
+    hydratedRef.current = true;
+    scrollToBottom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey]);
+
+  // Persist conversation so it survives navigating away and back.
+  useEffect(() => {
+    if (!hydratedRef.current || typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(messages));
+    } catch {
+      // storage full / unavailable — non-fatal
+    }
+  }, [messages, storageKey]);
 
   function nextId(prefix: string) {
     idRef.current += 1;
     return `${prefix}-${idRef.current}`;
+  }
+
+  function clearConversation() {
+    setMessages([welcomeMessage]);
+    idRef.current = 0;
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(storageKey);
+      } catch {
+        // ignore
+      }
+    }
   }
 
   function scrollToBottom() {
@@ -153,17 +213,32 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
             </p>
           </div>
         </div>
-        {focused ? null : (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="shrink-0 rounded-lg text-xs"
-            onClick={() => setOpen((v) => !v)}
-          >
-            {open ? "Hide" : "Open"}
-          </Button>
-        )}
+        <div className="flex shrink-0 items-center gap-1">
+          {messages.length > 1 ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="rounded-lg text-xs text-muted-foreground hover:text-foreground"
+              onClick={clearConversation}
+              disabled={pending}
+            >
+              <RotateCcw className="mr-1 size-3.5" />
+              Reset
+            </Button>
+          ) : null}
+          {focused ? null : (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="rounded-lg text-xs"
+              onClick={() => setOpen((v) => !v)}
+            >
+              {open ? "Hide" : "Open"}
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="px-4 pt-3">
