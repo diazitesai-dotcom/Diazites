@@ -149,84 +149,18 @@ export function AgentMcpAccessPanel({
       <Card className="border-white/[0.06]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Plug className="size-4 text-cyan-300" aria-hidden />
-            Zernio MCP (hosted)
+            <KeyRound className="size-4 text-amber-300" aria-hidden />
+            Generate agent connection token
           </CardTitle>
           <CardDescription>
-            Site connection docs:{" "}
-            <Link href="/docs/agents" className="text-violet-300 underline">
-              /docs/agents
-            </Link>
-            . Connect OpenClaw, Hermes, Cursor, Claude, or Windsurf directly to Zernio for
-            cross-posting, ads, inbox, and sequences across 14 platforms. Get an API key at{" "}
-            <a
-              href="https://zernio.com/dashboard/api-keys"
-              className="text-violet-300 underline"
-              target="_blank"
-              rel="noreferrer"
-            >
-              zernio.com/dashboard/api-keys
-            </a>
-            .
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <pre className="overflow-x-auto rounded-xl border border-white/10 bg-black/40 p-4 text-xs text-muted-foreground">
-            {zernioCursorConfig}
-          </pre>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="rounded-xl"
-            onClick={() => copyText(zernioCursorConfig)}
-          >
-            <Copy className="mr-2 size-3.5" aria-hidden />
-            Copy Zernio MCP config
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card className="border-white/[0.06]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Link2 className="size-4 text-violet-300" aria-hidden />
-            Diazites MCP (this workspace)
-          </CardTitle>
-          <CardDescription>
-            Let external agents read your Diazites agents and leads and optionally bridge to
-            your per-business Zernio key.{" "}
-            <Link href="/docs/agents" className="text-violet-300 underline">
-              Full connection docs
-            </Link>
-            . Endpoint: <code className="text-xs">{mcpEndpoint}</code>
+            Create a bearer token for Hermes, OpenClaw, Cursor, Claude, or any MCP client. Use it
+            with the Diazites MCP endpoint below once generated.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <pre className="overflow-x-auto rounded-xl border border-white/10 bg-black/40 p-4 text-xs text-muted-foreground">
-            {diazitesClientConfig}
-          </pre>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="rounded-xl"
-            onClick={() => copyText(diazitesClientConfig)}
-          >
-            <Copy className="mr-2 size-3.5" aria-hidden />
-            Copy Diazites MCP config
-          </Button>
-
           {newToken ? <TokenAlert token={newToken} onCopied={() => setMessage("Token copied to clipboard.")} /> : null}
 
-          <form
-            action={createConnection}
-            className="space-y-4 rounded-xl border border-border/60 bg-muted/10 p-4"
-          >
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <KeyRound className="size-4 text-amber-300" aria-hidden />
-              Generate agent connection token
-            </p>
+          <form action={createConnection} className="space-y-4">
             <Field label="Label" name="label" placeholder="OpenClaw production" required />
             <ClientTypeSelect />
             <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-violet-500/25 bg-violet-500/5 px-3 py-2.5 text-sm">
@@ -284,6 +218,79 @@ export function AgentMcpAccessPanel({
           )}
 
           {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+        </CardContent>
+      </Card>
+
+      <Card className="border-white/[0.06]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Plug className="size-4 text-cyan-300" aria-hidden />
+            Zernio MCP (hosted)
+          </CardTitle>
+          <CardDescription>
+            Site connection docs:{" "}
+            <Link href="/docs/agents" className="text-violet-300 underline">
+              /docs/agents
+            </Link>
+            . Connect OpenClaw, Hermes, Cursor, Claude, or Windsurf directly to Zernio for
+            cross-posting, ads, inbox, and sequences across 14 platforms. Get an API key at{" "}
+            <a
+              href="https://zernio.com/dashboard/api-keys"
+              className="text-violet-300 underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              zernio.com/dashboard/api-keys
+            </a>
+            .
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <pre className="overflow-x-auto rounded-xl border border-white/10 bg-black/40 p-4 text-xs text-muted-foreground">
+            {zernioCursorConfig}
+          </pre>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-xl"
+            onClick={() => copyText(zernioCursorConfig)}
+          >
+            <Copy className="mr-2 size-3.5" aria-hidden />
+            Copy Zernio MCP config
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-white/[0.06]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Link2 className="size-4 text-violet-300" aria-hidden />
+            Diazites MCP (this workspace)
+          </CardTitle>
+          <CardDescription>
+            Let external agents read your Diazites agents and leads and optionally bridge to
+            your per-business Zernio key.{" "}
+            <Link href="/docs/agents" className="text-violet-300 underline">
+              Full connection docs
+            </Link>
+            . Endpoint: <code className="text-xs">{mcpEndpoint}</code>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <pre className="overflow-x-auto rounded-xl border border-white/10 bg-black/40 p-4 text-xs text-muted-foreground">
+            {diazitesClientConfig}
+          </pre>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-xl"
+            onClick={() => copyText(diazitesClientConfig)}
+          >
+            <Copy className="mr-2 size-3.5" aria-hidden />
+            Copy Diazites MCP config
+          </Button>
         </CardContent>
       </Card>
     </section>
