@@ -56,7 +56,14 @@ export function AiOperatorConsole({
 }: AiOperatorConsoleProps = {}) {
   const [openInternal, setOpenInternal] = useState(false);
   const open = openControlled ?? openInternal;
-  const setOpen = onOpenChange ?? setOpenInternal;
+  const setOpen = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      const next = typeof value === "function" ? value(open) : value;
+      if (onOpenChange) onOpenChange(next);
+      else setOpenInternal(next);
+    },
+    [open, onOpenChange],
+  );
   const [portalReady, setPortalReady] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<OperatorMessage[]>([WELCOME]);
