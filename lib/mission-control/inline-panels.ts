@@ -25,7 +25,16 @@ export function hrefToPanelKind(href: string): SetupPanelKind | null {
   if (path.includes("/agents")) return "agents";
   if (path.includes("/settings") || path.includes("/business")) return "profile";
   if (path.includes("/organization")) return "team";
-  if (path.includes("/automations") || path.includes("/workflows") || path.includes("/engine"))
+  if (
+    path.includes("/automations") ||
+    path.includes("/workflows") ||
+    path.includes("/engine") ||
+    path.includes("/leads") ||
+    path.includes("/reports") ||
+    path.includes("/optimization") ||
+    path.includes("/approvals") ||
+    path.includes("/email")
+  )
     return "funnel";
   if (path === "/dashboard") return "funnel";
   return null;

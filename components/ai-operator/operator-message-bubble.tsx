@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, ExternalLink } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { OperatorAction, OperatorAssistantMessage, OperatorMode } from "@/types/ai-operator";
@@ -24,6 +25,50 @@ const MODE_STYLE: Record<OperatorMode, string> = {
   operator: "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-200",
 };
 
+/** Regex to match http(s) URLs or internal /p/ and /dashboard paths. */
+const URL_REGEX = /(https?:\/\/[^\s]+|\/p\/[^\s,)]+|\/dashboard(?:\/[^\s,)]*)?)/g;
+
+/** Split text and render any URLs as clickable links. */
+function Linkified({ text }: { text: string }) {
+  const parts = text.split(URL_REGEX);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (URL_REGEX.test(part)) {
+          URL_REGEX.lastIndex = 0;
+          const isExternal = part.startsWith("http");
+          const label = part.replace(/^https?:\/\//, "").replace(/^www\./, "").slice(0, 50);
+          if (isExternal) {
+            return (
+              <a
+                key={i}
+                href={part}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 text-violet-300 underline underline-offset-2 hover:text-violet-200"
+              >
+                {label}
+                <ExternalLink className="size-3" />
+              </a>
+            );
+          }
+          return (
+            <Link
+              key={i}
+              href={part}
+              className="text-violet-300 underline underline-offset-2 hover:text-violet-200"
+            >
+              {part}
+            </Link>
+          );
+        }
+        URL_REGEX.lastIndex = 0;
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
 export function OperatorMessageBubble({
   message,
   onAction,
@@ -46,17 +91,24 @@ export function OperatorMessageBubble({
           <span className="text-[10px] text-muted-foreground">{message.breadcrumb}</span>
         ) : null}
       </div>
-      <p className="text-sm leading-relaxed text-foreground/95">{message.content}</p>
+
+      <p className="text-sm leading-relaxed text-foreground/95">
+        <Linkified text={message.content} />
+      </p>
+
       {message.bullets && message.bullets.length > 0 ? (
         <ul className="space-y-1 text-sm text-muted-foreground">
           {message.bullets.map((b) => (
             <li key={b} className="flex gap-2 leading-snug">
               <span className="text-violet-400">•</span>
-              <span>{b}</span>
+              <span>
+                <Linkified text={b} />
+              </span>
             </li>
           ))}
         </ul>
       ) : null}
+
       {message.actions && message.actions.length > 0 ? (
         <div className="flex flex-wrap gap-1.5 pt-1">
           {message.actions.map((action) => (

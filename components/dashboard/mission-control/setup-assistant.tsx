@@ -333,10 +333,14 @@ export function SetupAssistant({
         window.open(href, "_blank", "noopener,noreferrer");
         return;
       }
-      if (href === "/dashboard" || href.startsWith("/dashboard?")) {
-        router.replace(href, { scroll: false });
+      if (href.startsWith("/dashboard")) {
+        // Any unrecognised dashboard route stays on Mission Control — open funnel panel as fallback.
+        openPanel("funnel");
         return;
       }
+      // External-ish path: open in new tab rather than navigate away.
+      window.open(href, "_blank", "noopener,noreferrer");
+      return;
     }
 
     if (action.kind === "navigate" || action.kind === "open_diagnostics") {
