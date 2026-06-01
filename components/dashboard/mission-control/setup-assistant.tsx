@@ -1,0 +1,282 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  CheckCircle2,
+  ChevronRight,
+  Circle,
+  Loader2,
+  Send,
+  Sparkles,
+  Wand2,
+} from "lucide-react";
+
+import { sendOperatorMessageAction } from "@/actions/operator.actions";
+import { useAgentDeploymentOptional } from "@/components/agents/agent-deployment-provider";
+import { OperatorMessageBubble } from "@/components/ai-operator/operator-message-bubble";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import type { PostSetupChecklistItem } from "@/lib/onboarding/draft";
+import {
+  SETUP_STEP_PROMPTS,
+  buildAutonomousSetupPrompt,
+} from "@/lib/onboarding/setup-assistant-steps";
+import type {
+  OperatorAction,
+  OperatorAssistantMessage,
+  OperatorMessage,
+} from "@/types/ai-operator";
+import { cn } from "@/lib/utils";
+
+type SetupAssistantProps = {
+  items: PostSetupChecklistItem[];
+  businessName?: string;
+};
+
+export function SetupAssistant({ items, businessName }: SetupAssistantProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const deployment = useAgentDeploymentOptional();
+
+  const total = items.length;
+  const done = items.filter((i) => i.done).length;
+  const remaining = items.filter((i) => !i.done);
+  const allDone = remaining.length === 0;
+  const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  const [open, setOpen] = useState(!allDone);
+  const [input, setInput] = useState("");
+  const [pending, setPending] = useState(false);
+  const [messages, setMessages] = useState<OperatorMessage[]>([
+    {
+      id: "setup-welcome",
+      role: "assistant",
+      mode: "operator",
+      content: allDone
+        ? `Nice work${businessName ? `, ${businessName}` : ""} — your workspace is fully set up. Ask me anything or tell me what you want to launch next.`
+        : `Hi${businessName ? ` ${businessName}` : ""} — I'm your setup specialist. I'll get your workspace fully launched. Pick a step below or hit "Set everything up for me" and I'll handle it with you.`,
+    } as OperatorAssistantMessage,
+  ]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const idRef = useRef(0);
+
+  function nextId(prefix: string) {
+    idRef.current += 1;
+    return `${prefix}-${idRef.current}`;
+  }
+
+  function scrollToBottom() {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    });
+  }
+
+  async function submit(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || pending) return;
+
+    setMessages((m) => [...m, { id: nextId("u"), role: "user", content: trimmed }]);
+    setInput("");
+    setPending(true);
+    scrollToBottom();
+
+    try {
+      const reply = await sendOperatorMessageAction(trimmed, pathname);
+      setMessages((m) => [...m, reply]);
+    } catch {
+      setMessages((m) => [
+        ...m,
+        {
+          id: nextId("e"),
+          role: "assistant",
+          mode: "support",
+          content:
+            "I hit a snag setting that up. Try again, or open the step directly from the buttons above.",
+        } as OperatorAssistantMessage,
+      ]);
+    } finally {
+      setPending(false);
+      scrollToBottom();
+    }
+  }
+
+  function handleAction(action: OperatorAction) {
+    if ((action.kind === "navigate" || action.kind === "open_diagnostics" || action.kind === "approve") && action.href) {
+      router.push(action.href);
+      return;
+    }
+    if (action.kind === "navigate" && !action.href) {
+      router.push("/dashboard/integrations");
+      return;
+    }
+    if (action.kind === "deploy" && action.deploy) {
+      if (deployment) deployment.openDeployment(action.deploy);
+      else router.push("/dashboard/agents");
+      return;
+    }
+    if (action.kind === "open_diagnostics") {
+      router.push("/dashboard/integrations");
+    }
+  }
+
+  function runAutonomousSetup() {
+    const keys = remaining.map((r) => r.key);
+    void submit(buildAutonomousSetupPrompt(keys));
+  }
+
+  return (
+    <Card className="overflow-hidden border-violet-500/25 bg-gradient-to-br from-violet-950/30 via-card to-cyan-950/20">
+      <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] p-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/35 bg-violet-500/15">
+            <Sparkles className="size-5 text-violet-200" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">Setup Assistant</p>
+            <p className="text-[11px] text-muted-foreground">
+              {allDone
+                ? "Workspace ready — ask me to launch anything next."
+                : `${done} of ${total} launch steps complete — I'll finish the rest with you.`}
+            </p>
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="shrink-0 rounded-lg text-xs"
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? "Hide" : "Open"}
+        </Button>
+      </div>
+
+      <div className="px-4 pt-3">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ type: "spring", damping: 26, stiffness: 220 }}
+          />
+        </div>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-3 p-4">
+              {!allDone ? (
+                <div className="flex flex-wrap gap-1.5">
+                  <Button
+                    type="button"
+                    variant="gradient"
+                    size="sm"
+                    className="h-8 rounded-lg text-xs"
+                    disabled={pending}
+                    onClick={runAutonomousSetup}
+                  >
+                    <Wand2 className="mr-1 size-3.5" />
+                    Set everything up for me
+                  </Button>
+                  {remaining.map((item) => (
+                    <Button
+                      key={item.key}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 rounded-lg border-white/10 text-xs"
+                      disabled={pending}
+                      onClick={() => submit(SETUP_STEP_PROMPTS[item.key]?.prompt ?? item.label)}
+                    >
+                      <Circle className="mr-1 size-3 text-muted-foreground" />
+                      {SETUP_STEP_PROMPTS[item.key]?.cta ?? item.label}
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
+
+              <div
+                ref={scrollRef}
+                className="max-h-[340px] min-h-[120px] space-y-3 overflow-y-auto rounded-xl border border-white/[0.06] bg-background/40 p-3"
+              >
+                {messages.map((m) =>
+                  m.role === "user" ? (
+                    <div key={m.id} className="flex justify-end">
+                      <p className="max-w-[88%] rounded-xl rounded-br-sm bg-violet-600/25 px-3 py-2 text-sm text-violet-50">
+                        {m.content}
+                      </p>
+                    </div>
+                  ) : (
+                    <OperatorMessageBubble key={m.id} message={m} onAction={handleAction} />
+                  ),
+                )}
+                {pending ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="size-3.5 animate-spin text-violet-400" />
+                    Setting that up…
+                  </div>
+                ) : null}
+              </div>
+
+              <form
+                className="flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void submit(input);
+                }}
+              >
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Tell me what to set up…"
+                  className="min-w-0 flex-1 rounded-xl border border-white/10 bg-background/80 px-3 py-2.5 text-sm outline-none ring-violet-500/30 placeholder:text-muted-foreground focus:ring-2"
+                  disabled={pending}
+                />
+                <Button
+                  type="submit"
+                  variant="gradient"
+                  size="icon"
+                  className="size-10 shrink-0 rounded-xl"
+                  disabled={pending || !input.trim()}
+                  aria-label="Send"
+                >
+                  <Send className="size-4" />
+                </Button>
+              </form>
+
+              {!allDone ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {remaining.map((item) => (
+                    <button
+                      key={`open-${item.key}`}
+                      type="button"
+                      onClick={() => router.push(item.href)}
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-violet-200"
+                    >
+                      Open {item.label.toLowerCase()}
+                      <ChevronRight className="size-3" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-emerald-300">
+                  <CheckCircle2 className="size-4" />
+                  All launch steps complete.
+                </div>
+              )}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </Card>
+  );
+}

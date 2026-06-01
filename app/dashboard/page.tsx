@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 import { DashboardHomeClient } from "@/components/dashboard/dashboard-home-client";
+import { SetupAssistant } from "@/components/dashboard/mission-control/setup-assistant";
 import { PageHeader } from "@/components/layout/page-header";
-import { PostSetupChecklist } from "@/components/onboarding/post-setup-checklist";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PostSetupChecklist items={checklistItems} />
+      <SetupAssistant items={checklistItems} businessName={data.workspace.businessName} />
       <DashboardHomeClient data={data} />
     </div>
   );
