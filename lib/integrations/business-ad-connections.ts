@@ -110,11 +110,11 @@ export function extractZernioApiKeyFromConnection(
   try {
     const plaintext = decryptCredentials(encrypted);
     const parsed = JSON.parse(plaintext) as Record<string, unknown>;
-    const token =
-      (typeof parsed.token === "string" && parsed.token) ||
-      (typeof parsed.api_key === "string" && parsed.api_key) ||
-      (typeof parsed.apiKey === "string" && parsed.apiKey);
-    return token?.trim() || null;
+    const candidates = [parsed.token, parsed.api_key, parsed.apiKey];
+    const token = candidates.find(
+      (v): v is string => typeof v === "string" && v.trim().length > 0,
+    );
+    return token?.trim() ?? null;
   } catch {
     return null;
   }
