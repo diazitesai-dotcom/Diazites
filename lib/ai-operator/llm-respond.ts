@@ -246,7 +246,10 @@ async function synthesizeReply(
     .map((m) => {
       if (m.role === "tool") return `Tool result: ${String(m.content).slice(0, 2000)}`;
       if (m.role === "assistant" && "tool_calls" in m && m.tool_calls) {
-        return `Assistant called tools: ${m.tool_calls.map((t) => t.function.name).join(", ")}`;
+        const names = m.tool_calls
+          .filter((t) => t.type === "function")
+          .map((t) => t.function.name);
+        return `Assistant called tools: ${names.join(", ")}`;
       }
       return `${m.role}: ${typeof m.content === "string" ? m.content : ""}`;
     })
