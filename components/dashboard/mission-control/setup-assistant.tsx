@@ -14,16 +14,17 @@ import {
   Wand2,
 } from "lucide-react";
 
+import {
+  runSetupStepAction,
+  type SetupStepResult,
+} from "@/actions/mission-control-setup.actions";
 import { sendOperatorMessageAction } from "@/actions/operator.actions";
 import { useAgentDeploymentOptional } from "@/components/agents/agent-deployment-provider";
 import { OperatorMessageBubble } from "@/components/ai-operator/operator-message-bubble";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { PostSetupChecklistItem } from "@/lib/onboarding/draft";
-import {
-  SETUP_STEP_PROMPTS,
-  buildAutonomousSetupPrompt,
-} from "@/lib/onboarding/setup-assistant-steps";
+import type { OnboardingChecklistKey, PostSetupChecklistItem } from "@/lib/onboarding/draft";
+import { SETUP_STEP_PROMPTS } from "@/lib/onboarding/setup-assistant-steps";
 import type {
   OperatorAction,
   OperatorAssistantMessage,
@@ -192,9 +193,95 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
     }
   }
 
-  function runAutonomousSetup() {
+  function resultToMessage(result: SetupStepResult): OperatorAssistantMessage {
+    if (result.status === "manual") {
+      return {
+        id: nextId("a"),
+        role: "assistant",
+        mode: "operator",
+        content: `${result.title} — ${result.detail}`,
+        actions: [
+          { id: nextId("act"), label: "Open the page", kind: "navigate", href: result.href },
+        ],
+      };
+    }
+    return {
+      id: nextId("a"),
+      role: "assistant",
+      mode: result.status === "done" ? "operator" : "support",
+      content: `${result.status === "done" ? "✅ " : "⚠️ "}${result.title} — ${result.detail}`,
+    };
+  }
+
+  /** Runs a single setup step inline on Mission Control (no navigation). */
+  async function runStep(key: OnboardingChecklistKey, label: string) {
+    if (pending) return;
+    setMessages((m) => [
+      ...m,
+      { id: nextId("u"), role: "user", content: SETUP_STEP_PROMPTS[key]?.cta ?? label },
+    ]);
+    setPending(true);
+    scrollToBottom();
+
+    try {
+      const result = await runSetupStepAction(key);
+      setMessages((m) => [...m, resultToMessage(result)]);
+      if (result.status === "manual") {
+        router.push(withSetupReturn(result.href));
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setMessages((m) => [
+        ...m,
+        {
+          id: nextId("e"),
+          role: "assistant",
+          mode: "support",
+          content: "I hit a snag setting that up. Try again in a moment.",
+        } as OperatorAssistantMessage,
+      ]);
+    } finally {
+      setPending(false);
+      scrollToBottom();
+    }
+  }
+
+  /** Runs every remaining step inline, in order, keeping the user on Mission Control. */
+  async function runAutonomousSetup() {
+    if (pending) return;
     const keys = remaining.map((r) => r.key);
-    void submit(buildAutonomousSetupPrompt(keys));
+    setMessages((m) => [
+      ...m,
+      { id: nextId("u"), role: "user", content: "Set everything up for me" },
+    ]);
+    setPending(true);
+    scrollToBottom();
+
+    try {
+      // Manual steps (e.g. connecting Zernio) can't be automated — they surface
+      // as a message with an "Open the page" action, while everything else is
+      // set up inline without leaving Mission Control.
+      for (const key of keys) {
+        const result = await runSetupStepAction(key);
+        setMessages((m) => [...m, resultToMessage(result)]);
+        scrollToBottom();
+      }
+      router.refresh();
+    } catch {
+      setMessages((m) => [
+        ...m,
+        {
+          id: nextId("e"),
+          role: "assistant",
+          mode: "support",
+          content: "Something interrupted the setup. I've done what I could — try the remaining steps again.",
+        } as OperatorAssistantMessage,
+      ]);
+    } finally {
+      setPending(false);
+      scrollToBottom();
+    }
   }
 
   return (
@@ -283,7 +370,7 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
                       size="sm"
                       className="h-8 rounded-lg border-white/10 text-xs"
                       disabled={pending}
-                      onClick={() => submit(SETUP_STEP_PROMPTS[item.key]?.prompt ?? item.label)}
+                      onClick={() => runStep(item.key, item.label)}
                     >
                       <Circle className="mr-1 size-3 text-muted-foreground" />
                       {SETUP_STEP_PROMPTS[item.key]?.cta ?? item.label}

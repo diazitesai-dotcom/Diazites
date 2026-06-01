@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 import { SupabaseAuthHashHandler } from "@/components/auth/supabase-auth-hash-handler";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -60,6 +61,7 @@ export default function RootLayout({
           {children}
         </ThemeProvider>
       </body>
+      <GoogleAnalytics gaId="G-LJ308R5F8Q" />
     </html>
   );
 }
