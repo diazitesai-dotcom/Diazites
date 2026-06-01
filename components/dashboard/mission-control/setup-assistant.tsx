@@ -33,9 +33,20 @@ import { cn } from "@/lib/utils";
 type SetupAssistantProps = {
   items: PostSetupChecklistItem[];
   businessName?: string;
+  /** Focused Mission Control mode — larger, always open, no hide control. */
+  focused?: boolean;
 };
 
-export function SetupAssistant({ items, businessName }: SetupAssistantProps) {
+/** Adds a marker so sub-pages can offer a "back to setup" return path. */
+function withSetupReturn(href: string): string {
+  if (!href.startsWith("/")) return href;
+  const [path, query] = href.split("?");
+  const params = new URLSearchParams(query ?? "");
+  params.set("setup", "1");
+  return `${path}?${params.toString()}`;
+}
+
+export function SetupAssistant({ items, businessName, focused = false }: SetupAssistantProps) {
   const router = useRouter();
   const pathname = usePathname();
   const deployment = useAgentDeploymentOptional();
@@ -46,7 +57,7 @@ export function SetupAssistant({ items, businessName }: SetupAssistantProps) {
   const allDone = remaining.length === 0;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  const [open, setOpen] = useState(!allDone);
+  const [open, setOpen] = useState(focused || !allDone);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [messages, setMessages] = useState<OperatorMessage[]>([
@@ -104,20 +115,20 @@ export function SetupAssistant({ items, businessName }: SetupAssistantProps) {
 
   function handleAction(action: OperatorAction) {
     if ((action.kind === "navigate" || action.kind === "open_diagnostics" || action.kind === "approve") && action.href) {
-      router.push(action.href);
+      router.push(withSetupReturn(action.href));
       return;
     }
     if (action.kind === "navigate" && !action.href) {
-      router.push("/dashboard/integrations");
+      router.push(withSetupReturn("/dashboard/integrations"));
       return;
     }
     if (action.kind === "deploy" && action.deploy) {
       if (deployment) deployment.openDeployment(action.deploy);
-      else router.push("/dashboard/agents");
+      else router.push(withSetupReturn("/dashboard/agents"));
       return;
     }
     if (action.kind === "open_diagnostics") {
-      router.push("/dashboard/integrations");
+      router.push(withSetupReturn("/dashboard/integrations"));
     }
   }
 
@@ -142,15 +153,17 @@ export function SetupAssistant({ items, businessName }: SetupAssistantProps) {
             </p>
           </div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="shrink-0 rounded-lg text-xs"
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? "Hide" : "Open"}
-        </Button>
+        {focused ? null : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="shrink-0 rounded-lg text-xs"
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? "Hide" : "Open"}
+          </Button>
+        )}
       </div>
 
       <div className="px-4 pt-3">
@@ -206,7 +219,10 @@ export function SetupAssistant({ items, businessName }: SetupAssistantProps) {
 
               <div
                 ref={scrollRef}
-                className="max-h-[340px] min-h-[120px] space-y-3 overflow-y-auto rounded-xl border border-white/[0.06] bg-background/40 p-3"
+                className={cn(
+                  "min-h-[120px] space-y-3 overflow-y-auto rounded-xl border border-white/[0.06] bg-background/40 p-3",
+                  focused ? "max-h-[460px]" : "max-h-[340px]",
+                )}
               >
                 {messages.map((m) =>
                   m.role === "user" ? (
@@ -259,7 +275,7 @@ export function SetupAssistant({ items, businessName }: SetupAssistantProps) {
                     <button
                       key={`open-${item.key}`}
                       type="button"
-                      onClick={() => router.push(item.href)}
+                      onClick={() => router.push(withSetupReturn(item.href))}
                       className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-violet-200"
                     >
                       Open {item.label.toLowerCase()}

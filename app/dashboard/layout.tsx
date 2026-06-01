@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { AgentDeploymentShell } from "@/components/agents/agent-deployment-shell";
+import { SetupReturnBar } from "@/components/dashboard/setup-return-bar";
 import { AdminAccessDeniedBanner } from "@/components/layout/admin-access-denied-banner";
 import { AppSidebarShell } from "@/components/layout/app-sidebar-shell";
 import { OnboardingCompleteBanner } from "@/components/onboarding/onboarding-complete-banner";
@@ -90,6 +91,7 @@ export default async function DashboardLayout({
       isOwnerAdmin={isOwnerAdmin}
       showPlatformAdminNav={Boolean(account?.isPlatformAdmin || isOwnerAdmin)}
     >
+      <SetupReturnBar />
       <Suspense fallback={null}>
         <AdminAccessDeniedBanner />
         <OnboardingCompleteBanner />

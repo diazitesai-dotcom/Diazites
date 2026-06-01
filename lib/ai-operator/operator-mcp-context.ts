@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { createAdAccountRepository } from "@/repositories/ad-account.repository";
+import {
+  findZernioConnection,
+  listBusinessAdConnections,
+} from "@/lib/integrations/business-ad-connections";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import type { CurrentUserAccess } from "@/types/access-control";
 import type { AgentType } from "@/types/domain";
@@ -30,11 +33,20 @@ export async function buildOperatorMcpContext(
   const scopes = scopesForOperator(access);
   const zernioBridgeEnabled = await isZernioConnected(client, business.id);
 
+  // When an ad broker is connected, let the operator read/write across every
+  // app linked to the workspace (e.g. all platforms behind Zernio).
+  if (zernioBridgeEnabled) {
+    if (!scopes.includes("zernio:read")) scopes.push("zernio:read");
+    if (!scopes.includes("zernio:write")) scopes.push("zernio:write");
+    if (!scopes.includes("campaigns:read")) scopes.push("campaigns:read");
+    if (!scopes.includes("campaigns:write")) scopes.push("campaigns:write");
+  }
+
   const ctx: McpAuthContext = {
     connectionId: "operator-in-app",
     businessId: business.id,
     allowedAgentTypes: AGENTS.map((a) => a.key as AgentType),
-    scopes,
+    scopes: [...new Set(scopes)],
     zernioBridgeEnabled,
   };
 
@@ -88,7 +100,6 @@ async function isZernioConnected(
   client: SupabaseClient,
   businessId: string,
 ): Promise<boolean> {
-  const accounts = createAdAccountRepository(client);
-  const { data } = await accounts.getByPlatform(businessId, "zernio");
-  return Boolean(data?.status === "connected" && data.access_token);
+  const connections = await listBusinessAdConnections(client, businessId);
+  return Boolean(findZernioConnection(connections));
 }

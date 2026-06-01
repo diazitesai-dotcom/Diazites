@@ -52,6 +52,24 @@ export default async function DashboardPage() {
     await markIntegrationsConnectedForUser(supabase, user.id);
   }
   const checklistItems = await loadPostSetupChecklist(supabase, user.id, data.businessId);
+  const setupComplete = checklistItems.every((item) => item.done);
+
+  if (!setupComplete) {
+    return (
+      <div className="mx-auto flex max-w-3xl flex-col gap-6 py-4">
+        <PageHeader
+          eyebrow="Mission Control"
+          title="Let’s set up your growth workspace"
+          description="Your AI specialist will get everything launched. Answer a few prompts or let it set everything up for you."
+        />
+        <SetupAssistant
+          items={checklistItems}
+          businessName={data.workspace.businessName}
+          focused
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
