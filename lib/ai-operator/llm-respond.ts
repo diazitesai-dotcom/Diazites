@@ -72,7 +72,10 @@ function buildSystemPrompt(ctx: OperatorPlatformContext): string {
     `- Leads (7d velocity): ${ctx.leadVelocity7d} · Total leads: ${ctx.totalLeads}`,
     `- Campaigns active: ${ctx.activeCampaigns} · Agents active: ${ctx.activeAgents}/${ctx.totalAgents}`,
     `- Approvals pending: ${ctx.pendingApprovals}`,
-    `- Meta connected: ${ctx.metaConnected} · Google connected: ${ctx.googleConnected}`,
+    `- Meta connected: ${ctx.metaConnected} · Google connected: ${ctx.googleConnected} · Zernio connected: ${ctx.zernioConnected}`,
+    ctx.zernioConnected
+      ? "- Zernio is connected: it is a multi-platform ads broker (Meta, Instagram, TikTok, LinkedIn, YouTube, X, and more). Treat paid ads as available."
+      : "",
     `- Tracking: ${ctx.trackingStatus}`,
     `- Connected platforms: ${ctx.connectedPlatforms.join(", ") || "none"}`,
     ctx.topInsight ? `- Insight: ${ctx.topInsight}` : "",

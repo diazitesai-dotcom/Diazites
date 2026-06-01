@@ -27,6 +27,7 @@ export async function loadOperatorPlatformContext(
       crmConnected: false,
       metaConnected: false,
       googleConnected: false,
+      zernioConnected: false,
       agentIssues: ["Complete onboarding to unlock live platform context."],
       topInsight: "No business profile connected yet.",
     };
@@ -37,6 +38,9 @@ export async function loadOperatorPlatformContext(
   const connected = data.connections
     .filter((c) => c.status === "connected")
     .map((c) => c.name);
+  const zernioConnected = data.connections.some(
+    (c) => c.id === "zernio" && c.status === "connected",
+  );
   const metaConnected = data.connections.some(
     (c) => (c.id === "meta" || c.id === "facebook") && c.status === "connected",
   );
@@ -64,7 +68,7 @@ export async function loadOperatorPlatformContext(
       `${inactiveAgents.length} agent${inactiveAgents.length > 1 ? "s" : ""} inactive — enable follow-up and qualification.`,
     );
   }
-  if (!metaConnected && !googleConnected) {
+  if (!metaConnected && !googleConnected && !zernioConnected) {
     agentIssues.push("No paid ad accounts connected — acquisition is limited to organic.");
   }
   if (!crmConnected) {
@@ -72,7 +76,11 @@ export async function loadOperatorPlatformContext(
   }
 
   const trackingStatus: OperatorPlatformContext["trackingStatus"] =
-    metaConnected || googleConnected ? (agentIssues.length > 2 ? "degraded" : "healthy") : "degraded";
+    metaConnected || googleConnected || zernioConnected
+      ? agentIssues.length > 2
+        ? "degraded"
+        : "healthy"
+      : "degraded";
 
   return {
     hasBusiness: true,
@@ -95,6 +103,7 @@ export async function loadOperatorPlatformContext(
     crmConnected,
     metaConnected,
     googleConnected,
+    zernioConnected,
     agentIssues,
     topInsight: data.briefing.aiInsight,
   };

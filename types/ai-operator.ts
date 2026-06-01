@@ -46,6 +46,7 @@ export type OperatorPlatformContext = {
   crmConnected: boolean;
   metaConnected: boolean;
   googleConnected: boolean;
+  zernioConnected: boolean;
   agentIssues: string[];
   topInsight?: string;
 };

@@ -28,6 +28,8 @@ import type {
   LandingStackVersion,
   RevenueCommandCenter,
 } from "@/lib/dashboard/mission-control-types";
+import { isAdAccountRowConnected } from "@/lib/integrations/ad-account-connection";
+import { listBusinessAdConnections } from "@/lib/integrations/business-ad-connections";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAgentRepository } from "@/repositories/agent.repository";
@@ -357,15 +359,24 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     if (s === "won") won++;
   }
 
-  const { data: adAccounts } = await supabase
-    .from("ad_accounts")
-    .select("platform, status")
-    .eq("business_id", business.id);
+  const adConnections = await listBusinessAdConnections(supabase, business.id);
 
   const connectedPlatforms = new Set<string>();
-  for (const acc of adAccounts ?? []) {
-    if (acc.status === "connected" || acc.status === "active") {
-      connectedPlatforms.add(String(acc.platform).toLowerCase());
+  let zernioConnected = false;
+  for (const acc of adConnections) {
+    if (!isAdAccountRowConnected(acc)) continue;
+    const platform = String(acc.platform).toLowerCase();
+    connectedPlatforms.add(platform);
+    if (platform === "zernio") {
+      zernioConnected = true;
+      const linked = Array.isArray(acc.meta.connectedPlatforms)
+        ? (acc.meta.connectedPlatforms as unknown[])
+        : [];
+      for (const p of linked) {
+        if (typeof p === "string" && p.trim()) {
+          connectedPlatforms.add(p.trim().toLowerCase());
+        }
+      }
     }
   }
 
@@ -409,6 +420,7 @@ export async function loadDashboardOverview(): Promise<DashboardOverviewData | n
     connectedPlatforms,
     billingActive,
     crmConnected: true,
+    zernioConnected,
   });
 
   mission.revenueCommandCenter = {

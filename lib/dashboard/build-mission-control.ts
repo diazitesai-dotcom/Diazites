@@ -56,8 +56,10 @@ export function buildMissionControlPayload(input: {
   connectedPlatforms: Set<string>;
   billingActive: boolean;
   crmConnected: boolean;
+  zernioConnected?: boolean;
 }) {
   const { metrics, agents, funnelCounts, connectedPlatforms, billingActive, crmConnected } = input;
+  const zernioConnected = input.zernioConnected ?? connectedPlatforms.has("zernio");
   const totalLeads = metrics?.totalLeads ?? 0;
   const activeCampaigns = metrics?.activeCampaigns ?? 0;
   const activeAgentCount = agents.filter((a) => a.status === "active").length;
@@ -569,12 +571,26 @@ export function buildMissionControlPayload(input: {
 
   const connections: AccountConnection[] = [
     {
+      id: "zernio",
+      name: "Zernio",
+      status: zernioConnected ? "connected" : "missing",
+      href: "/dashboard/integrations?focus=zernio",
+      category: "ads",
+      healthDetail: zernioConnected
+        ? "API key connected · multi-platform broker"
+        : "Connect to unlock 14 ad platforms",
+    },
+    {
       id: "meta",
       name: "Meta Ads",
-      status: hasMeta ? "connected" : "missing",
+      status: hasMeta || zernioConnected ? "connected" : "missing",
       href: ROUTES.campaignOps,
       category: "ads",
-      healthDetail: hasMeta ? "Token valid · syncing" : "Connect to unlock paid",
+      healthDetail: hasMeta
+        ? "Token valid · syncing"
+        : zernioConnected
+          ? "Connected via Zernio"
+          : "Connect to unlock paid",
     },
     {
       id: "google",

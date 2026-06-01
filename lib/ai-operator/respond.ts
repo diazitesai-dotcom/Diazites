@@ -107,8 +107,8 @@ export function processOperatorMessage(
 
   if (intent === "diagnose_leads" || /leads down/i.test(text)) {
     const bullets: string[] = [];
-    if (!ctx.metaConnected && !ctx.googleConnected)
-      bullets.push("Paid acquisition is offline — connect Meta or Google Ads.");
+    if (!ctx.metaConnected && !ctx.googleConnected && !ctx.zernioConnected)
+      bullets.push("Paid acquisition is offline — connect Meta, Google Ads, or Zernio.");
     if (ctx.activeAgents < 2)
       bullets.push("Qualification or follow-up agents may be inactive.");
     if (ctx.leadVelocity7d < 5) bullets.push(`Only ${ctx.leadVelocity7d} leads in the last 7 days — check landing traffic.`);
@@ -128,7 +128,11 @@ export function processOperatorMessage(
   if (intent === "diagnose_performance" || intent === "explain_metric" && /performance/i.test(text)) {
     const pct = ctx.leadVelocity7d > 0 ? "monitoring inbound trends" : "very low inbound volume";
     const bullets = [
-      ctx.metaConnected ? "Meta connected — check ad set fatigue and CPL." : "Meta Ads disconnected — paid reach is limited.",
+      ctx.metaConnected
+        ? "Meta connected — check ad set fatigue and CPL."
+        : ctx.zernioConnected
+          ? "Zernio connected — paid reach is active across linked platforms."
+          : "Meta Ads disconnected — paid reach is limited.",
       ctx.trackingStatus === "degraded" ? "Tracking degraded — attribution may be incomplete." : "Tracking looks stable.",
       `Return on ad spend: ${ctx.roas != null ? `${ctx.roas.toFixed(1)}×` : "not enough spend data yet"}.`,
       `Lead velocity (7d): ${ctx.leadVelocity7d} leads — ${pct}.`,
