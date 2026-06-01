@@ -1,8 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  generateThreeLandingPageVariants,
+  slugifyFunnelInput,
+} from "@/lib/funnel/generate-three-landing-pages";
+import { buildPublicConfigFromVersion } from "@/lib/landing/build-public-config";
 import { ok, fail, type ServiceResult } from "@/lib/result";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { createLandingPageRepository } from "@/repositories/landing-page.repository";
+import type { LandingSection } from "@/types/marketing-os";
+
+const LANDING_THEMES = ["violet", "cyan", "emerald", "amber", "rose", "indigo"] as const;
+const LANDING_DESIGNS = ["aurora", "spotlight", "editorial", "minimal"] as const;
+
+function pickRandom<T>(items: readonly T[]): T {
+  return items[Math.floor(Math.random() * items.length)] ?? items[0];
+}
+
+function randomSuffix(): string {
+  return Math.random().toString(36).slice(2, 6);
+}
 
 export async function generateLandingPage(
   client: SupabaseClient,
@@ -16,7 +33,53 @@ export async function generateLandingPage(
     return fail("Forbidden", "FORBIDDEN");
   }
 
-  const slug = opts.slug ?? `biz-${businessId.slice(0, 8)}`;
+  const businessName = String(business.name ?? "Your business");
+
+  // Generate AI-written, visually distinct content. A random theme + layout is
+  // chosen on every call so no two generated pages share the same look.
+  let sections: LandingSection[] = [];
+  let asset: Record<string, unknown> = {};
+  const theme = pickRandom(LANDING_THEMES);
+  const design = pickRandom(LANDING_DESIGNS);
+
+  try {
+    const prompt = [
+      businessName,
+      opts.offer ? `Offer: ${opts.offer}.` : "",
+      opts.location ? `Location: ${opts.location}.` : "",
+      opts.headline ? `Focus: ${opts.headline}.` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const variants = await generateThreeLandingPageVariants({
+      prompt,
+      supabase: client,
+      businessId,
+      accountBusinessName: businessName,
+    });
+    const variant = pickRandom(variants);
+
+    if (variant) {
+      // Stamp the chosen theme + design onto the hero so the renderer varies.
+      sections = variant.sections.map((s) =>
+        s.type === "hero"
+          ? { ...s, content: { ...s.content, theme, design } }
+          : s,
+      );
+      const built = buildPublicConfigFromVersion(
+        { headline: opts.headline, offer: opts.offer, location: opts.location },
+        { sections },
+      );
+      asset = { ...(built.asset as Record<string, unknown>), theme, design };
+    }
+  } catch {
+    // Fall back to a minimal config below if generation fails.
+  }
+
+  const slug =
+    opts.slug ?? `${slugifyFunnelInput(businessName).slice(0, 24) || "page"}-${randomSuffix()}`;
+
   const landing = createLandingPageRepository(client);
   const { data, error } = await landing.upsertBySlug({
     businessId,
@@ -24,7 +87,13 @@ export async function generateLandingPage(
     headline: opts.headline,
     offer: opts.offer,
     location: opts.location,
-    config: { generatedAt: new Date().toISOString() },
+    config: {
+      generatedAt: new Date().toISOString(),
+      theme,
+      design,
+      asset,
+      sections,
+    },
     published: false,
   });
 

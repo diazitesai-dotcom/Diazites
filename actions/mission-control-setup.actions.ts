@@ -113,7 +113,7 @@ export async function runSetupStepAction(
         return {
           status: "done",
           title: "Landing page published",
-          detail: `Your lead-capture page is live at /${generated.data.slug} and ready to receive traffic.`,
+          detail: `Your AI-designed lead-capture page is live at /p/${generated.data.slug} and ready to receive traffic. Each page gets a unique design.`,
         };
       }
 

@@ -11,6 +11,8 @@ export type PublicLandingAsset = {
   heroImageUrl?: string;
   videoEmbedUrl?: string;
   theme?: string;
+  /** Layout/design variant — controls structure, not just color. */
+  design?: string;
   stats?: Array<{ value: string; label: string }>;
   gallery?: Array<{ url: string; alt: string }>;
   testimonials?: Array<{ quote: string; author: string; role: string }>;
@@ -43,6 +45,7 @@ export function buildPublicConfigFromVersion(
     heroImageUrl: hero?.content?.heroImageUrl ? String(hero.content.heroImageUrl) : undefined,
     videoEmbedUrl: video?.content?.embedUrl ? String(video.content.embedUrl) : undefined,
     theme: hero?.content?.theme ? String(hero.content.theme) : "violet",
+    design: hero?.content?.design ? String(hero.content.design) : undefined,
     stats: (hero?.content?.stats as PublicLandingAsset["stats"]) ?? [],
     gallery: (gallery?.content?.images as PublicLandingAsset["gallery"]) ?? [],
     testimonials: (testimonials?.content?.items as PublicLandingAsset["testimonials"]) ?? [],
