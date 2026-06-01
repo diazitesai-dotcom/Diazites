@@ -1,17 +1,12 @@
 import Link from "next/link";
 
-import { AgentMcpDocs } from "@/components/agents/agent-mcp-docs";
 import { AgentMcpAccessPanel } from "@/components/agents/agent-mcp-access-panel";
-import { AgentManagerClient } from "@/components/agents/agent-manager-client";
-import { PlatformAgentRoster } from "@/components/agents/platform-agent-roster";
-import { ModulePurpose } from "@/components/layout/module-purpose";
 import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { getPublicAppUrl } from "@/lib/env";
 import { requireDashboardService } from "@/lib/access-control/guard";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { getUserAgents } from "@/services/agents/agent.service";
 import { listMcpConnections } from "@/services/mcp/mcp-connection.service";
 import type { AgentMcpConnectionPublic } from "@/types/mcp";
 
@@ -21,12 +16,6 @@ export default async function AgentManagerPage() {
   await requireDashboardService("agents");
   const user = await requireAuth();
   const supabase = await createServerSupabaseClient();
-  const result = await getUserAgents(supabase, user.id);
-  const agents = (result.success ? result.data : []) as Array<{
-    agent_type: string;
-    status: string;
-    activated_at: string | null;
-  }>;
 
   let mcpConnections: AgentMcpConnectionPublic[] = [];
   let mcpSetupError: string | null = null;
@@ -43,36 +32,26 @@ export default async function AgentManagerPage() {
 
   const mcpEndpoint = `${getPublicAppUrl()}/api/mcp`;
   return (
-    <div className="mx-auto max-w-6xl space-y-10">
+    <div className="mx-auto max-w-3xl space-y-8">
       <PageHeader
         eyebrow="Agents"
-        title="Autonomous execution layer"
-        description="Each agent opens a drill-down workspace — queue, logs, AI reasoning, campaign ownership, scoring, and approvals — not just summary cards."
+        title="Generate agent connection token"
+        description="Create a bearer token so external AI agents (Hermes, OpenClaw, Cursor, Claude, or any MCP client) can securely access the agents and data you allow."
       />
-      <ModulePurpose
-        title="Agent operations"
-        description="Research through follow-up: each agent runs with transparent reasoning, connected tools, and enterprise approval modes from recommend-only to full autonomous."
-      />
-      <PlatformAgentRoster />
-      <p className="-mt-6 text-sm text-muted-foreground">
-        Full setup guide for connecting agents to this site:{" "}
-        <Link href="/docs/agents" className="text-violet-300 underline">
-          /docs/agents
-        </Link>
-        <Link
-          href="/docs/agents"
-          className={buttonVariants({ variant: "outline", size: "sm", className: "ml-3 rounded-xl" })}
-        >
-          Open agent connection docs
-        </Link>
-      </p>
-      <AgentMcpDocs mcpEndpoint={mcpEndpoint} />
       <AgentMcpAccessPanel
         mcpEndpoint={mcpEndpoint}
         connections={mcpConnections}
         setupError={mcpSetupError}
       />
-      <AgentManagerClient agents={agents} />
+      <div className="border-t border-white/[0.06] pt-6 text-center text-sm text-muted-foreground">
+        Need help connecting your agent?{" "}
+        <Link
+          href="/docs/agents"
+          className={buttonVariants({ variant: "outline", size: "sm", className: "ml-2 rounded-xl" })}
+        >
+          Open agent connection docs
+        </Link>
+      </div>
     </div>
   );
 }
