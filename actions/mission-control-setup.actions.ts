@@ -16,14 +16,49 @@ import {
 } from "@/services/landing/landing-page.service";
 import type { AgentType } from "@/types/domain";
 
+type SupabaseClientType = Awaited<ReturnType<typeof createServerSupabaseClient>>;
+
+type LandingArtifact = {
+  type: "landing_page";
+  slug: string;
+  url: string;
+  headline: string;
+  theme: string;
+  design: string;
+};
+
+type CampaignArtifact = {
+  type: "campaign";
+  platform: string;
+  budget: number;
+  goal: string;
+  location: string;
+};
+
+type AgentsArtifact = { type: "agents"; agents: string[] };
+
+type FunnelArtifact = {
+  type: "funnel";
+  landingPage: Omit<LandingArtifact, "type"> | null;
+  agents: string[];
+  campaign: Omit<CampaignArtifact, "type"> | null;
+};
+
+/** Structured description of what the assistant just built — rendered as a card. */
+export type SetupArtifact =
+  | LandingArtifact
+  | CampaignArtifact
+  | AgentsArtifact
+  | FunnelArtifact;
+
 /**
  * Result of running a setup step from the Mission Control assistant.
- * - `done`   → completed inline, no navigation needed.
+ * - `done`   → completed inline, no navigation needed (may include an artifact).
  * - `error`  → something failed; show the message.
  * - `manual` → can't be automated; the assistant should route the user (carrying `href`).
  */
 export type SetupStepResult =
-  | { status: "done"; title: string; detail: string }
+  | { status: "done"; title: string; detail: string; artifact?: SetupArtifact }
   | { status: "error"; title: string; detail: string }
   | { status: "manual"; title: string; detail: string; href: string };
 
@@ -43,6 +78,118 @@ const MANUAL_STEP_HREFS: Partial<Record<OnboardingChecklistKey, { href: string; 
   },
 };
 
+type BusinessCtx = {
+  userId: string;
+  supabase: SupabaseClientType;
+  businessId: string;
+  businessName: string;
+  location: string;
+  offer: string;
+  monthlyBudget: number;
+};
+
+async function resolveBusinessCtx(): Promise<BusinessCtx | { error: SetupStepResult }> {
+  const user = await requireAuth();
+  const supabase = await createServerSupabaseClient();
+  const businesses = createBusinessRepository(supabase);
+  const { data: business } = await businesses.getByOwnerUserId(user.id);
+  if (!business?.id) {
+    return {
+      error: {
+        status: "manual",
+        title: "Finish onboarding first",
+        detail: "I couldn't find your business profile yet.",
+        href: "/onboarding",
+      },
+    };
+  }
+
+  return {
+    userId: user.id,
+    supabase,
+    businessId: business.id,
+    businessName: (business.name as string) ?? "your business",
+    location:
+      (business.city_state as string | null) ?? (business.service_area as string | null) ?? "",
+    offer: (business.services as string | null) ?? "Free consultation",
+    monthlyBudget: Number(business.monthly_budget) || 0,
+  };
+}
+
+async function buildLandingPage(
+  ctx: BusinessCtx,
+): Promise<{ ok: true; artifact: LandingArtifact } | { ok: false; error: string }> {
+  const generated = await generateLandingPage(ctx.supabase, ctx.userId, ctx.businessId, {
+    headline: `${ctx.businessName} — Get Started Today`,
+    offer: ctx.offer,
+    location: ctx.location,
+  });
+  if (!generated.success) return { ok: false, error: generated.error };
+
+  const published = await updateLandingPage(
+    ctx.supabase,
+    ctx.userId,
+    ctx.businessId,
+    generated.data.slug,
+    { published: true },
+  );
+  if (!published.success) return { ok: false, error: published.error };
+
+  return {
+    ok: true,
+    artifact: {
+      type: "landing_page",
+      slug: generated.data.slug,
+      url: `/p/${generated.data.slug}`,
+      headline: `${ctx.businessName} — Get Started Today`,
+      theme: generated.data.theme,
+      design: generated.data.design,
+    },
+  };
+}
+
+async function buildCampaign(
+  ctx: BusinessCtx,
+): Promise<{ ok: true; artifact: CampaignArtifact } | { ok: false; error: string }> {
+  const platform = await pickCampaignPlatform(ctx.supabase, ctx.businessId);
+  const budget = ctx.monthlyBudget > 0 ? Math.round(ctx.monthlyBudget / 30) : 20;
+  const created = await createCampaign(ctx.supabase, ctx.userId, {
+    businessId: ctx.businessId,
+    platform,
+    budget,
+    goal: "lead_generation",
+    location: ctx.location || null,
+    status: "draft",
+  });
+  if (!created.success) return { ok: false, error: created.error };
+
+  return {
+    ok: true,
+    artifact: {
+      type: "campaign",
+      platform,
+      budget,
+      goal: "lead_generation",
+      location: ctx.location || "your area",
+    },
+  };
+}
+
+async function buildAgents(
+  ctx: BusinessCtx,
+  agentTypes: AgentType[],
+): Promise<{ ok: true; agents: string[] } | { ok: false; error: string }> {
+  const activated: AgentType[] = [];
+  for (const agentType of agentTypes) {
+    const result = await activateAgent(ctx.supabase, ctx.userId, agentType);
+    if (result.success) activated.push(agentType);
+  }
+  if (activated.length === 0) {
+    return { ok: false, error: "None of the recommended agents could be turned on." };
+  }
+  return { ok: true, agents: activated.map(agentLabel) };
+}
+
 export async function runSetupStepAction(
   stepKey: OnboardingChecklistKey,
 ): Promise<SetupStepResult> {
@@ -51,93 +198,58 @@ export async function runSetupStepAction(
     return { status: "manual", title: "Needs a quick action from you", detail: manual.detail, href: manual.href };
   }
 
-  const user = await requireAuth();
-  const supabase = await createServerSupabaseClient();
-  const businesses = createBusinessRepository(supabase);
-  const { data: business } = await businesses.getByOwnerUserId(user.id);
-  if (!business?.id) {
-    return {
-      status: "manual",
-      title: "Finish onboarding first",
-      detail: "I couldn't find your business profile yet.",
-      href: "/onboarding",
-    };
-  }
-
-  const businessName = (business.name as string) ?? "your business";
-  const location =
-    (business.city_state as string | null) ?? (business.service_area as string | null) ?? "";
-  const offer = (business.services as string | null) ?? "Free consultation";
-  const monthlyBudget = Number(business.monthly_budget) || 0;
+  const resolved = await resolveBusinessCtx();
+  if ("error" in resolved) return resolved.error;
+  const ctx = resolved;
 
   try {
     switch (stepKey) {
-      case "agents_assigned":
-        return await activateAgentStack(supabase, user.id, [
-          "lead_qualification",
-          "ai_follow_up",
-          "social_ads",
-        ]);
+      case "agents_assigned": {
+        const res = await buildAgents(ctx, ["lead_qualification", "ai_follow_up", "social_ads"]);
+        if (!res.ok) return { status: "error", title: "Couldn't activate agents", detail: res.error };
+        revalidateSetup();
+        return {
+          status: "done",
+          title: `${res.agents.length} agent${res.agents.length > 1 ? "s" : ""} activated`,
+          detail: `${res.agents.join(", ")} ${res.agents.length > 1 ? "are" : "is"} now live and working in the background.`,
+          artifact: { type: "agents", agents: res.agents },
+        };
+      }
 
-      case "ai_active":
-        return await activateAgentStack(supabase, user.id, ["ai_follow_up"], {
+      case "ai_active": {
+        const res = await buildAgents(ctx, ["ai_follow_up"]);
+        if (!res.ok) return { status: "error", title: "Couldn't enable follow-up", detail: res.error };
+        revalidateSetup();
+        return {
+          status: "done",
           title: "AI follow-up is live",
           detail:
             "New leads will now be contacted instantly and nurtured automatically until they're ready to talk.",
-        });
+          artifact: { type: "agents", agents: res.agents },
+        };
+      }
 
       case "landing_page_ready": {
-        const generated = await generateLandingPage(supabase, user.id, business.id, {
-          headline: `${businessName} — Get Started Today`,
-          offer,
-          location,
-        });
-        if (!generated.success) {
-          return { status: "error", title: "Couldn't build the landing page", detail: generated.error };
-        }
-        const published = await updateLandingPage(
-          supabase,
-          user.id,
-          business.id,
-          generated.data.slug,
-          { published: true },
-        );
-        if (!published.success) {
-          return {
-            status: "error",
-            title: "Landing page saved but not published",
-            detail: published.error,
-          };
-        }
-        revalidatePath("/dashboard");
+        const res = await buildLandingPage(ctx);
+        if (!res.ok) return { status: "error", title: "Couldn't build the landing page", detail: res.error };
+        revalidateSetup();
         return {
           status: "done",
           title: "Landing page published",
-          detail: `Your AI-designed lead-capture page is live at /p/${generated.data.slug} and ready to receive traffic. Each page gets a unique design.`,
+          detail: `Your AI-designed lead-capture page is live and ready for traffic. Every page gets a unique design.`,
+          artifact: res.artifact,
         };
       }
 
       case "campaign_built": {
-        const platform = await pickCampaignPlatform(supabase, business.id);
-        const budget = monthlyBudget > 0 ? Math.round(monthlyBudget / 30) : 20;
-        const created = await createCampaign(supabase, user.id, {
-          businessId: business.id,
-          platform,
-          budget,
-          goal: "lead_generation",
-          location: location || null,
-          status: "draft",
-        });
-        if (!created.success) {
-          return { status: "error", title: "Couldn't draft the campaign", detail: created.error };
-        }
-        revalidatePath("/dashboard");
+        const res = await buildCampaign(ctx);
+        if (!res.ok) return { status: "error", title: "Couldn't draft the campaign", detail: res.error };
+        revalidateSetup();
         return {
           status: "done",
           title: "Lead-gen campaign drafted",
-          detail: `A ${platform} campaign is drafted at ~$${budget}/day targeting ${
-            location || "your area"
-          }. Review and launch it whenever you're ready.`,
+          detail: `A ${res.artifact.platform} campaign is drafted at ~$${res.artifact.budget}/day. Review and launch it whenever you're ready.`,
+          artifact: res.artifact,
         };
       }
 
@@ -158,43 +270,83 @@ export async function runSetupStepAction(
   }
 }
 
-async function activateAgentStack(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-  userId: string,
-  agentTypes: AgentType[],
-  override?: { title: string; detail: string },
-): Promise<SetupStepResult> {
-  const activated: AgentType[] = [];
-  for (const agentType of agentTypes) {
-    const result = await activateAgent(supabase, userId, agentType);
-    if (result.success) {
-      activated.push(agentType);
-    }
-  }
+/**
+ * Builds an entire funnel in one shot — landing page + agent stack + campaign —
+ * and returns a single funnel artifact for the assistant to render.
+ */
+export async function runCompleteFunnelAction(): Promise<SetupStepResult> {
+  const resolved = await resolveBusinessCtx();
+  if ("error" in resolved) return resolved.error;
+  const ctx = resolved;
 
-  if (activated.length === 0) {
+  try {
+    const landing = await buildLandingPage(ctx);
+    const agents = await buildAgents(ctx, [
+      "landing_page",
+      "lead_qualification",
+      "ai_follow_up",
+      "social_ads",
+    ]);
+    const campaign = await buildCampaign(ctx);
+
+    const landingPage = landing.ok ? { ...landing.artifact } : null;
+    const agentNames = agents.ok ? agents.agents : [];
+    const campaignData = campaign.ok ? { ...campaign.artifact } : null;
+
+    if (!landingPage && agentNames.length === 0 && !campaignData) {
+      return {
+        status: "error",
+        title: "Funnel build failed",
+        detail: "I couldn't create the funnel pieces. Please try again in a moment.",
+      };
+    }
+
+    revalidateSetup();
+
+    const pieces = [
+      landingPage ? "a uniquely designed landing page" : null,
+      agentNames.length ? `${agentNames.length} AI agents` : null,
+      campaignData ? `a ${campaignData.platform} campaign` : null,
+    ].filter(Boolean);
+
+    const landingForFunnel: Omit<LandingArtifact, "type"> | null = landingPage
+      ? {
+          slug: landingPage.slug,
+          url: landingPage.url,
+          headline: landingPage.headline,
+          theme: landingPage.theme,
+          design: landingPage.design,
+        }
+      : null;
+
+    return {
+      status: "done",
+      title: "Complete funnel launched",
+      detail: `Built ${pieces.join(", ")} — all wired together and ready to capture and convert leads.`,
+      artifact: {
+        type: "funnel",
+        landingPage: landingForFunnel,
+        agents: agentNames,
+        campaign: campaignData,
+      },
+    };
+  } catch (err) {
     return {
       status: "error",
-      title: "Couldn't activate agents",
-      detail: "None of the recommended agents could be turned on. Please try again.",
+      title: "Funnel build hit a snag",
+      detail: err instanceof Error ? err.message : "Unexpected error — please try again.",
     };
   }
+}
 
+function revalidateSetup() {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/agents");
   revalidatePath("/dashboard/automations");
-
-  if (override) return { status: "done", ...override };
-
-  const names = activated.map(AGENT_LABELS).join(", ");
-  return {
-    status: "done",
-    title: `${activated.length} agent${activated.length > 1 ? "s" : ""} activated`,
-    detail: `${names} ${activated.length > 1 ? "are" : "is"} now live and working in the background.`,
-  };
+  revalidatePath("/dashboard/funnel");
 }
 
-function AGENT_LABELS(type: AgentType): string {
+function agentLabel(type: AgentType): string {
   const labels: Record<AgentType, string> = {
     social_ads: "Social Ads Agent",
     search_ads: "Search Ads Agent",
@@ -207,7 +359,7 @@ function AGENT_LABELS(type: AgentType): string {
 }
 
 async function pickCampaignPlatform(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  supabase: SupabaseClientType,
   businessId: string,
 ): Promise<string> {
   try {

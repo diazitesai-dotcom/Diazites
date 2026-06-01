@@ -12,25 +12,28 @@ import {
   Send,
   Sparkles,
   Wand2,
+  Workflow,
 } from "lucide-react";
 
 import {
+  runCompleteFunnelAction,
   runSetupStepAction,
+  type SetupArtifact,
   type SetupStepResult,
 } from "@/actions/mission-control-setup.actions";
 import { sendOperatorMessageAction } from "@/actions/operator.actions";
 import { useAgentDeploymentOptional } from "@/components/agents/agent-deployment-provider";
 import { OperatorMessageBubble } from "@/components/ai-operator/operator-message-bubble";
+import { SetupArtifactCard } from "@/components/dashboard/mission-control/setup-artifact-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { OnboardingChecklistKey, PostSetupChecklistItem } from "@/lib/onboarding/draft";
 import { SETUP_STEP_PROMPTS } from "@/lib/onboarding/setup-assistant-steps";
-import type {
-  OperatorAction,
-  OperatorAssistantMessage,
-  OperatorMessage,
-} from "@/types/ai-operator";
+import type { OperatorAction, OperatorMessage } from "@/types/ai-operator";
 import { cn } from "@/lib/utils";
+
+/** Chat message that can optionally carry a rich artifact card (e.g. a built funnel). */
+type ChatMessage = OperatorMessage & { artifact?: SetupArtifact };
 
 type SetupAssistantProps = {
   items: PostSetupChecklistItem[];
@@ -54,14 +57,14 @@ function storageKeyFor(businessName?: string): string {
   return `diazites:setup-assistant:${slug}`;
 }
 
-function loadStoredMessages(key: string): OperatorMessage[] | null {
+function loadStoredMessages(key: string): ChatMessage[] | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed as OperatorMessage[];
+      return parsed as ChatMessage[];
     }
   } catch {
     // ignore malformed storage
@@ -82,19 +85,19 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
 
   const storageKey = storageKeyFor(businessName);
 
-  const welcomeMessage: OperatorAssistantMessage = {
+  const welcomeMessage: ChatMessage = {
     id: "setup-welcome",
     role: "assistant",
     mode: "operator",
     content: allDone
       ? `Nice work${businessName ? `, ${businessName}` : ""} — your workspace is fully set up. Ask me anything or tell me what you want to launch next.`
-      : `Hi${businessName ? ` ${businessName}` : ""} — I'm your setup specialist. I'll get your workspace fully launched. Pick a step below or hit "Set everything up for me" and I'll handle it with you.`,
+      : `Hi${businessName ? ` ${businessName}` : ""} — I'm your setup specialist. I'll build everything right here. Hit "Create complete funnel" and I'll generate your landing page, agents, and campaign in one go.`,
   };
 
   const [open, setOpen] = useState(focused || !allDone);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
-  const [messages, setMessages] = useState<OperatorMessage[]>([welcomeMessage]);
+  const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(0);
   // Only persist once we've attempted to restore, so we never clobber saved chat.
@@ -166,7 +169,7 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
           mode: "support",
           content:
             "I hit a snag setting that up. Try again, or open the step directly from the buttons above.",
-        } as OperatorAssistantMessage,
+        } as ChatMessage,
       ]);
     } finally {
       setPending(false);
@@ -193,7 +196,7 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
     }
   }
 
-  function resultToMessage(result: SetupStepResult): OperatorAssistantMessage {
+  function resultToMessage(result: SetupStepResult): ChatMessage {
     if (result.status === "manual") {
       return {
         id: nextId("a"),
@@ -210,7 +213,42 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
       role: "assistant",
       mode: result.status === "done" ? "operator" : "support",
       content: `${result.status === "done" ? "✅ " : "⚠️ "}${result.title} — ${result.detail}`,
+      artifact: result.status === "done" ? result.artifact : undefined,
     };
+  }
+
+  /** Builds an entire funnel inline and renders it as a card in the chat. */
+  async function runCompleteFunnel() {
+    if (pending) return;
+    setMessages((m) => [
+      ...m,
+      { id: nextId("u"), role: "user", content: "Create a complete funnel" },
+    ]);
+    setPending(true);
+    scrollToBottom();
+
+    try {
+      const result = await runCompleteFunnelAction();
+      setMessages((m) => [...m, resultToMessage(result)]);
+      if (result.status === "manual") {
+        router.push(withSetupReturn(result.href));
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setMessages((m) => [
+        ...m,
+        {
+          id: nextId("e"),
+          role: "assistant",
+          mode: "support",
+          content: "I hit a snag building the funnel. Try again in a moment.",
+        } as ChatMessage,
+      ]);
+    } finally {
+      setPending(false);
+      scrollToBottom();
+    }
   }
 
   /** Runs a single setup step inline on Mission Control (no navigation). */
@@ -239,7 +277,7 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
           role: "assistant",
           mode: "support",
           content: "I hit a snag setting that up. Try again in a moment.",
-        } as OperatorAssistantMessage,
+        } as ChatMessage,
       ]);
     } finally {
       setPending(false);
@@ -276,7 +314,7 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
           role: "assistant",
           mode: "support",
           content: "Something interrupted the setup. I've done what I could — try the remaining steps again.",
-        } as OperatorAssistantMessage,
+        } as ChatMessage,
       ]);
     } finally {
       setPending(false);
@@ -288,11 +326,18 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
     <Card className="overflow-hidden border-violet-500/25 bg-gradient-to-br from-violet-950/30 via-card to-cyan-950/20">
       <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] p-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/35 bg-violet-500/15">
-            <Sparkles className="size-5 text-violet-200" />
+          <span className="relative flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/35 bg-violet-500/15">
+            <span className="absolute inset-0 animate-pulse rounded-xl bg-violet-500/10" aria-hidden />
+            <Sparkles className="relative size-5 text-violet-200" />
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-semibold">Setup Assistant</p>
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              AI Setup Assistant
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-emerald-300">
+                <span className="size-1.5 rounded-full bg-emerald-400" />
+                Online
+              </span>
+            </p>
             <p className="text-[11px] text-muted-foreground">
               {allDone
                 ? "Workspace ready — ask me to launch anything next."
@@ -349,18 +394,44 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
             className="overflow-hidden"
           >
             <div className="space-y-3 p-4">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={runCompleteFunnel}
+                className="group relative w-full overflow-hidden rounded-xl border border-violet-400/40 bg-gradient-to-r from-violet-600/30 via-fuchsia-600/25 to-cyan-500/25 px-4 py-3 text-left transition-all hover:border-violet-300/60 disabled:opacity-60"
+              >
+                <span
+                  className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 group-hover:translate-x-full"
+                  aria-hidden
+                />
+                <span className="relative flex items-center gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10">
+                    <Workflow className="size-5 text-violet-100" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-foreground">
+                      Create complete funnel
+                    </span>
+                    <span className="block text-[11px] text-violet-100/70">
+                      Landing page + AI agents + campaign — built right here
+                    </span>
+                  </span>
+                  <ChevronRight className="ml-auto size-4 text-violet-100/70 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </button>
+
               {!allDone ? (
                 <div className="flex flex-wrap gap-1.5">
                   <Button
                     type="button"
-                    variant="gradient"
+                    variant="outline"
                     size="sm"
-                    className="h-8 rounded-lg text-xs"
+                    className="h-8 rounded-lg border-white/10 text-xs"
                     disabled={pending}
                     onClick={runAutonomousSetup}
                   >
                     <Wand2 className="mr-1 size-3.5" />
-                    Set everything up for me
+                    Set up step by step
                   </Button>
                   {remaining.map((item) => (
                     <Button
@@ -381,6 +452,11 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
 
               <div
                 ref={scrollRef}
+                style={{
+                  backgroundImage:
+                    "linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)",
+                  backgroundSize: "22px 22px",
+                }}
                 className={cn(
                   "min-h-[120px] space-y-3 overflow-y-auto rounded-xl border border-white/[0.06] bg-background/40 p-3",
                   focused ? "max-h-[460px]" : "max-h-[340px]",
@@ -394,13 +470,22 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
                       </p>
                     </div>
                   ) : (
-                    <OperatorMessageBubble key={m.id} message={m} onAction={handleAction} />
+                    <div key={m.id} className="space-y-2">
+                      <OperatorMessageBubble message={m} onAction={handleAction} />
+                      {m.artifact ? <SetupArtifactCard artifact={m.artifact} /> : null}
+                    </div>
                   ),
                 )}
                 {pending ? (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Loader2 className="size-3.5 animate-spin text-violet-400" />
-                    Setting that up…
+                    <span className="flex gap-1">
+                      <span className="size-1.5 animate-bounce rounded-full bg-violet-400 [animation-delay:-0.3s]" />
+                      <span className="size-1.5 animate-bounce rounded-full bg-fuchsia-400 [animation-delay:-0.15s]" />
+                      <span className="size-1.5 animate-bounce rounded-full bg-cyan-400" />
+                    </span>
+                    <span className="bg-gradient-to-r from-violet-300 via-fuchsia-200 to-cyan-300 bg-clip-text text-transparent">
+                      Building that for you…
+                    </span>
                   </div>
                 ) : null}
               </div>

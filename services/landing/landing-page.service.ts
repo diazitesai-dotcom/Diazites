@@ -26,7 +26,7 @@ export async function generateLandingPage(
   ownerUserId: string,
   businessId: string,
   opts: { slug?: string; headline: string; offer: string; location: string },
-): Promise<ServiceResult<{ id: string; slug: string }>> {
+): Promise<ServiceResult<{ id: string; slug: string; theme: string; design: string }>> {
   const businesses = createBusinessRepository(client);
   const { data: business } = await businesses.getById(businessId);
   if (!business || business.user_id !== ownerUserId) {
@@ -98,7 +98,7 @@ export async function generateLandingPage(
   });
 
   if (error || !data) return fail(error?.message ?? "Landing page save failed");
-  return ok({ id: data.id, slug: data.slug });
+  return ok({ id: data.id, slug: data.slug, theme, design });
 }
 
 export async function updateLandingPage(
