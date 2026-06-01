@@ -40,6 +40,9 @@ export const metadata: Metadata = {
     description:
       "Deploy AI agents to run ads, capture leads, automate follow-up, and scale from one command center.",
   },
+  verification: {
+    google: "eNYYGoN1BcfGRuJ5RxxjFFDVkheBbv5HBN7SGPAj6-I",
+  },
 };
 
 export default function RootLayout({
