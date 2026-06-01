@@ -157,6 +157,7 @@ export function FunnelPreview({
             onLaunch={onLaunch}
             onDiscard={onDiscard}
             onEdit={onEdit}
+            onOpenPanel={onOpenPanel}
           />
         ))}
       </Reorder.Group>
@@ -171,6 +172,7 @@ function FunnelNode({
   onLaunch,
   onDiscard,
   onEdit,
+  onOpenPanel,
 }: {
   step: LiveFunnelStep;
   index: number;
@@ -178,6 +180,7 @@ function FunnelNode({
   onLaunch: (step: LiveFunnelStep) => void;
   onDiscard: (id: string) => void;
   onEdit: (id: string, patch: Partial<LiveFunnelStep>) => void;
+  onOpenPanel?: (panel: SetupPanelKind) => void;
 }) {
   const meta = KIND_META[step.kind];
   const Icon = meta.icon;
