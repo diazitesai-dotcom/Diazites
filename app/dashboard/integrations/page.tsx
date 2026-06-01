@@ -5,8 +5,8 @@ import { isAdsConfigured } from "@/lib/ads-env";
 import { getCurrentUserAccess } from "@/lib/access-control/access-control.service";
 import { requireBusinessContext } from "@/lib/auth/business-context";
 import { requireAuth } from "@/lib/auth/session";
+import { isAdAccountRowConnected } from "@/lib/integrations/ad-account-connection";
 import {
-  isAdAccountConnected,
   resolveLinkedIntegrationId,
   type LinkedAdAccount,
 } from "@/lib/integrations/integration-connect-config";
@@ -39,7 +39,7 @@ export default async function IntegrationsPage() {
   const linkedAccounts: Record<string, LinkedAdAccount> = {};
 
   for (const acc of adConnections) {
-    if (!isAdAccountConnected(acc)) continue;
+    if (!isAdAccountRowConnected(acc)) continue;
     const integrationId = resolveLinkedIntegrationId(acc);
     if (!integrationId) continue;
     connectedIds.push(integrationId);

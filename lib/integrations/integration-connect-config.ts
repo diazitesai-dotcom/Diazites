@@ -1,3 +1,4 @@
+import type { AdAccountConnectionRow } from "@/lib/integrations/ad-account-connection";
 import { GROWTH_INTEGRATION_IDS } from "@/lib/integrations/growth-integrations-catalog";
 import type { AdPlatform } from "@/types/marketing-os";
 
@@ -56,16 +57,7 @@ export const LEGACY_PLATFORM_TO_INTEGRATION: Record<string, string> = {
   microsoft: "microsoft_ads",
 };
 
-type AdAccountRow = {
-  platform: string;
-  external_account_id: string | null;
-  /** Marketing OS vault column */
-  connection_status?: string | null;
-  /** Ads engine OAuth column (migration 009) */
-  status?: string | null;
-};
-
-export function resolveLinkedIntegrationId(account: AdAccountRow): string | null {
+export function resolveLinkedIntegrationId(account: AdAccountConnectionRow): string | null {
   const ext = account.external_account_id?.trim();
   if (ext && GROWTH_INTEGRATION_IDS.has(ext)) return ext;
 
@@ -73,7 +65,7 @@ export function resolveLinkedIntegrationId(account: AdAccountRow): string | null
   return LEGACY_PLATFORM_TO_INTEGRATION[platform] ?? null;
 }
 
-export function isAdAccountConnected(account: AdAccountRow): boolean {
+export function isAdAccountConnected(account: AdAccountConnectionRow): boolean {
   const vaultStatus = account.connection_status?.toLowerCase();
   if (vaultStatus === "connected" || vaultStatus === "active") return true;
 
