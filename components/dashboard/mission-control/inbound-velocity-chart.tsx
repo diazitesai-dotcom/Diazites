@@ -3,15 +3,9 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Area, AreaChart, Tooltip, XAxis, YAxis } from "recharts";
 
+import { ChartContainer } from "@/components/charts/chart-container";
 import type { SparkAnnotation, SparkPoint } from "@/lib/dashboard/mission-control-types";
 import { cn } from "@/lib/utils";
 
@@ -156,9 +150,14 @@ export function InboundVelocityChart({ data }: { data?: SparkPoint[] }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div className="relative h-[160px] min-h-[160px] w-full min-w-0">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <AreaChart data={series} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+      <ChartContainer className="relative h-[160px]" minHeight={160}>
+        {({ width, height }) => (
+          <AreaChart
+            width={width}
+            height={height}
+            data={series}
+            margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+          >
             <defs>
               <linearGradient id="velocityFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.4} />
@@ -213,8 +212,8 @@ export function InboundVelocityChart({ data }: { data?: SparkPoint[] }) {
               isAnimationActive
             />
           </AreaChart>
-        </ResponsiveContainer>
-      </div>
+        )}
+      </ChartContainer>
 
       <VelocityIntelligenceLayer annotations={annotated} />
     </motion.div>

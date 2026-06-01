@@ -2,14 +2,9 @@
 
 import { useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
-import {
-  Area,
-  AreaChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Area, AreaChart, Tooltip, XAxis, YAxis } from "recharts";
+
+import { ChartContainer } from "@/components/charts/chart-container";
 
 const defaultSeries = [
   { d: "Mon", v: 0 },
@@ -41,7 +36,7 @@ export function OverviewSparkChart({ data }: { data?: { d: string; v: number }[]
 
   return (
     <motion.div
-      className="relative h-[140px] min-h-[140px] w-full min-w-0"
+      className="relative w-full min-w-0"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -51,43 +46,50 @@ export function OverviewSparkChart({ data }: { data?: { d: string; v: number }[]
         animate={{ opacity: [0.3, 0.6, 0.3] }}
         transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
       />
-      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-        <AreaChart data={series} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-          <defs>
-            <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.4} />
-              <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <XAxis
-            dataKey="d"
-            tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis hide />
-          <Tooltip
-            contentStyle={{
-              background: "var(--popover)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 12,
-              fontSize: 12,
-            }}
-            labelStyle={{ color: "var(--foreground)" }}
-          />
-          <Area
-            type="monotone"
-            dataKey="v"
-            stroke="#818cf8"
-            strokeWidth={2}
-            fill="url(#sparkFill)"
-            dot={false}
-            activeDot={{ r: 5, fill: "#22d3ee", strokeWidth: 0 }}
-            isAnimationActive
-            animationDuration={1200}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      <ChartContainer className="h-[140px]" minHeight={140}>
+        {({ width, height }) => (
+          <AreaChart
+            width={width}
+            height={height}
+            data={series}
+            margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+          >
+            <defs>
+              <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis
+              dataKey="d"
+              tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis hide />
+            <Tooltip
+              contentStyle={{
+                background: "var(--popover)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 12,
+                fontSize: 12,
+              }}
+              labelStyle={{ color: "var(--foreground)" }}
+            />
+            <Area
+              type="monotone"
+              dataKey="v"
+              stroke="#818cf8"
+              strokeWidth={2}
+              fill="url(#sparkFill)"
+              dot={false}
+              activeDot={{ r: 5, fill: "#22d3ee", strokeWidth: 0 }}
+              isAnimationActive
+              animationDuration={1200}
+            />
+          </AreaChart>
+        )}
+      </ChartContainer>
     </motion.div>
   );
 }

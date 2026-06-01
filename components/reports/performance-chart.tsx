@@ -8,11 +8,12 @@ import {
   Legend,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+
+import { ChartContainer } from "@/components/charts/chart-container";
 
 const demoMonthly = [
   { month: "Jan", leads: 32, spend: 2800, cpl: 87, roi: 2.3, conversions: 8 },
@@ -63,36 +64,65 @@ export function PerformanceChart({ data }: { data?: PerformanceSeriesRow[] }) {
     <div className="grid gap-6 lg:grid-cols-2">
       <div className={chartWrap}>
         <p className="mb-3 shrink-0 text-sm font-medium text-foreground">Leads & spend</p>
-        <div className="min-h-0 min-w-0 flex-1">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <BarChart data={monthly}>
-            <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="month" stroke={axisStroke} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickLine={false} axisLine={false} />
-            <YAxis stroke={axisStroke} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickLine={false} axisLine={false} />
-            <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(167,139,250,0.06)" }} />
-            <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
-            <Bar dataKey="leads" fill="#a78bfa" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="spend" fill="#38bdf8" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-        </div>
+        <ChartContainer className="min-h-0 flex-1" minHeight={200}>
+          {({ width, height }) => (
+            <BarChart width={width} height={height} data={monthly}>
+              <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" vertical={false} />
+              <XAxis
+                dataKey="month"
+                stroke={axisStroke}
+                tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke={axisStroke}
+                tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(167,139,250,0.06)" }} />
+              <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
+              <Bar dataKey="leads" fill="#a78bfa" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="spend" fill="#38bdf8" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          )}
+        </ChartContainer>
       </div>
       <div className={chartWrap}>
         <p className="mb-3 shrink-0 text-sm font-medium text-foreground">CPL, ROI & conversions</p>
-        <div className="min-h-0 min-w-0 flex-1">
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <LineChart data={monthly}>
-            <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
-            <XAxis dataKey="month" stroke={axisStroke} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickLine={false} axisLine={false} />
-            <YAxis stroke={axisStroke} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickLine={false} axisLine={false} />
-            <Tooltip contentStyle={tooltipStyle} />
-            <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
-            <Line type="monotone" dataKey="cpl" stroke="#fb7185" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-            <Line type="monotone" dataKey="roi" stroke="#34d399" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-            <Line type="monotone" dataKey="conversions" stroke="#818cf8" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-          </LineChart>
-        </ResponsiveContainer>
-        </div>
+        <ChartContainer className="min-h-0 flex-1" minHeight={200}>
+          {({ width, height }) => (
+            <LineChart width={width} height={height} data={monthly}>
+              <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" />
+              <XAxis
+                dataKey="month"
+                stroke={axisStroke}
+                tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke={axisStroke}
+                tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
+              <Line type="monotone" dataKey="cpl" stroke="#fb7185" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+              <Line type="monotone" dataKey="roi" stroke="#34d399" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+              <Line
+                type="monotone"
+                dataKey="conversions"
+                stroke="#818cf8"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            </LineChart>
+          )}
+        </ChartContainer>
       </div>
     </div>
   );
