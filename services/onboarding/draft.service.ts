@@ -7,6 +7,7 @@ import {
   type OnboardingDraft,
   type PostSetupChecklistItem,
 } from "@/lib/onboarding/draft";
+import { resolveIntegrationsConnectedForUser } from "@/lib/integrations/integration-connection-status";
 import { ok, fail, type ServiceResult } from "@/lib/result";
 import { createOnboardingRepository } from "@/repositories/onboarding.repository";
 
@@ -69,10 +70,18 @@ export async function loadPostSetupChecklist(
 
   const raw = (data.checklist ?? {}) as Record<string, boolean>;
   const merged = { ...DEFAULT_POST_SETUP_CHECKLIST, ...raw };
+  const integrationsDone = await resolveIntegrationsConnectedForUser(
+    client,
+    userId,
+    Boolean(merged.integrations_connected),
+  );
 
   return POST_SETUP_CHECKLIST_META.map((meta) => ({
     ...meta,
-    done: Boolean(merged[meta.key]),
+    done:
+      meta.key === "integrations_connected"
+        ? integrationsDone
+        : Boolean(merged[meta.key]),
   })).filter((item) => item.key !== "profile_complete");
 }
 

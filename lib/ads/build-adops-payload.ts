@@ -1,4 +1,8 @@
 import { ADOPS_PLATFORMS, DEFAULT_SAFETY_POLICY } from "@/lib/ads/adops-catalog";
+import {
+  adopsPlatformLinkedViaZernio,
+  mapZernioAccountsToWorkspaceAccounts,
+} from "@/lib/ads/zernio-adops-bridge";
 import type {
   AdopsAgentView,
   AdopsPagePayload,
@@ -8,6 +12,7 @@ import type {
   PlatformHealth,
   PlatformWorkspaceData,
 } from "@/lib/ads/adops-types";
+import type { ZernioAccount } from "@/lib/zernio";
 import type { AdAccountRow, AdCampaignRow } from "@/repositories/ad-account.repository";
 
 function mapCampaignStatus(status: string): LiveCampaignRow["status"] {
@@ -103,12 +108,24 @@ export function buildPlatformWorkspace(
   businessName: string,
   accounts: AdAccountRow[],
   campaigns: LiveCampaignRow[],
+  zernioAccounts: ZernioAccount[] = [],
 ): PlatformWorkspaceData {
   const def = ADOPS_PLATFORMS.find((p) => p.id === platformId)!;
   const repoPlatform = def.mapsToRepo;
   const acct = repoPlatform ? accounts.find((a) => a.platform === repoPlatform) : undefined;
-  const connected = acct?.status === "connected" || acct?.status === "pending";
-  const health = healthForAccount(acct);
+  const viaZernio = adopsPlatformLinkedViaZernio(platformId, zernioAccounts);
+  const oauthConnected = acct?.status === "connected" || acct?.status === "pending";
+  const connected = oauthConnected || viaZernio;
+  const health: PlatformHealth = connected
+    ? viaZernio && !oauthConnected
+      ? "healthy"
+      : healthForAccount(acct)
+    : "disconnected";
+  const zernioWorkspaceAccounts = mapZernioAccountsToWorkspaceAccounts(
+    platformId,
+    businessName,
+    zernioAccounts,
+  );
   const platformCampaigns = campaigns.filter(
     (c) => c.platformId === platformId || (platformId === "youtube" && c.platformId === "google"),
   );
@@ -118,18 +135,33 @@ export function buildPlatformWorkspace(
   return {
     platformId,
     label: def.label,
-    connectionStatus: connected ? acct!.status : "disconnected",
+    connectionStatus: connected ? (acct?.status ?? "connected") : "disconnected",
     health,
-    lastSync: acct?.updated_at ? new Date(acct.updated_at).toLocaleString() : null,
-    oauthHealth: health === "token_expiring" ? "Token expires soon" : connected ? "Valid" : "Not connected",
+    lastSync: acct?.updated_at
+      ? new Date(acct.updated_at).toLocaleString()
+      : viaZernio
+        ? "Via Zernio"
+        : null,
+    oauthHealth:
+      health === "token_expiring"
+        ? "Token expires soon"
+        : viaZernio && !oauthConnected
+          ? "Connected via Zernio"
+          : connected
+            ? "Valid"
+            : "Not connected",
     totalSpend: spend,
     leads,
     roas: spend > 0 && leads > 0 ? Math.round((leads * 42) / spend * 10) / 10 : null,
     campaignCount: platformCampaigns.length,
-    activeAccounts: connected ? 2 : 0,
+    activeAccounts: zernioWorkspaceAccounts.length || (connected ? 2 : 0),
     pixelConnected: platformId === "meta" || platformId === "google",
     eventLossPercent: connected ? 4 : null,
-    accounts: acct ? syntheticAccounts(platformId, businessName, connected) : [],
+    accounts: zernioWorkspaceAccounts.length
+      ? zernioWorkspaceAccounts
+      : acct
+        ? syntheticAccounts(platformId, businessName, connected)
+        : [],
     campaigns: platformCampaigns,
     audiences: connected
       ? [
@@ -318,9 +350,12 @@ export function buildAdopsPayload(input: {
   businessName: string;
   accounts: AdAccountRow[];
   campaigns: AdCampaignRow[];
+  zernioAccounts?: ZernioAccount[];
   hasWinningAd?: boolean;
   winningAdMeta?: AdopsPagePayload["winningAdMeta"];
 }): AdopsPagePayload {
+  const zernioAccounts = input.zernioAccounts ?? [];
+  const zernioLinkedPlatforms: AdopsPlatformId[] = [];
   const liveCampaigns = buildLiveCampaignRows(input.campaigns, input.businessName);
   const totalSpend = liveCampaigns.reduce((s, c) => s + c.spend, 0);
   const totalLeads = liveCampaigns.reduce((s, c) => s + c.leads, 0);
@@ -332,8 +367,23 @@ export function buildAdopsPayload(input: {
     const acct = p.mapsToRepo
       ? input.accounts.find((a) => a.platform === p.mapsToRepo)
       : undefined;
-    accountStatus[p.id] = acct?.status ?? "disconnected";
-    platformHealth[p.id] = healthForAccount(acct);
+    const viaZernio = adopsPlatformLinkedViaZernio(p.id, zernioAccounts);
+    if (viaZernio) {
+      zernioLinkedPlatforms.push(p.id);
+    }
+    const oauthStatus = acct?.status ?? "disconnected";
+    accountStatus[p.id] =
+      oauthStatus === "connected" || oauthStatus === "pending"
+        ? oauthStatus
+        : viaZernio
+          ? "connected"
+          : "disconnected";
+    platformHealth[p.id] =
+      accountStatus[p.id] === "connected" || accountStatus[p.id] === "pending"
+        ? viaZernio && oauthStatus === "disconnected"
+          ? "healthy"
+          : healthForAccount(acct)
+        : "disconnected";
   }
 
   const connected = Object.values(accountStatus).filter(
@@ -350,8 +400,15 @@ export function buildAdopsPayload(input: {
   if (liveCampaigns.some((c) => c.status === "requires_approval")) {
     alerts.push({ id: "approval", message: "3 campaigns require approval.", tone: "violet", href: "/dashboard/approvals" });
   }
-  if (connected === 0) {
+  if (connected === 0 && zernioAccounts.length === 0) {
     alerts.push({ id: "ads-missing", message: "Ad accounts not connected — estimated 18–32% more leads left on table.", tone: "amber", href: "/dashboard/integrations" });
+  } else if (zernioLinkedPlatforms.length > 0 && connected > 0) {
+    alerts.push({
+      id: "zernio-linked",
+      message: `${zernioLinkedPlatforms.length} platform${zernioLinkedPlatforms.length === 1 ? "" : "s"} linked via Zernio — manage apps on Integrations.`,
+      tone: "cyan",
+      href: "/dashboard/integrations?focus=zernio",
+    });
   } else if (totalLeads > 0) {
     alerts.push({ id: "scale", message: "AI found +18% scale opportunity on top campaign.", tone: "cyan", href: "/dashboard/optimization" });
   }
@@ -378,5 +435,7 @@ export function buildAdopsPayload(input: {
     policy: DEFAULT_SAFETY_POLICY,
     rawAccounts: input.accounts,
     rawCampaigns: input.campaigns,
+    zernioAccounts,
+    zernioLinkedPlatforms,
   };
 }

@@ -32,10 +32,10 @@ const WELCOME: OperatorAssistantMessage = {
   role: "assistant",
   mode: "operator",
   content:
-    "I'm your GrowthOS operator — analyst, navigator, and deployment assistant. Ask in plain English or pick a quick command.",
+    "I'm your GrowthOS operator — I can answer questions, navigate the app, run workspace actions, and deploy agents using your live data.",
   bullets: [
-    "Answer · Navigate · Deploy · Diagnose · Support",
-    "I use live Mission Control, campaigns, leads, agents, and revenue context.",
+    "Try: “List my leads”, “Generate a landing page for my site”, “Activate follow-up agent”",
+    "Connected ad accounts unlock campaign and funnel tools (Meta, Google, Zernio).",
   ],
 };
 

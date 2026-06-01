@@ -52,6 +52,7 @@ export function AdopsProvider({
       payload.businessName,
       payload.rawAccounts,
       payload.liveCampaigns,
+      payload.zernioAccounts,
     );
   }, [selectedPlatform, payload]);
 

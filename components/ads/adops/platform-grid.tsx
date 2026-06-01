@@ -58,6 +58,7 @@ export function PlatformGrid() {
           const health = payload.platformHealth[p.id];
           const status = payload.accountStatus[p.id];
           const connected = status === "connected" || status === "pending";
+          const viaZernio = payload.zernioLinkedPlatforms.includes(p.id);
           const repo = p.mapsToRepo;
           const canConnect =
             p.connectable &&
@@ -93,7 +94,7 @@ export function PlatformGrid() {
                   HEALTH_STYLE[health],
                 )}
               >
-                {HEALTH_LABEL[health]}
+                {viaZernio && connected ? "Connected · Zernio" : HEALTH_LABEL[health]}
               </span>
               {p.connectable && !connected && canConnect ? (
                 <div className="mt-3 border-t border-white/[0.06] pt-3" onClick={(e) => e.stopPropagation()}>

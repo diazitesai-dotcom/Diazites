@@ -302,6 +302,10 @@ export function integrationHealthScore(integrations: GrowthIntegration[]): numbe
 }
 
 export function criticalMissingConnections(integrations: GrowthIntegration[]): string[] {
+  const zernio = integrations.find((i) => i.id === "zernio");
+  if (zernio?.status === "connected") {
+    return [];
+  }
   const criticalIds = ["meta", "google_ads"];
   return criticalIds
     .filter((id) => {

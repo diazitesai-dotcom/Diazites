@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { markIntegrationsConnectedForUser } from "@/lib/integrations/integration-connection-status";
 import { resolveZernioApiKeyForBusiness } from "@/lib/integrations/resolve-zernio-api-key";
 import { requireAuth } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit/log";
@@ -134,6 +135,9 @@ export async function connectZernioWithApiKeyAction(formData: FormData) {
     return { success: false as const, error: error.message };
   }
 
+  await markIntegrationsConnectedForUser(supabase, user.id);
+
+  revalidatePath("/dashboard");
   revalidatePath("/dashboard/integrations");
   revalidatePath("/dashboard/campaign-ops");
   return { success: true as const, data: { accountCount } };

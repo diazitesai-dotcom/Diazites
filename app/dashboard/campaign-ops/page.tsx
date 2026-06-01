@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildAdopsPayload } from "@/lib/ads/build-adops-payload";
+import { loadZernioAccountsForAdops } from "@/lib/integrations/load-zernio-accounts-for-adops";
 import { loadCampaignsPageData } from "@/lib/dashboard/load-campaigns-page";
 import { loadRevenueAttribution } from "@/lib/revenue/load-revenue-attribution";
 import { isZernioConfigured } from "@/lib/zernio";
@@ -87,10 +88,13 @@ export default async function CampaignOpsPage() {
       ((assets ?? []) as AssetRow[]).find((a) => a.kind === "ad" && a.is_winner) ?? null;
   }
 
+  const zernioAccounts = await loadZernioAccountsForAdops(supabase, business.id);
+
   const payload = buildAdopsPayload({
     businessName: business.name,
     accounts,
     campaigns,
+    zernioAccounts,
     hasWinningAd: Boolean(winningAd && activeRun),
     winningAdMeta:
       winningAd && activeRun

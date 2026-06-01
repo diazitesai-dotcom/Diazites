@@ -1,3 +1,4 @@
+import type { ZernioAccount } from "@/lib/zernio";
 import type { AdAccountRow, AdCampaignRow, AdPlatform } from "@/repositories/ad-account.repository";
 
 export type AdopsPlatformId =
@@ -169,6 +170,8 @@ export type AdopsPagePayload = {
   policy: ExecutionSafetyPolicy;
   rawAccounts: AdAccountRow[];
   rawCampaigns: AdCampaignRow[];
+  zernioAccounts: ZernioAccount[];
+  zernioLinkedPlatforms: AdopsPlatformId[];
 };
 
 export type CampaignWorkspaceTab =
