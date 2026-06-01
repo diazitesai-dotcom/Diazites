@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { CheckCircle2, ChevronDown, Play } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronDown, Play, Sparkles } from "lucide-react";
 
 import { LandingLeadForm } from "@/components/public/landing-lead-form";
 import type { PublicLandingAsset } from "@/lib/landing/build-public-config";
@@ -347,27 +347,63 @@ export function LandingPageRenderer({
           </section>
         ) : null}
 
-        <section id="lead-form" className={cn("mx-auto scroll-mt-8 px-4 py-16", layout.maxWidth)}>
-          <div className="grid gap-10 lg:grid-cols-[1fr_400px] lg:items-start">
-            <div className="space-y-3">
-              <h2 className={cn("text-3xl", layout.heading)}>Ready to launch?</h2>
-              <p className="text-muted-foreground">
-                Tell us about your project — {displayBrand} will follow up fast.
-              </p>
-            </div>
-            <aside
+        <ProcessBlock layout={layout} styles={styles} brand={displayBrand} />
+
+        <section id="lead-form" className="relative scroll-mt-8 px-4 py-20">
+          <div
+            className="pointer-events-none absolute inset-x-0 top-1/2 -z-0 h-[420px] -translate-y-1/2"
+            aria-hidden
+            style={{
+              backgroundImage: `radial-gradient(ellipse 50% 60% at 50% 50%, ${styles.glow}, transparent 70%)`,
+            }}
+          />
+          <div className={cn("relative mx-auto", layout.maxWidth)}>
+            <div
               className={cn(
-                "border border-white/10 bg-white/[0.04] p-6 shadow-xl backdrop-blur",
+                "mx-auto max-w-2xl overflow-hidden border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] p-8 shadow-2xl ring-1 backdrop-blur-xl sm:p-10",
                 layout.radius,
+                styles.ring,
               )}
             >
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Free consultation
-              </p>
-              <LandingLeadForm slug={slug} primaryCta={primaryCta} />
-            </aside>
+              <div className="text-center">
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1.5 border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em]",
+                    layout.ctaShape,
+                    styles.badge,
+                  )}
+                >
+                  <Sparkles className="size-3.5" />
+                  Free consultation
+                </span>
+                <h2 className={cn("mt-5 text-3xl md:text-4xl", layout.heading)}>
+                  Claim your free consultation
+                </h2>
+                <p className="mx-auto mt-3 max-w-md text-muted-foreground">
+                  No obligation, no pressure. Tell us about your project and {displayBrand} will
+                  follow up within 24 hours.
+                </p>
+              </div>
+
+              <div className="mx-auto mt-8 max-w-lg">
+                <LandingLeadForm slug={slug} primaryCta={primaryCta} />
+              </div>
+
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-white/10 pt-6 text-xs text-muted-foreground">
+                {["100% free quote", "No spam, ever", "Fast 24h response", "Local & insured"].map(
+                  (item) => (
+                    <span key={item} className="inline-flex items-center gap-1.5">
+                      <CheckCircle2 className={cn("size-3.5", styles.accent)} />
+                      {item}
+                    </span>
+                  ),
+                )}
+              </div>
+            </div>
           </div>
         </section>
+
+        <ClosingCta layout={layout} styles={styles} brand={displayBrand} cta={primaryCta} />
       </main>
 
       <footer className="relative z-10 border-t border-white/10 py-8 text-center">
@@ -376,6 +412,109 @@ export function LandingPageRenderer({
         </p>
       </footer>
     </div>
+  );
+}
+
+function ProcessBlock({
+  layout,
+  styles,
+  brand,
+}: {
+  layout: LayoutStyle;
+  styles: (typeof THEME_STYLES)[ThemeKey];
+  brand: string;
+}) {
+  const steps = [
+    {
+      title: "Tell us what you need",
+      body: "Share your goals in a quick 60-second form — no commitment required.",
+    },
+    {
+      title: "Get a tailored plan",
+      body: `${brand} reviews your details and sends a clear, personalized recommendation.`,
+    },
+    {
+      title: "Start seeing results",
+      body: "Approve the plan and we get to work — with progress you can track every step.",
+    },
+  ];
+
+  return (
+    <section className={cn("mx-auto px-4 py-14", layout.maxWidth)}>
+      <div className="mb-10 text-center">
+        <p className={cn("text-xs font-bold", layout.eyebrow, styles.accent)}>How it works</p>
+        <h2 className={cn("mt-3 text-3xl md:text-4xl", layout.heading)}>
+          Get started in three simple steps
+        </h2>
+      </div>
+      <div className="grid gap-5 md:grid-cols-3">
+        {steps.map((step, i) => (
+          <div
+            key={i}
+            className={cn(
+              "relative border border-white/10 bg-white/[0.03] p-6",
+              layout.radius,
+            )}
+          >
+            <span
+              className={cn(
+                "flex size-10 items-center justify-center border text-sm font-bold",
+                layout.ctaShape,
+                styles.badge,
+              )}
+            >
+              {i + 1}
+            </span>
+            <h3 className="mt-4 text-lg font-semibold">{step.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ClosingCta({
+  layout,
+  styles,
+  brand,
+  cta,
+}: {
+  layout: LayoutStyle;
+  styles: (typeof THEME_STYLES)[ThemeKey];
+  brand: string;
+  cta: string;
+}) {
+  return (
+    <section className={cn("mx-auto px-4 pb-20 pt-6", layout.maxWidth)}>
+      <div
+        className={cn(
+          "relative overflow-hidden border border-white/10 px-6 py-14 text-center shadow-2xl sm:px-12",
+          layout.radius,
+        )}
+        style={{
+          backgroundImage: `radial-gradient(ellipse 60% 100% at 50% 0%, ${styles.glow}, transparent 70%)`,
+        }}
+      >
+        <h2 className={cn("mx-auto max-w-2xl text-3xl md:text-4xl", layout.heading)}>
+          Ready to work with {brand}?
+        </h2>
+        <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
+          Join the customers already growing with us. It only takes a minute to get started.
+        </p>
+        <a
+          href="#lead-form"
+          className={cn(
+            "mt-8 inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold transition-colors",
+            layout.ctaShape,
+            styles.cta,
+          )}
+        >
+          {cta}
+          <ArrowRight className="size-4" />
+        </a>
+      </div>
+    </section>
   );
 }
 
