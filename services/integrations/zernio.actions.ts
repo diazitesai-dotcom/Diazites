@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { markIntegrationsConnectedForUser } from "@/lib/integrations/integration-connection-status";
+import { persistZernioConnectedPlatforms } from "@/lib/integrations/load-zernio-accounts-for-adops";
 import { resolveZernioApiKeyForBusiness } from "@/lib/integrations/resolve-zernio-api-key";
 import { requireAuth } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit/log";
@@ -46,6 +47,16 @@ export async function listZernioAccountsAction() {
   if (!ctx.ok) return { success: false as const, error: ctx.error };
   const result = await listZernioAccountsForUi(ctx.key);
   if (!result.success) return { success: false as const, error: result.error };
+
+  const platforms = result.data.map((a) => a.platform);
+  await persistZernioConnectedPlatforms(
+    ctx.supabase,
+    ctx.businessId,
+    platforms,
+    result.data.length,
+  );
+  revalidatePath("/dashboard/campaign-ops");
+
   return { success: true as const, data: result.data };
 }
 
@@ -104,11 +115,13 @@ export async function connectZernioWithApiKeyAction(formData: FormData) {
 
   const { verifyApiKey, listAccounts } = await import("@/lib/zernio");
   let accountCount = 0;
+  let connectedPlatforms: string[] = [];
   try {
     const verified = await verifyApiKey(apiKey);
     accountCount = verified.accountCount;
     const accounts = await listAccounts(apiKey);
     accountCount = Math.max(accountCount, accounts.length);
+    connectedPlatforms = accounts.map((a) => a.platform);
   } catch (e) {
     return {
       success: false as const,
@@ -128,7 +141,9 @@ export async function connectZernioWithApiKeyAction(formData: FormData) {
     meta: {
       accountLabel: "Zernio",
       connectedAppCount: accountCount,
+      connectedPlatforms,
       lastVerifiedAt: new Date().toISOString(),
+      lastSyncedAt: new Date().toISOString(),
     },
   });
   if (error) {
@@ -136,6 +151,12 @@ export async function connectZernioWithApiKeyAction(formData: FormData) {
   }
 
   await markIntegrationsConnectedForUser(supabase, user.id);
+  await persistZernioConnectedPlatforms(
+    supabase,
+    business.id,
+    connectedPlatforms,
+    accountCount,
+  );
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/integrations");

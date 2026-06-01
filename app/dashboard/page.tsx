@@ -44,7 +44,7 @@ export default async function DashboardPage() {
 
   const user = await requireAuth();
   const supabase = await createServerSupabaseClient();
-  const checklistItems = await loadPostSetupChecklist(supabase, user.id);
+  const checklistItems = await loadPostSetupChecklist(supabase, user.id, data.businessId);
 
   return (
     <div className="space-y-6">

@@ -63,6 +63,7 @@ export async function saveOnboardingDraft(
 export async function loadPostSetupChecklist(
   client: SupabaseClient,
   userId: string,
+  businessId?: string | null,
 ): Promise<PostSetupChecklistItem[]> {
   const onboarding = createOnboardingRepository(client);
   const { data } = await onboarding.getByUserId(userId);
@@ -74,6 +75,7 @@ export async function loadPostSetupChecklist(
     client,
     userId,
     Boolean(merged.integrations_connected),
+    businessId,
   );
 
   return POST_SETUP_CHECKLIST_META.map((meta) => ({

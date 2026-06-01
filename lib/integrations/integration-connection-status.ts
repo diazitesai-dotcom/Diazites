@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { isAdAccountRowConnected } from "@/lib/integrations/ad-account-connection";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { createOnboardingRepository } from "@/repositories/onboarding.repository";
 
@@ -8,14 +9,13 @@ export async function businessHasConnectedIntegration(
   client: SupabaseClient,
   businessId: string,
 ): Promise<boolean> {
-  const { data } = await client
+  const { data, error } = await client
     .from("ad_accounts")
-    .select("id")
-    .eq("business_id", businessId)
-    .in("status", ["connected", "pending"])
-    .limit(1);
+    .select("platform, external_account_id, status, connection_status, access_token")
+    .eq("business_id", businessId);
 
-  return (data ?? []).length > 0;
+  if (error || !data?.length) return false;
+  return data.some((row) => isAdAccountRowConnected(row));
 }
 
 /** Persist Mission Control checklist: integrations_connected = true */
@@ -39,12 +39,17 @@ export async function resolveIntegrationsConnectedForUser(
   client: SupabaseClient,
   userId: string,
   checklistFlag: boolean,
+  businessId?: string | null,
 ): Promise<boolean> {
   if (checklistFlag) return true;
 
-  const businesses = createBusinessRepository(client);
-  const { data: business } = await businesses.getByOwnerUserId(userId);
-  if (!business) return false;
+  let resolvedBusinessId = businessId ?? null;
+  if (!resolvedBusinessId) {
+    const businesses = createBusinessRepository(client);
+    const { data: business } = await businesses.getByOwnerUserId(userId);
+    resolvedBusinessId = business?.id ?? null;
+  }
+  if (!resolvedBusinessId) return false;
 
-  return businessHasConnectedIntegration(client, business.id);
+  return businessHasConnectedIntegration(client, resolvedBusinessId);
 }
