@@ -76,7 +76,7 @@ export async function loadOperatorPlatformContext(
 
   return {
     hasBusiness: true,
-    businessName: data.businessName,
+    businessName: data.workspace.businessName,
     pagePath: pathname,
     healthScore: data.healthScore,
     riskLevel: data.briefing.riskLevel,
