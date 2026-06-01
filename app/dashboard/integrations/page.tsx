@@ -10,6 +10,10 @@ import {
   resolveLinkedIntegrationId,
   type LinkedAdAccount,
 } from "@/lib/integrations/integration-connect-config";
+import {
+  ensureZernioEngineAccessToken,
+  listBusinessAdConnections,
+} from "@/lib/integrations/business-ad-connections";
 import { markIntegrationsConnectedForUser } from "@/lib/integrations/integration-connection-status";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -25,17 +29,16 @@ export default async function IntegrationsPage() {
   const ctxResult = await requireBusinessContext(supabase);
   if (!ctxResult.ok) redirect("/dashboard/organization?tab=settings");
 
-  const { data: adAccounts } = await supabase
-    .from("ad_accounts")
-    .select(
-      "id, platform, external_account_id, status, connection_status, meta, access_token, refresh_token",
-    )
-    .eq("business_id", ctxResult.ctx.businessId);
+  await ensureZernioEngineAccessToken(supabase, ctxResult.ctx.businessId);
+  const adConnections = await listBusinessAdConnections(
+    supabase,
+    ctxResult.ctx.businessId,
+  );
 
   const connectedIds: string[] = [];
   const linkedAccounts: Record<string, LinkedAdAccount> = {};
 
-  for (const acc of adAccounts ?? []) {
+  for (const acc of adConnections) {
     if (!isAdAccountConnected(acc)) continue;
     const integrationId = resolveLinkedIntegrationId(acc);
     if (!integrationId) continue;
@@ -47,7 +50,7 @@ export default async function IntegrationsPage() {
       typeof meta.connectedAppCount === "number" ? meta.connectedAppCount : null;
 
     linkedAccounts[integrationId] = {
-      id: acc.id,
+      id: acc.id ?? integrationId,
       accountName: label,
       credentialsHint:
         integrationId === "zernio"

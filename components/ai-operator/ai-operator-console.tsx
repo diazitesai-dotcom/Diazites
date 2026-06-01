@@ -1,12 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Send, Sparkles, Terminal, X } from "lucide-react";
 
 import { getOperatorContextAction, sendOperatorMessageAction } from "@/actions/operator.actions";
 import { useAgentDeployment } from "@/components/agents/agent-deployment-provider";
+import {
+  OPERATOR_CLOSE_EVENT,
+  OPERATOR_OPEN_EVENT,
+  OPERATOR_TOGGLE_EVENT,
+} from "@/lib/ai-operator/operator-ui-events";
 import { OperatorContextPanel } from "@/components/ai-operator/operator-context-panel";
 import { OperatorMessageBubble } from "@/components/ai-operator/operator-message-bubble";
 import { Button } from "@/components/ui/button";
@@ -39,8 +45,19 @@ const WELCOME: OperatorAssistantMessage = {
   ],
 };
 
-export function AiOperatorConsole() {
-  const [open, setOpen] = useState(false);
+type AiOperatorConsoleProps = {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+};
+
+export function AiOperatorConsole({
+  open: openControlled,
+  onOpenChange,
+}: AiOperatorConsoleProps = {}) {
+  const [openInternal, setOpenInternal] = useState(false);
+  const open = openControlled ?? openInternal;
+  const setOpen = onOpenChange ?? setOpenInternal;
+  const [portalReady, setPortalReady] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<OperatorMessage[]>([WELCOME]);
   const [context, setContext] = useState<OperatorPlatformContext | null>(null);
@@ -71,13 +88,35 @@ export function AiOperatorConsole() {
   }, [open, refreshContext]);
 
   useEffect(() => {
-    if (!open) return;
+    setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    const onToggle = () => setOpen((v) => !v);
+    const onClose = () => setOpen(false);
+    window.addEventListener(OPERATOR_OPEN_EVENT, onOpen);
+    window.addEventListener(OPERATOR_TOGGLE_EVENT, onToggle);
+    window.addEventListener(OPERATOR_CLOSE_EVENT, onClose);
+    return () => {
+      window.removeEventListener(OPERATOR_OPEN_EVENT, onOpen);
+      window.removeEventListener(OPERATOR_TOGGLE_EVENT, onToggle);
+      window.removeEventListener(OPERATOR_CLOSE_EVENT, onClose);
+    };
+  }, [setOpen]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setOpen((v) => !v);
+        return;
+      }
+      if (e.key === "Escape" && open) setOpen(false);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, setOpen]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -147,12 +186,12 @@ export function AiOperatorConsole() {
     }
   }
 
-  return (
+  const ui = (
     <>
       <AnimatePresence>
         {open ? (
           <motion.div
-            className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-[2px]"
+            className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -167,7 +206,7 @@ export function AiOperatorConsole() {
           <motion.div
             role="dialog"
             aria-label="Ask Diazites AI — GrowthOS Operator"
-            className="fixed bottom-24 right-4 z-[60] flex max-h-[min(720px,calc(100vh-7rem))] w-[min(560px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-card/98 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:right-6"
+            className="fixed bottom-24 right-4 z-[210] flex max-h-[min(720px,calc(100vh-7rem))] w-[min(560px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-card/98 shadow-[0_24px_80px_-20px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:right-6"
             initial={{ opacity: 0, y: 20, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -298,33 +337,39 @@ export function AiOperatorConsole() {
         ) : null}
       </AnimatePresence>
 
-      <div className="fixed bottom-6 right-6 z-[65]">
+      <div className="fixed bottom-5 right-5 z-[220] sm:bottom-6 sm:right-6">
         <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
           <Button
             type="button"
             variant="gradient"
             size="lg"
             className={cn(
-              "mission-shimmer-btn relative rounded-full px-5 shadow-[0_12px_40px_-8px_rgba(99,102,241,0.55)]",
+              "mission-shimmer-btn relative h-12 rounded-full px-4 shadow-[0_12px_40px_-8px_rgba(99,102,241,0.65)] sm:px-5",
               open && "ring-2 ring-cyan-400/40",
             )}
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
+            aria-label="Ask Diazites AI — GrowthOS Operator"
           >
             {!open ? (
               <span
-                className="pointer-events-none absolute inset-0 animate-ping rounded-full bg-violet-500/20"
+                className="pointer-events-none absolute inset-0 animate-ping rounded-full bg-violet-500/25"
                 aria-hidden
               />
             ) : null}
-            <Terminal className="relative size-4" />
-            <span className="relative hidden sm:inline">Ask Diazites AI</span>
-            <span className="relative sm:hidden">AI Operator</span>
+            <Terminal className="relative size-4 shrink-0" />
+            <span className="relative text-sm font-semibold">Ask AI</span>
           </Button>
         </motion.div>
+        <p className="pointer-events-none mt-1 hidden text-center text-[9px] text-muted-foreground sm:block">
+          Ctrl+J
+        </p>
       </div>
     </>
   );
+
+  if (!portalReady || typeof document === "undefined") return null;
+  return createPortal(ui, document.body);
 }
 
 export const AiCopilotFab = AiOperatorConsole;

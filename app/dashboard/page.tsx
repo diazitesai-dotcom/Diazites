@@ -9,6 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { loadDashboardOverview } from "@/lib/dashboard/load-dashboard-overview";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  businessHasConnectedIntegration,
+  markIntegrationsConnectedForUser,
+} from "@/lib/integrations/integration-connection-status";
 import { loadPostSetupChecklist } from "@/services/onboarding/draft.service";
 
 export default async function DashboardPage() {
@@ -44,6 +48,9 @@ export default async function DashboardPage() {
 
   const user = await requireAuth();
   const supabase = await createServerSupabaseClient();
+  if (await businessHasConnectedIntegration(supabase, data.businessId)) {
+    await markIntegrationsConnectedForUser(supabase, user.id);
+  }
   const checklistItems = await loadPostSetupChecklist(supabase, user.id, data.businessId);
 
   return (

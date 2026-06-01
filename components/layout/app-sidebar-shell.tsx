@@ -36,6 +36,8 @@ import type { PlatformServiceKey } from "@/types/access-control";
 
 import type { AccountContext } from "@/lib/auth/account-context";
 
+import { AskAiHeaderButton } from "@/components/ai-operator/ask-ai-header-button";
+
 import { AccountMenu } from "./account-menu";
 import { NotificationBell } from "./notification-bell";
 
@@ -378,7 +380,12 @@ export function AppSidebarShell({
           </div>
           <span className="hidden md:block" aria-hidden />
           <div className="flex items-center gap-2">
-            {variant === "dashboard" ? <NotificationBell /> : null}
+            {variant === "dashboard" ? (
+              <>
+                <AskAiHeaderButton />
+                <NotificationBell />
+              </>
+            ) : null}
             {account ? <AccountMenu account={account} variant={variant} /> : null}
           </div>
         </header>

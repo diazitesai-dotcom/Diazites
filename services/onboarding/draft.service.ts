@@ -67,9 +67,8 @@ export async function loadPostSetupChecklist(
 ): Promise<PostSetupChecklistItem[]> {
   const onboarding = createOnboardingRepository(client);
   const { data } = await onboarding.getByUserId(userId);
-  if (!data) return [];
 
-  const raw = (data.checklist ?? {}) as Record<string, boolean>;
+  const raw = (data?.checklist ?? {}) as Record<string, boolean>;
   const merged = { ...DEFAULT_POST_SETUP_CHECKLIST, ...raw };
   const integrationsDone = await resolveIntegrationsConnectedForUser(
     client,

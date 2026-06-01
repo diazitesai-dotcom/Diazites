@@ -1,21 +1,23 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { zernioAccountsFromAdAccountMeta } from "@/lib/ads/zernio-adops-bridge";
-import { isAdAccountRowConnected } from "@/lib/integrations/ad-account-connection";
+import {
+  ensureZernioEngineAccessToken,
+  findZernioConnection,
+  listBusinessAdConnections,
+} from "@/lib/integrations/business-ad-connections";
 import { resolveZernioApiKeyForBusiness } from "@/lib/integrations/resolve-zernio-api-key";
 import { listAccounts, type ZernioAccount } from "@/lib/zernio";
-import { createAdAccountRepository } from "@/repositories/ad-account.repository";
 
 /** Loads live Zernio connected apps for Campaign Manager platform tiles. */
 export async function loadZernioAccountsForAdops(
   client: SupabaseClient,
   businessId: string,
 ): Promise<ZernioAccount[]> {
-  const accounts = createAdAccountRepository(client);
-  const { data: zernioRow } = await accounts.getByPlatform(businessId, "zernio");
-  const metaFallback = zernioAccountsFromAdAccountMeta(
-    (zernioRow?.meta ?? {}) as Record<string, unknown>,
-  );
+  await ensureZernioEngineAccessToken(client, businessId);
+  const connections = await listBusinessAdConnections(client, businessId);
+  const zernioRow = findZernioConnection(connections);
+  const metaFallback = zernioAccountsFromAdAccountMeta(zernioRow?.meta ?? {});
 
   const key = await resolveZernioApiKeyForBusiness(client, businessId);
   if (!key) {
@@ -37,20 +39,28 @@ export async function persistZernioConnectedPlatforms(
   platforms: string[],
   accountCount: number,
 ): Promise<void> {
-  const accounts = createAdAccountRepository(client);
-  const { data: row } = await accounts.getByPlatform(businessId, "zernio");
-  if (!row || !isAdAccountRowConnected(row)) return;
+  const connections = await listBusinessAdConnections(client, businessId);
+  const row = findZernioConnection(connections);
+  if (!row?.id) return;
 
   const meta = {
-    ...((row.meta ?? {}) as Record<string, unknown>),
+    ...row.meta,
     connectedAppCount: accountCount,
     connectedPlatforms: platforms,
     lastSyncedAt: new Date().toISOString(),
   };
 
-  await client
+  const basePatch = { updated_at: new Date().toISOString() };
+  const withMeta = await client
     .from("ad_accounts")
-    .update({ meta })
+    .update({ ...basePatch, meta })
     .eq("id", row.id)
     .eq("business_id", businessId);
+  if (withMeta.error) {
+    await client
+      .from("ad_accounts")
+      .update({ ...basePatch, metadata: meta })
+      .eq("id", row.id)
+      .eq("business_id", businessId);
+  }
 }

@@ -50,6 +50,31 @@ export async function connectAdAccount(
 
   if (error || !data) return fail(error?.message ?? "Failed to connect account");
 
+  if (input.platform === "zernio") {
+    const apiKey = input.credentials.token?.trim();
+    if (apiKey) {
+      const { createAdAccountRepository } = await import(
+        "@/repositories/ad-account.repository"
+      );
+      const engineAccounts = createAdAccountRepository(client);
+      await engineAccounts.upsert({
+        businessId,
+        platform: "zernio",
+        externalAccountId: "zernio",
+        accountName: input.accountName ?? "Zernio",
+        accessToken: apiKey,
+        status: "connected",
+        meta: {
+          accountLabel: "Zernio",
+          ...(((data as { metadata?: Record<string, unknown> }).metadata ?? {}) as Record<
+            string,
+            unknown
+          >),
+        },
+      });
+    }
+  }
+
   await writeAuditLog(client, {
     businessId,
     actorUserId: ownerUserId,

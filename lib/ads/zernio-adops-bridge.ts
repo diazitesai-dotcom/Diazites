@@ -27,20 +27,39 @@ export function zernioAccountsForAdopsPlatform(
   return accounts.filter((a) => normalizedKeys.has(normalizePlatform(a.platform)));
 }
 
+const DEFAULT_ZERNIO_PLATFORMS = [
+  "facebook",
+  "instagram",
+  "tiktok",
+  "linkedin",
+  "youtube",
+  "twitter",
+] as const;
+
 /** Build minimal account rows from ad_accounts.meta when live API fetch is unavailable. */
 export function zernioAccountsFromAdAccountMeta(
   meta: Record<string, unknown> | null | undefined,
 ): ZernioAccount[] {
   const raw = meta?.connectedPlatforms;
-  if (!Array.isArray(raw) || raw.length === 0) return [];
-  return raw
-    .filter((p): p is string => typeof p === "string" && p.trim().length > 0)
-    .map((platform, index) => ({
-      _id: `zernio-meta-${normalizePlatform(platform)}-${index}`,
-      platform: normalizePlatform(platform) as ZernioAccount["platform"],
-      displayName: platform,
-      status: "active",
-    }));
+  let platforms: string[] = [];
+  if (Array.isArray(raw)) {
+    platforms = raw.filter((p): p is string => typeof p === "string" && p.trim().length > 0);
+  }
+
+  const appCount =
+    typeof meta?.connectedAppCount === "number" ? meta.connectedAppCount : 0;
+  if (platforms.length === 0 && appCount > 0) {
+    platforms = [...DEFAULT_ZERNIO_PLATFORMS];
+  }
+
+  if (platforms.length === 0) return [];
+
+  return platforms.map((platform, index) => ({
+    _id: `zernio-meta-${normalizePlatform(platform)}-${index}`,
+    platform: normalizePlatform(platform) as ZernioAccount["platform"],
+    displayName: platform,
+    status: "active",
+  }));
 }
 
 export function adopsPlatformLinkedViaZernio(

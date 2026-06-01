@@ -358,8 +358,12 @@ export function buildAdopsPayload(input: {
 }): AdopsPagePayload {
   let zernioAccounts = input.zernioAccounts ?? [];
   const zernioRow = input.accounts.find((a) => a.platform === "zernio");
+  const zernioMeta =
+    zernioRow?.meta && typeof zernioRow.meta === "object"
+      ? (zernioRow.meta as Record<string, unknown>)
+      : {};
   if (!zernioAccounts.length && zernioRow && isAdAccountRowConnected(zernioRow)) {
-    zernioAccounts = zernioAccountsFromAdAccountMeta(zernioRow.meta);
+    zernioAccounts = zernioAccountsFromAdAccountMeta(zernioMeta);
   }
   const zernioLinkedPlatforms: AdopsPlatformId[] = [];
   const liveCampaigns = buildLiveCampaignRows(input.campaigns, input.businessName);

@@ -7,6 +7,7 @@ export type AdAccountConnectionRow = {
   status?: string | null;
   connection_status?: string | null;
   access_token?: string | null;
+  credentials_encrypted?: string | null;
 };
 
 /** Matches Integrations hub “connected” logic, including legacy Marketing OS rows. */
@@ -14,7 +15,8 @@ export function isAdAccountRowConnected(row: AdAccountConnectionRow): boolean {
   if (isAdAccountConnected(row)) return true;
 
   const platform = String(row.platform).toLowerCase();
-  if (platform !== "zernio" || !row.access_token?.trim()) return false;
+  if (platform !== "zernio") return false;
+  if (!row.access_token?.trim() && !row.credentials_encrypted?.trim()) return false;
 
   const st = row.status?.toLowerCase();
   const cs = row.connection_status?.toLowerCase();
