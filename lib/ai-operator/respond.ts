@@ -1,5 +1,10 @@
 import { ROUTES } from "@/lib/navigation/platform-nav";
 import { resolveNavigation } from "@/lib/ai-operator/navigation";
+import {
+  dashboardPanelHref,
+  inlineNavHref,
+  isMissionControlPath,
+} from "@/lib/mission-control/inline-panels";
 import type {
   OperatorAction,
   OperatorAssistantMessage,
@@ -27,8 +32,14 @@ function msg(
   };
 }
 
-function navAction(href: string, label: string): OperatorAction {
-  return { id: `nav-${href}`, label, kind: "navigate", href };
+function navAction(href: string, label: string, pagePath?: string): OperatorAction {
+  const inline = pagePath && isMissionControlPath(pagePath);
+  const resolvedHref = inline ? inlineNavHref(href, pagePath) : href;
+  const resolvedLabel =
+    inline && resolvedHref.includes("panel=") && /take me|open/i.test(label)
+      ? "Set up here"
+      : label;
+  return { id: `nav-${resolvedHref}`, label: resolvedLabel, kind: "navigate", href: resolvedHref };
 }
 
 function deployAction(label: string, deploy: DeploymentLaunchParams, requiresApproval = false): OperatorAction {
@@ -68,22 +79,27 @@ export function processOperatorMessage(
   const text = input.trim();
   const intent = detectIntent(text);
   const nav = resolveNavigation(text);
+  const path = ctx.pagePath;
+  const navBtn = (href: string, label: string) => navAction(href, label, path);
 
   if (!ctx.hasBusiness) {
     return msg({
       mode: "support",
       content: "Connect your business profile first so I can read live campaigns, leads, agents, and revenue.",
-      actions: [navAction("/onboarding", "Finish onboarding")],
+      actions: [navAction("/onboarding", "Finish onboarding", path)],
     });
   }
 
   if (intent === "navigate" && nav) {
+    const onMc = isMissionControlPath(path);
     return msg({
       mode: "navigation",
-      content: `Opening ${nav.label}.`,
+      content: onMc
+        ? `I'll open ${nav.label} right here on Mission Control.`
+        : `Opening ${nav.label}.`,
       breadcrumb: nav.breadcrumb,
-      actions: [navAction(nav.href, "Take me there")],
-      logLine: `Navigate → ${nav.href}`,
+      actions: [navBtn(nav.href, onMc ? "Set up here" : "Take me there")],
+      logLine: `Navigate → ${inlineNavHref(nav.href, path)}`,
     });
   }
 
@@ -97,9 +113,9 @@ export function processOperatorMessage(
       content: `System health is ${ctx.healthScore}% (${ctx.riskLevel} risk). Here's what needs attention:`,
       bullets,
       actions: [
-        navAction(ROUTES.integrationsHub, "Open diagnostics"),
+        navBtn(ROUTES.integrationsHub, "Open diagnostics"),
         deployAction("Fix tracking", { goal: "improve_conversion", step: "plan", source: "control_plane" }),
-        navAction(ROUTES.missionControl, "Growth Command Center"),
+        navBtn(ROUTES.missionControl, "Growth Command Center"),
       ],
       logLine: "Diagnostic scan complete",
     });
@@ -118,9 +134,9 @@ export function processOperatorMessage(
       content: "Lead flow is softer than target. Likely causes:",
       bullets,
       actions: [
-        navAction(ROUTES.leadsOs, "Open Leads OS"),
+        navBtn(ROUTES.leadsOs, "Open Leads OS"),
         deployAction("Deploy follow-up", { goal: "follow_up_leads", step: "stack", source: "control_plane" }),
-        navAction(ROUTES.campaignOps, "Campaign Ops"),
+        navBtn(ROUTES.campaignOps, "Campaign Ops"),
       ],
     });
   }
@@ -142,8 +158,8 @@ export function processOperatorMessage(
       content: "Performance is under pressure. Summary:",
       bullets,
       actions: [
-        navAction(ROUTES.reportsIntelligence, "Reports & Intelligence"),
-        navAction(ROUTES.integrationsHub, "Fix tracking"),
+        navBtn(ROUTES.reportsIntelligence, "Reports & Intelligence"),
+        navBtn(ROUTES.integrationsHub, "Fix tracking"),
         deployAction("Launch retargeting", { preset: "retargeting", agent: "retargeting", goal: "improve_conversion", mode: "guided", step: "plan", source: "control_plane" }, true),
       ],
     });
@@ -160,8 +176,8 @@ export function processOperatorMessage(
         "Reconnect CRM for closed-loop attribution.",
       ],
       actions: [
-        navAction(ROUTES.integrationsHub, "Open Integrations Hub"),
-        navAction(ROUTES.funnelStudio, "Funnel Studio"),
+        navBtn(ROUTES.integrationsHub, "Open Integrations Hub"),
+        navBtn(ROUTES.funnelStudio, "Funnel Studio"),
         deployAction("Validate stack", { goal: "improve_conversion", step: "plan", source: "control_plane" }),
       ],
     });
@@ -173,8 +189,8 @@ export function processOperatorMessage(
       content: "Connect Meta Ads to unlock paid acquisition, spend sync, and campaign deployment from Campaign Ops.",
       breadcrumb: "Integrations Hub → Meta Ads",
       actions: [
-        navAction(ROUTES.integrationsHub, "Connect Meta"),
-        navAction(ROUTES.campaignOps, "Campaign Ops"),
+        navBtn(ROUTES.integrationsHub, "Connect Meta"),
+        navBtn(ROUTES.campaignOps, "Campaign Ops"),
       ],
     });
   }
@@ -184,7 +200,7 @@ export function processOperatorMessage(
       mode: "action",
       content: "Connect Google Ads for search intent campaigns, keyword optimization, and ROAS reporting.",
       breadcrumb: "Integrations Hub → Google Ads",
-      actions: [navAction(ROUTES.integrationsHub, "Connect Google Ads")],
+      actions: [navBtn(ROUTES.integrationsHub, "Connect Google Ads")],
     });
   }
 
@@ -195,8 +211,8 @@ export function processOperatorMessage(
         "Stripe revenue tracking is configured in Organization → Workspace. Add webhook metadata business_id on payments for automatic revenue attribution.",
       breadcrumb: "Organization → Workspace → Revenue webhooks",
       actions: [
-        navAction(`${ROUTES.organization}?tab=settings`, "Workspace settings"),
-        navAction(ROUTES.reportsIntelligence, "Revenue reports"),
+        navBtn(`${ROUTES.organization}?tab=settings`, "Workspace settings"),
+        navBtn(ROUTES.reportsIntelligence, "Revenue reports"),
       ],
     });
   }
@@ -208,7 +224,7 @@ export function processOperatorMessage(
       bullets: ["Audience: site visitors + qualified non-converters", "Channels: Meta / Google where connected", "Approval may be required for budget changes"],
       actions: [
         deployAction("Deploy retargeting", { preset: "retargeting", agent: "retargeting", goal: "improve_conversion", mode: "guided", step: "plan", source: "control_plane" }, true),
-        navAction(ROUTES.campaignOps, "Campaign Ops"),
+        navBtn(ROUTES.campaignOps, "Campaign Ops"),
       ],
       logLine: "Retargeting deployment queued",
     });
@@ -221,29 +237,48 @@ export function processOperatorMessage(
       bullets: ["Trigger: new lead + qualified status", "Channels: email sequences", "Agent: AI Follow-Up"],
       actions: [
         deployAction("Deploy follow-up", { goal: "follow_up_leads", step: "stack", source: "control_plane" }, true),
-        navAction(ROUTES.automationCenter, "Automation Center"),
+        navBtn(ROUTES.automationCenter, "Automation Center"),
       ],
     });
   }
 
   if (intent === "deploy_lead_stack" || /deploy.*lead/i.test(text)) {
+    if (isMissionControlPath(path)) {
+      return msg({
+        mode: "operator",
+        content:
+          "Deploying your lead stack on Mission Control: landing page → qualification → follow-up. Use the funnel builder below.",
+        actions: [navBtn(dashboardPanelHref("funnel"), "Build funnel here")],
+      });
+    }
     return msg({
       mode: "action",
       content: "Deploying lead stack: landing capture → qualification → follow-up → CRM handoff.",
       actions: [
         deployAction("Deploy lead stack", { stack: "lead_engine", goal: "generate_leads", step: "stack", source: "control_plane" }),
-        navAction(ROUTES.growthEngine, "Growth Engine"),
+        navBtn(ROUTES.growthEngine, "Growth Engine"),
       ],
     });
   }
 
   if (intent === "deploy_ads" || /create.*campaign/i.test(text)) {
+    if (isMissionControlPath(path)) {
+      return msg({
+        mode: "operator",
+        content:
+          "I'll build your campaign inside Mission Control — landing page, ads, and follow-up in one funnel you can launch here.",
+        actions: [
+          navBtn(dashboardPanelHref("funnel"), "Create complete funnel"),
+          navBtn(ROUTES.integrationsHub, "Connect ad platforms"),
+        ],
+      });
+    }
     return msg({
       mode: "action",
       content: "Launch paid campaigns from Growth Engine or Campaign Ops — I'll open the deployment flow with guardrails.",
       actions: [
         deployAction("Launch ads", { goal: "launch_ads", step: "plan", source: "control_plane" }, true),
-        navAction(ROUTES.campaignOps, "Campaign Ops"),
+        navBtn(ROUTES.campaignOps, "Campaign Ops"),
       ],
     });
   }
@@ -253,8 +288,8 @@ export function processOperatorMessage(
       mode: "action",
       content: "Pausing poor performers requires Campaign Ops access. Review ROAS by campaign, then pause or reallocate budget.",
       actions: [
-        navAction(ROUTES.campaignOps, "Open Campaign Ops"),
-        navAction(ROUTES.optimizationLab, "Optimization Lab"),
+        navBtn(ROUTES.campaignOps, "Open Campaign Ops"),
+        navBtn(ROUTES.optimizationLab, "Optimization Lab"),
       ],
       logLine: "High-risk action — confirm in Campaign Ops",
     });
@@ -265,7 +300,7 @@ export function processOperatorMessage(
       mode: "navigation",
       content: `You have ${ctx.pendingApprovals} item(s) awaiting decision in the approval queue.`,
       breadcrumb: "Approval Center",
-      actions: [navAction(ROUTES.approvalCenter, "Open Approval Center")],
+      actions: [navBtn(ROUTES.approvalCenter, "Open Approval Center")],
     });
   }
 
@@ -278,7 +313,7 @@ export function processOperatorMessage(
         `Your modeled ROAS: ${ctx.roas != null ? `${ctx.roas.toFixed(1)}×` : "connect ads to calculate"}.`,
         `Money generated: ${formatMoney(ctx.revenue)} · Spend: ${formatMoney(ctx.spend)}.`,
       ],
-      actions: [navAction(ROUTES.reportsIntelligence, "Revenue reports")],
+      actions: [navBtn(ROUTES.reportsIntelligence, "Revenue reports")],
     });
   }
 
@@ -287,7 +322,7 @@ export function processOperatorMessage(
       mode: "answer",
       content: `Agent health reflects ${ctx.activeAgents} of ${ctx.totalAgents} agents actively running. Low health usually means inactive qualification, follow-up, or ads agents.`,
       bullets: ctx.agentIssues.length ? ctx.agentIssues : ["All core agents appear active."],
-      actions: [navAction(ROUTES.agents, "Open Agents")],
+      actions: [navBtn(ROUTES.agents, "Open Agents")],
     });
   }
 
@@ -302,7 +337,7 @@ export function processOperatorMessage(
       ],
       actions: [
         deployAction("Review growth plan", { stack: "lead_engine", goal: "generate_leads", step: "plan", source: "control_plane" }),
-        navAction(ROUTES.missionControl, "Growth Command Center"),
+        navBtn(ROUTES.missionControl, "Growth Command Center"),
       ],
     });
   }
@@ -315,7 +350,7 @@ export function processOperatorMessage(
         `ROAS: ${ctx.roas != null ? `${ctx.roas.toFixed(1)}×` : "—"}`,
         "Use Reports for source/campaign breakdown and CSV export.",
       ],
-      actions: [navAction(ROUTES.reportsIntelligence, "Revenue attribution")],
+      actions: [navBtn(ROUTES.reportsIntelligence, "Revenue attribution")],
     });
   }
 
@@ -325,14 +360,14 @@ export function processOperatorMessage(
         mode: "support",
         content:
           "Approvals protect budget, creative, and autonomous agent actions. Anything high-risk waits for your OK in Approval Center.",
-        actions: [navAction(ROUTES.approvalCenter, "Open Approval Center")],
+        actions: [navBtn(ROUTES.approvalCenter, "Open Approval Center")],
       });
     }
     if (/lead velocity/i.test(text)) {
       return msg({
         mode: "support",
         content: "Lead velocity is how many new leads you captured recently — a pulse on inbound demand, not closed revenue.",
-        actions: [navAction(ROUTES.missionControl, "Growth Command Center")],
+        actions: [navBtn(ROUTES.missionControl, "Growth Command Center")],
       });
     }
     return msg({
@@ -348,8 +383,8 @@ export function processOperatorMessage(
       mode: "answer",
       content: "Campaign ROAS rankings live in Campaign Ops and Reports & Intelligence. I'll take you to the workspace with live spend and return data.",
       actions: [
-        navAction(ROUTES.campaignOps, "Campaign Ops"),
-        navAction(ROUTES.reportsIntelligence, "Reports"),
+        navBtn(ROUTES.campaignOps, "Campaign Ops"),
+        navBtn(ROUTES.reportsIntelligence, "Reports"),
       ],
     });
   }
@@ -359,7 +394,7 @@ export function processOperatorMessage(
       mode: "navigation",
       content: "Leads waiting for qualification are in Leads OS — filter by status and agent queue.",
       breadcrumb: "Leads OS → Qualification queue",
-      actions: [navAction(ROUTES.leadsOs, "Open Leads OS")],
+      actions: [navBtn(ROUTES.leadsOs, "Open Leads OS")],
     });
   }
 
@@ -369,8 +404,8 @@ export function processOperatorMessage(
       content: "Your offer lives in Growth Engine → Offer Builder. Landing copy is in Funnel Studio.",
       breadcrumb: "Growth Engine → Offer Builder",
       actions: [
-        navAction(ROUTES.growthEngine, "Growth Engine"),
-        navAction(ROUTES.funnelStudio, "Funnel Studio"),
+        navBtn(ROUTES.growthEngine, "Growth Engine"),
+        navBtn(ROUTES.funnelStudio, "Funnel Studio"),
       ],
     });
   }
@@ -383,7 +418,7 @@ export function processOperatorMessage(
       `${ctx.activeAgents} agents active · ${ctx.pendingApprovals} approvals pending`,
     ],
     actions: [
-      navAction(ROUTES.missionControl, "Growth Command Center"),
+      navBtn(ROUTES.missionControl, "Growth Command Center"),
       deployAction("Review plan", { goal: "generate_leads", step: "plan", source: "control_plane" }),
     ],
   });

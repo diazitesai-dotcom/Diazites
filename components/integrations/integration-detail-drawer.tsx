@@ -45,17 +45,20 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "errors", label: "Errors" },
 ];
 
-const INTEGRATIONS_RETURN = "/dashboard/integrations";
+const DEFAULT_RETURN = "/dashboard/integrations";
 
 export function IntegrationDetailDrawer({
   integration,
   linkedAccount,
   oauthConfigured = { meta: false, google: false },
+  returnPath = DEFAULT_RETURN,
   onClose,
 }: {
   integration: GrowthIntegration | null;
   linkedAccount?: LinkedAdAccount | null;
   oauthConfigured?: { meta: boolean; google: boolean };
+  /** Where OAuth returns after connecting (Mission Control uses /dashboard). */
+  returnPath?: string;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -142,7 +145,7 @@ export function IntegrationDetailDrawer({
     if (!oauthPlatform) return null;
     const params = new URLSearchParams({
       platform: oauthPlatform,
-      returnTo: INTEGRATIONS_RETURN,
+      returnTo: returnPath,
     });
     return `/api/ads/oauth/start?${params.toString()}`;
   }
@@ -162,7 +165,7 @@ export function IntegrationDetailDrawer({
       return;
     }
     startTransition(async () => {
-      const result = await startAdsConnectAction(oauthPlatform, INTEGRATIONS_RETURN);
+      const result = await startAdsConnectAction(oauthPlatform, returnPath);
       if (!result.success) {
         setMessage(result.error);
         return;

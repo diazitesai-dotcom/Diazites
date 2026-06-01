@@ -318,6 +318,7 @@ export function GrowthIntegrationsHub({
         integration={selected}
         linkedAccount={selected ? linkedAccounts[selected.id] ?? null : null}
         oauthConfigured={oauthConfigured}
+        returnPath={returnPath}
         onClose={() => {
           setSelected(null);
           onConnectionChange?.();

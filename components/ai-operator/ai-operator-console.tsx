@@ -23,6 +23,11 @@ import type {
   OperatorMessage,
   OperatorPlatformContext,
 } from "@/types/ai-operator";
+import {
+  dashboardPanelHref,
+  hrefToPanelKind,
+  isMissionControlPath,
+} from "@/lib/mission-control/inline-panels";
 import { cn } from "@/lib/utils";
 
 const PLACEHOLDERS = [
@@ -168,8 +173,32 @@ export function AiOperatorConsole({
   }
 
   function handleAction(action: OperatorAction) {
+    const onMissionControl = isMissionControlPath(pathname);
+
+    if (onMissionControl && action.kind === "deploy" && action.deploy) {
+      setOpen(false);
+      window.dispatchEvent(
+        new CustomEvent("mc:inline-deploy", { detail: action.deploy }),
+      );
+      setLogs((l) => [...l.slice(-4), "Building on Mission Control…"]);
+      return;
+    }
+
     if (action.kind === "navigate" && action.href) {
       setOpen(false);
+      if (onMissionControl) {
+        if (action.href.includes("panel=")) {
+          router.replace(action.href, { scroll: false });
+        } else {
+          const panel = hrefToPanelKind(action.href);
+          if (panel) router.replace(dashboardPanelHref(panel), { scroll: false });
+          else if (action.href.startsWith("/dashboard"))
+            router.replace("/dashboard", { scroll: false });
+          else window.open(action.href, "_blank", "noopener,noreferrer");
+        }
+        setLogs((l) => [...l.slice(-4), `Panel → ${action.href}`]);
+        return;
+      }
       router.push(action.href);
       setLogs((l) => [...l.slice(-4), `Navigate → ${action.href}`]);
       return;
@@ -184,12 +213,14 @@ export function AiOperatorConsole({
     }
     if (action.kind === "open_diagnostics") {
       setOpen(false);
-      router.push("/dashboard/integrations");
+      if (onMissionControl) router.replace(dashboardPanelHref("integrations"), { scroll: false });
+      else router.push("/dashboard/integrations");
       return;
     }
     if (action.kind === "approve") {
       setOpen(false);
-      router.push("/dashboard/approvals");
+      if (onMissionControl) router.replace("/dashboard", { scroll: false });
+      else router.push("/dashboard/approvals");
     }
   }
 

@@ -25,7 +25,6 @@ import {
   type SetupStepResult,
 } from "@/actions/mission-control-setup.actions";
 import { sendOperatorMessageAction } from "@/actions/operator.actions";
-import { useAgentDeploymentOptional } from "@/components/agents/agent-deployment-provider";
 import { OperatorMessageBubble } from "@/components/ai-operator/operator-message-bubble";
 import { SetupArtifactCard } from "@/components/dashboard/mission-control/setup-artifact-card";
 import {
@@ -40,7 +39,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { OnboardingChecklistKey, PostSetupChecklistItem } from "@/lib/onboarding/draft";
 import { SETUP_STEP_PROMPTS } from "@/lib/onboarding/setup-assistant-steps";
+import {
+  dashboardPanelHref,
+  hrefToPanelKind,
+  parsePanelFromSearchParams,
+} from "@/lib/mission-control/inline-panels";
 import type { OperatorAction, OperatorMessage } from "@/types/ai-operator";
+import type { DeploymentLaunchParams } from "@/types/agent-deployment";
 import { cn } from "@/lib/utils";
 
 /** Chat message that can optionally carry a rich artifact card (e.g. a built funnel). */
@@ -53,18 +58,6 @@ type SetupAssistantProps = {
   focused?: boolean;
   integrationProps?: MissionControlIntegrationProps;
 };
-
-/** Maps dashboard hrefs to inline Mission Control panels (never leave /dashboard). */
-function hrefToPanel(href: string): SetupPanelKind | null {
-  if (href.includes("/integrations")) return "integrations";
-  if (href.includes("/campaign-ops")) return "campaign";
-  if (href.includes("/funnel")) return "landing";
-  if (href.includes("/agents")) return "agents";
-  if (href.includes("/settings")) return "profile";
-  if (href.includes("/organization")) return "team";
-  if (href.includes("/automations")) return "funnel";
-  return null;
-}
 
 /** Scope persisted chat per workspace so it survives navigation but not account switches. */
 function storageKeyFor(businessName?: string): string {
@@ -127,7 +120,6 @@ export function SetupAssistant({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const deployment = useAgentDeploymentOptional();
 
   const total = items.length;
   const done = items.filter((i) => i.done).length;
@@ -196,19 +188,51 @@ export function SetupAssistant({
     }
   }, [funnel, storageKey]);
 
+  // Sync inline panel from URL (?panel=integrations) — shareable and survives refresh.
+  useEffect(() => {
+    const fromUrl = parsePanelFromSearchParams(searchParams);
+    if (fromUrl) setActivePanel(fromUrl);
+  }, [searchParams]);
+
   // After OAuth (Google/Meta), land back on Mission Control with integrations panel open.
   useEffect(() => {
     const connected = searchParams.get("connected");
     const focus = searchParams.get("focus");
     if (connected || focus === "zernio") {
-      setActivePanel("integrations");
-      router.replace("/dashboard", { scroll: false });
+      router.replace(dashboardPanelHref("integrations"), { scroll: false });
     }
   }, [searchParams, router]);
 
+  // Floating operator deploy actions on /dashboard route here instead of opening other pages.
+  useEffect(() => {
+    function onInlineDeploy(e: Event) {
+      const deploy = (e as CustomEvent<DeploymentLaunchParams>).detail;
+      if (!deploy) return;
+      if (deploy.goal === "launch_ads") void startFunnel("campaign");
+      else if (deploy.goal === "follow_up_leads") void startFunnel("follow_up");
+      else if (deploy.goal === "generate_leads" || deploy.stack === "lead_engine") void startFunnel();
+      else openPanel("funnel");
+    }
+    window.addEventListener("mc:inline-deploy", onInlineDeploy);
+    return () => window.removeEventListener("mc:inline-deploy", onInlineDeploy);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function openPanel(panel: SetupPanelKind) {
     setActivePanel(panel);
+    router.replace(dashboardPanelHref(panel), { scroll: false });
     scrollToBottom();
+  }
+
+  function closePanel() {
+    setActivePanel(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("panel");
+    params.delete("connected");
+    params.delete("focus");
+    params.delete("error");
+    const q = params.toString();
+    router.replace(q ? `/dashboard?${q}` : "/dashboard", { scroll: false });
   }
 
   function captureArtifact(artifact?: SetupArtifact) {
@@ -275,10 +299,16 @@ export function SetupAssistant({
     }
   }
 
+  function handleInlineDeploy(deploy: DeploymentLaunchParams) {
+    if (deploy.goal === "launch_ads") void startFunnel("campaign");
+    else if (deploy.goal === "follow_up_leads") void startFunnel("follow_up");
+    else if (deploy.goal === "generate_leads" || deploy.stack === "lead_engine") void startFunnel();
+    else openPanel("funnel");
+  }
+
   function handleAction(action: OperatorAction) {
     if (action.kind === "deploy" && action.deploy) {
-      if (deployment) deployment.openDeployment(action.deploy);
-      else openPanel("agents");
+      handleInlineDeploy(action.deploy);
       return;
     }
 
@@ -290,15 +320,23 @@ export function SetupAssistant({
           : undefined;
 
     if (href) {
-      const panel = hrefToPanel(href);
+      if (href.includes("panel=")) {
+        router.replace(href, { scroll: false });
+        return;
+      }
+      const panel = hrefToPanelKind(href);
       if (panel) {
         openPanel(panel);
         return;
       }
       if (href.startsWith("http") || href.startsWith("/p/")) {
         window.open(href, "_blank", "noopener,noreferrer");
+        return;
       }
-      return;
+      if (href === "/dashboard" || href.startsWith("/dashboard?")) {
+        router.replace(href, { scroll: false });
+        return;
+      }
     }
 
     if (action.kind === "navigate" || action.kind === "open_diagnostics") {
@@ -321,7 +359,7 @@ export function SetupAssistant({
       return;
     }
     if (result.status === "manual") {
-      const panel = hrefToPanel(result.href);
+      const panel = hrefToPanelKind(result.href);
       if (panel) {
         openPanel(panel);
         setMessages((m) => [
@@ -413,7 +451,7 @@ export function SetupAssistant({
       }
       if (result.status === "manual") {
         patchStep(step.id, { status: "suggested" });
-        const panel = hrefToPanel(result.href);
+        const panel = hrefToPanelKind(result.href);
         if (panel) openPanel(panel);
         pushAssistant(`${result.title} — ${result.detail}`);
         return false;
@@ -506,7 +544,7 @@ export function SetupAssistant({
       // set up inline without leaving Mission Control.
       for (const key of keys) {
         const result = await runSetupStepAction(key);
-        setMessages((m) => [...m, resultToMessage(result)]);
+        applySetupResult(result);
         scrollToBottom();
       }
       router.refresh();
@@ -729,7 +767,7 @@ export function SetupAssistant({
 
               <MissionControlInlineWorkspace
                 panel={activePanel}
-                onClose={() => setActivePanel(null)}
+                onClose={closePanel}
                 integrationProps={integrationProps}
                 landingPreviewUrl={landingPreviewUrl}
               />

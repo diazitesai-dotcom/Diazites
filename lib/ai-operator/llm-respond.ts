@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { env } from "@/lib/env";
 import { processOperatorMessage } from "@/lib/ai-operator/respond";
+import { inlineNavHref, isMissionControlPath } from "@/lib/mission-control/inline-panels";
 import {
   callJsonResponses,
   ENGINE_DEFAULT_MODEL,
@@ -159,6 +160,7 @@ export function normalizeDashboardHref(href: string): string {
 
 function mapActions(
   raw: z.infer<typeof operatorReplySchema>["actions"],
+  pagePath?: string,
 ): OperatorAction[] | undefined {
   if (!raw?.length) return undefined;
   return raw.map((a, i) => {
@@ -170,7 +172,14 @@ function mapActions(
     } as OperatorAction;
 
     if ((a.kind === "navigate" || a.kind === "open_diagnostics" || a.kind === "approve") && a.href) {
-      return { ...base, href: normalizeDashboardHref(a.href) };
+      const normalized = normalizeDashboardHref(a.href);
+      const href =
+        pagePath && isMissionControlPath(pagePath) ? inlineNavHref(normalized, pagePath) : normalized;
+      const label =
+        pagePath && isMissionControlPath(pagePath) && href.includes("panel=") && /take me|open/i.test(a.label)
+          ? "Set up here"
+          : a.label;
+      return { ...base, label, href };
     }
     if (a.kind === "deploy") {
       const goal = normalizeDeploymentGoalId(a.deployGoal);
@@ -369,7 +378,10 @@ Return JSON with:
 
   const data = parsed.data;
   const ruleBased = processOperatorMessage(userMessage, platformCtx);
-  const mergedActions = mergeActions(mapActions(data.actions), ruleBased.actions);
+  const mergedActions = mergeActions(
+    mapActions(data.actions, platformCtx.pagePath),
+    ruleBased.actions,
+  );
 
   return {
     id: `a-llm-${Date.now()}`,
