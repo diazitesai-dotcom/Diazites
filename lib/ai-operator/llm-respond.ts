@@ -351,6 +351,7 @@ Return JSON with:
 - breadcrumb: optional UI breadcrumb
 - actions: optional array of { kind, label, href?, deployGoal?, deployPreset?, requiresApproval? }
   - navigate: href MUST be one of these exact routes (do not invent others): /dashboard, /dashboard/engine, /dashboard/campaign-ops, /dashboard/leads, /dashboard/funnel (landing pages live here), /dashboard/agents, /dashboard/optimization, /dashboard/integrations, /dashboard/automations, /dashboard/workflows, /dashboard/email-campaigns, /dashboard/approvals, /dashboard/reports, /dashboard/organization, /dashboard/business
+  - For setup (integrations, campaigns, landing pages, funnel): prefer /dashboard — Mission Control opens those tools inline without sending the user to another page
   - deploy: deployGoal e.g. generate_leads, launch_ads, follow_up_leads; deployPreset optional retargeting
 - logLine: optional short log for operator console`,
     schema: operatorReplySchema,

@@ -11,7 +11,7 @@ import {
   Workflow,
 } from "lucide-react";
 
-import type { SetupArtifact } from "@/actions/mission-control-setup.actions";
+import type { SetupArtifact, SetupPanelKind } from "@/actions/mission-control-setup.actions";
 import { cn } from "@/lib/utils";
 
 const THEME_DOT: Record<string, string> = {
@@ -56,20 +56,44 @@ function CardShell({
   );
 }
 
-function PreviewLink({ href, label, external }: { href: string; label: string; external?: boolean }) {
+function PreviewLink({
+  href,
+  label,
+  external,
+  onClick,
+}: {
+  href?: string;
+  label: string;
+  external?: boolean;
+  onClick?: () => void;
+}) {
+  const className =
+    "inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-violet-100";
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        {label}
+        <ArrowUpRight className="size-3" />
+      </button>
+    );
+  }
+
   return (
-    <Link
-      href={href}
-      target={external ? "_blank" : undefined}
-      className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-violet-100"
-    >
+    <Link href={href!} target={external ? "_blank" : undefined} className={className}>
       {label}
       {external ? <ExternalLink className="size-3" /> : <ArrowUpRight className="size-3" />}
     </Link>
   );
 }
 
-export function SetupArtifactCard({ artifact }: { artifact: SetupArtifact }) {
+export function SetupArtifactCard({
+  artifact,
+  onOpenPanel,
+}: {
+  artifact: SetupArtifact;
+  onOpenPanel?: (panel: SetupPanelKind) => void;
+}) {
   if (artifact.type === "landing_page") {
     return (
       <CardShell accent="violet">
@@ -87,7 +111,7 @@ export function SetupArtifactCard({ artifact }: { artifact: SetupArtifact }) {
         <p className="mt-0.5 truncate text-[11px] text-muted-foreground">diazites.com{artifact.url}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <PreviewLink href={artifact.url} label="View live page" external />
-          <PreviewLink href="/dashboard/funnel?setup=1" label="Edit in Funnel" />
+          <PreviewLink label="Preview here" onClick={() => onOpenPanel?.("landing")} />
         </div>
       </CardShell>
     );
@@ -111,7 +135,7 @@ export function SetupArtifactCard({ artifact }: { artifact: SetupArtifact }) {
           <Metric label="Targeting" value={artifact.location} />
         </div>
         <div className="mt-3">
-          <PreviewLink href="/dashboard/campaign-ops?setup=1" label="Open Campaign Manager" />
+          <PreviewLink label="Manage campaign" onClick={() => onOpenPanel?.("campaign")} />
         </div>
       </CardShell>
     );
@@ -176,7 +200,7 @@ export function SetupArtifactCard({ artifact }: { artifact: SetupArtifact }) {
             icon={<Megaphone className="size-3.5 text-cyan-200" />}
             title="Ad campaign"
             subtitle={`${artifact.campaign.platform} · $${artifact.campaign.budget}/day`}
-            href="/dashboard/campaign-ops?setup=1"
+            onPanel={() => onOpenPanel?.("campaign")}
           />
         ) : null}
       </div>
@@ -199,12 +223,14 @@ function FunnelRow({
   subtitle,
   href,
   external,
+  onPanel,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   href?: string;
   external?: boolean;
+  onPanel?: () => void;
 }) {
   const body = (
     <div className="flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-2 transition-colors hover:border-white/20">
@@ -219,6 +245,13 @@ function FunnelRow({
     </div>
   );
 
+  if (onPanel) {
+    return (
+      <button type="button" onClick={onPanel} className="block w-full text-left">
+        {body}
+      </button>
+    );
+  }
   if (!href) return body;
   return (
     <Link href={href} target={external ? "_blank" : undefined} className="block">

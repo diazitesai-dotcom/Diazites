@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -21,6 +21,7 @@ import {
   runSetupStepAction,
   type FunnelStepKind,
   type SetupArtifact,
+  type SetupPanelKind,
   type SetupStepResult,
 } from "@/actions/mission-control-setup.actions";
 import { sendOperatorMessageAction } from "@/actions/operator.actions";
@@ -31,6 +32,10 @@ import {
   FunnelPreview,
   type LiveFunnelStep,
 } from "@/components/dashboard/mission-control/funnel-preview";
+import {
+  MissionControlInlineWorkspace,
+  type MissionControlIntegrationProps,
+} from "@/components/dashboard/mission-control/mission-control-inline-workspace";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { OnboardingChecklistKey, PostSetupChecklistItem } from "@/lib/onboarding/draft";
@@ -46,15 +51,19 @@ type SetupAssistantProps = {
   businessName?: string;
   /** Focused Mission Control mode — larger, always open, no hide control. */
   focused?: boolean;
+  integrationProps?: MissionControlIntegrationProps;
 };
 
-/** Adds a marker so sub-pages can offer a "back to setup" return path. */
-function withSetupReturn(href: string): string {
-  if (!href.startsWith("/")) return href;
-  const [path, query] = href.split("?");
-  const params = new URLSearchParams(query ?? "");
-  params.set("setup", "1");
-  return `${path}?${params.toString()}`;
+/** Maps dashboard hrefs to inline Mission Control panels (never leave /dashboard). */
+function hrefToPanel(href: string): SetupPanelKind | null {
+  if (href.includes("/integrations")) return "integrations";
+  if (href.includes("/campaign-ops")) return "campaign";
+  if (href.includes("/funnel")) return "landing";
+  if (href.includes("/agents")) return "agents";
+  if (href.includes("/settings")) return "profile";
+  if (href.includes("/organization")) return "team";
+  if (href.includes("/automations")) return "funnel";
+  return null;
 }
 
 /** Scope persisted chat per workspace so it survives navigation but not account switches. */
@@ -99,9 +108,25 @@ const CHECKLIST_TO_FUNNEL: Partial<Record<OnboardingChecklistKey, FunnelStepKind
   ai_active: "follow_up",
 };
 
-export function SetupAssistant({ items, businessName, focused = false }: SetupAssistantProps) {
+const CHECKLIST_TO_PANEL: Partial<Record<OnboardingChecklistKey, SetupPanelKind>> = {
+  integrations_connected: "integrations",
+  landing_page_ready: "landing",
+  campaign_built: "campaign",
+  agents_assigned: "agents",
+  ai_active: "funnel",
+  team_invited: "team",
+  profile_complete: "profile",
+};
+
+export function SetupAssistant({
+  items,
+  businessName,
+  focused = false,
+  integrationProps,
+}: SetupAssistantProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const deployment = useAgentDeploymentOptional();
 
   const total = items.length;
@@ -126,6 +151,8 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
   const [pending, setPending] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
   const [funnel, setFunnel] = useState<LiveFunnelStep[] | null>(null);
+  const [activePanel, setActivePanel] = useState<SetupPanelKind | null>(null);
+  const [landingPreviewUrl, setLandingPreviewUrl] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(0);
   // Only persist once we've attempted to restore, so we never clobber saved chat.
@@ -169,6 +196,30 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
     }
   }, [funnel, storageKey]);
 
+  // After OAuth (Google/Meta), land back on Mission Control with integrations panel open.
+  useEffect(() => {
+    const connected = searchParams.get("connected");
+    const focus = searchParams.get("focus");
+    if (connected || focus === "zernio") {
+      setActivePanel("integrations");
+      router.replace("/dashboard", { scroll: false });
+    }
+  }, [searchParams, router]);
+
+  function openPanel(panel: SetupPanelKind) {
+    setActivePanel(panel);
+    scrollToBottom();
+  }
+
+  function captureArtifact(artifact?: SetupArtifact) {
+    if (artifact?.type === "landing_page") {
+      setLandingPreviewUrl(artifact.url);
+    }
+    if (artifact?.type === "funnel" && artifact.landingPage?.url) {
+      setLandingPreviewUrl(artifact.landingPage.url);
+    }
+  }
+
   function nextId(prefix: string) {
     idRef.current += 1;
     return `${prefix}-${idRef.current}`;
@@ -177,6 +228,7 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
   function clearConversation() {
     setMessages([welcomeMessage]);
     setFunnel(null);
+    setActivePanel(null);
     idRef.current = 0;
     if (typeof window !== "undefined") {
       try {
@@ -224,36 +276,71 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
   }
 
   function handleAction(action: OperatorAction) {
-    if ((action.kind === "navigate" || action.kind === "open_diagnostics" || action.kind === "approve") && action.href) {
-      router.push(withSetupReturn(action.href));
-      return;
-    }
-    if (action.kind === "navigate" && !action.href) {
-      router.push(withSetupReturn("/dashboard/integrations"));
-      return;
-    }
     if (action.kind === "deploy" && action.deploy) {
       if (deployment) deployment.openDeployment(action.deploy);
-      else router.push(withSetupReturn("/dashboard/agents"));
+      else openPanel("agents");
       return;
     }
-    if (action.kind === "open_diagnostics") {
-      router.push(withSetupReturn("/dashboard/integrations"));
+
+    const href =
+      action.kind === "open_diagnostics"
+        ? (action.href ?? "/dashboard/integrations")
+        : action.kind === "navigate" || action.kind === "approve"
+          ? action.href
+          : undefined;
+
+    if (href) {
+      const panel = hrefToPanel(href);
+      if (panel) {
+        openPanel(panel);
+        return;
+      }
+      if (href.startsWith("http") || href.startsWith("/p/")) {
+        window.open(href, "_blank", "noopener,noreferrer");
+      }
+      return;
+    }
+
+    if (action.kind === "navigate" || action.kind === "open_diagnostics") {
+      openPanel("integrations");
     }
   }
 
-  function resultToMessage(result: SetupStepResult): ChatMessage {
-    if (result.status === "manual") {
-      return {
-        id: nextId("a"),
-        role: "assistant",
-        mode: "operator",
-        content: `${result.title} — ${result.detail}`,
-        actions: [
-          { id: nextId("act"), label: "Open the page", kind: "navigate", href: result.href },
-        ],
-      };
+  function applySetupResult(result: SetupStepResult) {
+    if (result.status === "panel") {
+      openPanel(result.panel);
+      setMessages((m) => [
+        ...m,
+        {
+          id: nextId("a"),
+          role: "assistant",
+          mode: "operator",
+          content: `${result.title} — ${result.detail}`,
+        } as ChatMessage,
+      ]);
+      return;
     }
+    if (result.status === "manual") {
+      const panel = hrefToPanel(result.href);
+      if (panel) {
+        openPanel(panel);
+        setMessages((m) => [
+          ...m,
+          {
+            id: nextId("a"),
+            role: "assistant",
+            mode: "operator",
+            content: `${result.title} — ${result.detail}`,
+          } as ChatMessage,
+        ]);
+        return;
+      }
+    }
+    if (result.status === "done") captureArtifact(result.artifact);
+    setMessages((m) => [...m, resultToMessage(result)]);
+  }
+
+  function resultToMessage(result: SetupStepResult): ChatMessage {
     return {
       id: nextId("a"),
       role: "assistant",
@@ -313,14 +400,22 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
         platform: step.platform,
       });
       if (result.status === "done") {
+        captureArtifact(result.artifact);
         patchStep(step.id, { status: "ready", artifact: result.artifact });
         router.refresh();
         return true;
       }
+      if (result.status === "panel") {
+        patchStep(step.id, { status: "suggested" });
+        openPanel(result.panel);
+        pushAssistant(`${result.title} — ${result.detail}`);
+        return false;
+      }
       if (result.status === "manual") {
         patchStep(step.id, { status: "suggested" });
+        const panel = hrefToPanel(result.href);
+        if (panel) openPanel(panel);
         pushAssistant(`${result.title} — ${result.detail}`);
-        router.push(withSetupReturn(result.href));
         return false;
       }
       patchStep(step.id, { status: "error", error: result.detail });
@@ -376,12 +471,8 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
 
     try {
       const result = await runSetupStepAction(key);
-      setMessages((m) => [...m, resultToMessage(result)]);
-      if (result.status === "manual") {
-        router.push(withSetupReturn(result.href));
-      } else {
-        router.refresh();
-      }
+      applySetupResult(result);
+      if (result.status === "done") router.refresh();
     } catch {
       setMessages((m) => [
         ...m,
@@ -548,6 +639,7 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
                   </Button>
                   {remaining.map((item) => {
                     const seedKind = CHECKLIST_TO_FUNNEL[item.key];
+                    const panelKind = CHECKLIST_TO_PANEL[item.key];
                     return (
                       <Button
                         key={item.key}
@@ -556,11 +648,21 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
                         size="sm"
                         className="h-8 rounded-lg border-white/10 text-xs"
                         disabled={pending}
-                        onClick={() =>
-                          seedKind
-                            ? startFunnel(seedKind, item.label.toLowerCase())
-                            : runStep(item.key, item.label)
-                        }
+                        onClick={() => {
+                          if (item.key === "integrations_connected" && panelKind) {
+                            void runStep(item.key, item.label);
+                            return;
+                          }
+                          if (seedKind) {
+                            void startFunnel(seedKind, item.label.toLowerCase());
+                            return;
+                          }
+                          if (panelKind) {
+                            openPanel(panelKind);
+                            return;
+                          }
+                          void runStep(item.key, item.label);
+                        }}
                       >
                         <Circle className="mr-1 size-3 text-muted-foreground" />
                         {SETUP_STEP_PROMPTS[item.key]?.cta ?? item.label}
@@ -592,7 +694,9 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
                   ) : (
                     <div key={m.id} className="space-y-2">
                       <OperatorMessageBubble message={m} onAction={handleAction} />
-                      {m.artifact ? <SetupArtifactCard artifact={m.artifact} /> : null}
+                      {m.artifact ? (
+                        <SetupArtifactCard artifact={m.artifact} onOpenPanel={openPanel} />
+                      ) : null}
                     </div>
                   ),
                 )}
@@ -619,8 +723,16 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
                   onLaunchAll={launchAllSteps}
                   onDiscard={discardStep}
                   onEdit={patchStep}
+                  onOpenPanel={openPanel}
                 />
               ) : null}
+
+              <MissionControlInlineWorkspace
+                panel={activePanel}
+                onClose={() => setActivePanel(null)}
+                integrationProps={integrationProps}
+                landingPreviewUrl={landingPreviewUrl}
+              />
 
               <form
                 className="flex gap-2"
@@ -650,17 +762,21 @@ export function SetupAssistant({ items, businessName, focused = false }: SetupAs
 
               {!allDone ? (
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {remaining.map((item) => (
-                    <button
-                      key={`open-${item.key}`}
-                      type="button"
-                      onClick={() => router.push(withSetupReturn(item.href))}
-                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-violet-200"
-                    >
-                      Open {item.label.toLowerCase()}
-                      <ChevronRight className="size-3" />
-                    </button>
-                  ))}
+                  {remaining.map((item) => {
+                    const panelKind = CHECKLIST_TO_PANEL[item.key];
+                    if (!panelKind) return null;
+                    return (
+                      <button
+                        key={`panel-${item.key}`}
+                        type="button"
+                        onClick={() => openPanel(panelKind)}
+                        className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-violet-200"
+                      >
+                        Set up {item.label.toLowerCase()} here
+                        <ChevronRight className="size-3" />
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-xs text-emerald-300">

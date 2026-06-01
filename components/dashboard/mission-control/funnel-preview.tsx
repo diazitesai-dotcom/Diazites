@@ -20,6 +20,7 @@ import type {
   FunnelStepKind,
   FunnelStepPlan,
   SetupArtifact,
+  SetupPanelKind,
 } from "@/actions/mission-control-setup.actions";
 import { SetupArtifactCard } from "@/components/dashboard/mission-control/setup-artifact-card";
 import { cn } from "@/lib/utils";
@@ -76,6 +77,7 @@ type FunnelPreviewProps = {
   onLaunchAll: () => void;
   onDiscard: (id: string) => void;
   onEdit: (id: string, patch: Partial<LiveFunnelStep>) => void;
+  onOpenPanel?: (panel: SetupPanelKind) => void;
 };
 
 export function FunnelPreview({
@@ -86,6 +88,7 @@ export function FunnelPreview({
   onLaunchAll,
   onDiscard,
   onEdit,
+  onOpenPanel,
 }: FunnelPreviewProps) {
   if (steps.length === 0) return null;
 
@@ -326,7 +329,7 @@ function FunnelNode({
                     animate={{ opacity: 1, height: "auto" }}
                     className="mt-2.5"
                   >
-                    <SetupArtifactCard artifact={step.artifact} />
+                    <SetupArtifactCard artifact={step.artifact} onOpenPanel={onOpenPanel} />
                   </motion.div>
                 ) : null}
               </AnimatePresence>

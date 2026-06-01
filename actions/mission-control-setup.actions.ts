@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { requireAuth } from "@/lib/auth/session";
 import { isAdAccountRowConnected } from "@/lib/integrations/ad-account-connection";
+import {
+  businessHasConnectedIntegration,
+  markIntegrationsConnectedForUser,
+} from "@/lib/integrations/integration-connection-status";
 import { listBusinessAdConnections } from "@/lib/integrations/business-ad-connections";
 import type { OnboardingChecklistKey } from "@/lib/onboarding/draft";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -74,30 +78,41 @@ export type FunnelPlanResult =
   | { ok: true; businessName: string; steps: FunnelStepPlan[] }
   | { ok: false; error: string };
 
+/** Inline workspace panels — everything stays on Mission Control. */
+export type SetupPanelKind =
+  | "integrations"
+  | "campaign"
+  | "landing"
+  | "funnel"
+  | "profile"
+  | "team"
+  | "agents";
+
 /**
  * Result of running a setup step from the Mission Control assistant.
  * - `done`   → completed inline, no navigation needed (may include an artifact).
  * - `error`  → something failed; show the message.
- * - `manual` → can't be automated; the assistant should route the user (carrying `href`).
+ * - `panel`  → open an inline workspace panel on Mission Control (no page leave).
+ * - `manual` → legacy fallback; UI maps href → panel when possible.
  */
 export type SetupStepResult =
   | { status: "done"; title: string; detail: string; artifact?: SetupArtifact }
   | { status: "error"; title: string; detail: string }
+  | { status: "panel"; panel: SetupPanelKind; title: string; detail: string }
   | { status: "manual"; title: string; detail: string; href: string };
 
-const MANUAL_STEP_HREFS: Partial<Record<OnboardingChecklistKey, { href: string; detail: string }>> = {
+const PANEL_STEP_HINTS: Partial<Record<OnboardingChecklistKey, { panel: SetupPanelKind; detail: string }>> = {
   profile_complete: {
-    href: "/dashboard/settings",
-    detail: "Finish your business profile so I can tailor everything to you.",
+    panel: "profile",
+    detail: "Update your business profile right here so I can tailor campaigns and pages.",
   },
   integrations_connected: {
-    href: "/dashboard/integrations",
-    detail:
-      "Connecting an ad or CRM platform (like Zernio) needs your login, so I'll open the Integrations page for you. Come back here when you're done.",
+    panel: "integrations",
+    detail: "Connect Zernio, Google Ads, or Meta below — you won't leave Mission Control.",
   },
   team_invited: {
-    href: "/dashboard/organization",
-    detail: "Invite teammates and assign seats from your Organization page.",
+    panel: "team",
+    detail: "Invite teammates and assign seats without leaving this page.",
   },
 };
 
@@ -222,9 +237,31 @@ async function buildAgents(
 export async function runSetupStepAction(
   stepKey: OnboardingChecklistKey,
 ): Promise<SetupStepResult> {
-  const manual = MANUAL_STEP_HREFS[stepKey];
-  if (manual) {
-    return { status: "manual", title: "Needs a quick action from you", detail: manual.detail, href: manual.href };
+  const panelHint = PANEL_STEP_HINTS[stepKey];
+  if (panelHint) {
+    const resolved = await resolveBusinessCtx();
+    if ("error" in resolved) return resolved.error;
+    const ctx = resolved;
+
+    if (stepKey === "integrations_connected") {
+      const hasIntegration = await businessHasConnectedIntegration(ctx.supabase, ctx.businessId);
+      if (hasIntegration) {
+        await markIntegrationsConnectedForUser(ctx.supabase, ctx.userId);
+        revalidateSetup();
+        return {
+          status: "done",
+          title: "Integrations connected",
+          detail: "Your ad and CRM platforms are linked. I can run campaigns and sync leads.",
+        };
+      }
+    }
+
+    return {
+      status: "panel",
+      panel: panelHint.panel,
+      title: "Set this up here",
+      detail: panelHint.detail,
+    };
   }
 
   const resolved = await resolveBusinessCtx();
@@ -284,10 +321,10 @@ export async function runSetupStepAction(
 
       default:
         return {
-          status: "manual",
-          title: "Open this step",
-          detail: "Let's set this up together.",
-          href: "/dashboard",
+          status: "panel",
+          panel: "funnel",
+          title: "Build your funnel",
+          detail: "Use the funnel builder below to create and launch your growth stack.",
         };
     }
   } catch (err) {

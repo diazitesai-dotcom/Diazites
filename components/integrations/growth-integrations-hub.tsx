@@ -45,12 +45,20 @@ export function GrowthIntegrationsHub({
   linkedAccounts = {},
   oauthConfigured = { meta: false, google: false },
   starterOnly = true,
+  embedded = false,
+  returnPath = "/dashboard/integrations",
+  onConnectionChange,
 }: {
   connectedIds: string[];
   linkedAccounts?: Record<string, LinkedAdAccount>;
   oauthConfigured?: { meta: boolean; google: boolean };
   /** When true, only Meta and Google Ads are shown (default for new users). */
   starterOnly?: boolean;
+  /** Compact layout embedded inside Mission Control — no page navigation. */
+  embedded?: boolean;
+  /** OAuth return path after connecting Google/Meta. */
+  returnPath?: string;
+  onConnectionChange?: () => void;
 }) {
   const searchParams = useSearchParams();
   const [banner, setBanner] = useState<string | null>(null);
@@ -107,7 +115,7 @@ export function GrowthIntegrationsHub({
     if (OAUTH_INTEGRATION_IDS.has(integration.id) && !linked && oauthReady && platform) {
       const params = new URLSearchParams({
         platform,
-        returnTo: "/dashboard/integrations",
+        returnTo: returnPath,
       });
       window.location.href = `/api/ads/oauth/start?${params.toString()}`;
       return;
@@ -132,31 +140,43 @@ export function GrowthIntegrationsHub({
   });
 
   return (
-    <motion.div className="mx-auto max-w-7xl space-y-8 pb-24">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-300/90">
-            Integrations Hub
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight">External systems & credentials</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            {starterOnly
-              ? "Connect Meta, Google Ads, and Zernio to run and manage campaigns across social and ad platforms. Additional integrations unlock as your plan grows."
-              : "Connect ad platforms, CRM, analytics, tracking, ecommerce, and comms — agents monitor, recommend, and execute within your guardrails."}
-          </p>
+    <motion.div className={cn("mx-auto space-y-6", embedded ? "max-w-none px-4 pb-6 pt-2" : "max-w-7xl space-y-8 pb-24")}>
+      {!embedded ? (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-300/90">
+              Integrations Hub
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight">External systems & credentials</h1>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+              {starterOnly
+                ? "Connect Meta, Google Ads, and Zernio to run and manage campaigns across social and ad platforms. Additional integrations unlock as your plan grows."
+                : "Connect ad platforms, CRM, analytics, tracking, ecommerce, and comms — agents monitor, recommend, and execute within your guardrails."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" className="rounded-xl border-white/10" onClick={() => setShowPermissions((v) => !v)}>
+              <Shield className="mr-1.5 size-4" />
+              Agent permissions
+            </Button>
+            <Link href="/dashboard" className={cn(buttonVariants({ variant: "outline" }), "rounded-xl border-white/10")}>
+              Mission Control
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" className="rounded-xl border-white/10" onClick={() => setShowPermissions((v) => !v)}>
-            <Shield className="mr-1.5 size-4" />
-            Agent permissions
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">
+            Connect Zernio for multi-platform ads, or link Google Ads / Meta directly.
+          </p>
+          <Button type="button" variant="outline" size="sm" className="h-8 rounded-lg border-white/10 text-xs" onClick={() => setShowPermissions((v) => !v)}>
+            <Shield className="mr-1 size-3.5" />
+            Permissions
           </Button>
-          <Link href="/dashboard" className={cn(buttonVariants({ variant: "outline" }), "rounded-xl border-white/10")}>
-            Mission Control
-          </Link>
         </div>
-      </div>
+      )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={cn("grid gap-4", embedded ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-4")}>
         <GlassCard title="Connected" contentClassName="pt-0">
           <p className="text-3xl font-bold tabular-nums text-emerald-300">{connectedCount}</p>
           <p className="text-xs text-muted-foreground">of {integrations.length} platforms</p>
@@ -274,29 +294,34 @@ export function GrowthIntegrationsHub({
         </motion.div>
       ) : null}
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <GlassCard
-          title="Agent capability matrix"
-          description="What specialist agents can do per platform type"
-          headerExtra={<Sparkles className="size-4 text-violet-300" />}
-        >
-          <ul className="space-y-3">
-            {AGENT_CAPABILITY_GROUPS.map((g) => (
-              <li key={g.agentType} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-                <p className="text-sm font-medium">{g.label}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">{g.capabilities.slice(0, 4).join(" · ")}…</p>
-              </li>
-            ))}
-          </ul>
-        </GlassCard>
-        <CredentialVaultPanel />
-      </section>
+      {!embedded ? (
+        <section className="grid gap-6 lg:grid-cols-2">
+          <GlassCard
+            title="Agent capability matrix"
+            description="What specialist agents can do per platform type"
+            headerExtra={<Sparkles className="size-4 text-violet-300" />}
+          >
+            <ul className="space-y-3">
+              {AGENT_CAPABILITY_GROUPS.map((g) => (
+                <li key={g.agentType} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                  <p className="text-sm font-medium">{g.label}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{g.capabilities.slice(0, 4).join(" · ")}…</p>
+                </li>
+              ))}
+            </ul>
+          </GlassCard>
+          <CredentialVaultPanel />
+        </section>
+      ) : null}
 
       <IntegrationDetailDrawer
         integration={selected}
         linkedAccount={selected ? linkedAccounts[selected.id] ?? null : null}
         oauthConfigured={oauthConfigured}
-        onClose={() => setSelected(null)}
+        onClose={() => {
+          setSelected(null);
+          onConnectionChange?.();
+        }}
       />
 
       <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-center text-xs text-muted-foreground">
