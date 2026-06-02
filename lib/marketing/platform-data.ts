@@ -75,6 +75,11 @@ export const ONBOARDING_AI_AGENTS = [
     description: "Trigger stage-based automations in your CRM.",
   },
   {
+    key: "workflow",
+    label: "Workflow Agent",
+    description: "Build and run automations across CRM, tasks, and campaigns.",
+  },
+  {
     key: "merchant",
     label: "Merchant Services",
     description: "Collect payments, invoices, and subscriptions via Stripe.",

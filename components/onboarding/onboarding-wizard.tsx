@@ -30,12 +30,12 @@ import {
   type OnboardingAccountIntent,
   type OnboardingDraft,
 } from "@/lib/onboarding/draft";
-import {
-  completeOnboardingFromDraftAction,
-  saveOnboardingDraftAction,
-} from "@/services/onboarding/actions";
+import { saveOnboardingDraftAction } from "@/services/onboarding/actions";
+import { LaunchBuilderReview } from "@/components/onboarding/launch-builder-review";
 import { OnboardingAiAutofill } from "@/components/onboarding/onboarding-ai-autofill";
 import { PostSetupChecklist } from "@/components/onboarding/post-setup-checklist";
+import type { LaunchPlan } from "@/lib/launch-builder/types";
+import { generateLaunchPlanAction } from "@/services/onboarding/launch-builder.actions";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
@@ -99,11 +99,12 @@ const WORKSPACE_TYPES: Array<{
 ];
 
 const GENERATE_PHASES = [
-  "Provisioning workspace…",
-  "Deploying CRM pipeline…",
-  "Configuring AI agents…",
-  "Setting entitlements…",
-  "Building your AI business command center…",
+  "Analyzing your niche…",
+  "Generating landing page…",
+  "Building ad campaign & creatives…",
+  "Creating workflows & pipeline…",
+  "Preparing nurture automations…",
+  "Finalizing your launch system…",
 ];
 
 export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDraft }) {
@@ -116,6 +117,8 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
   const [generatePhase, setGeneratePhase] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [setupComplete, setSetupComplete] = useState<string | null>(null);
+  const [launchPlan, setLaunchPlan] = useState<LaunchPlan | null>(null);
+  const [launchReviewMode, setLaunchReviewMode] = useState(false);
 
   const launchChecklist = useMemo(() => buildLaunchChecklistFromDraft(draft), [draft]);
 
@@ -178,31 +181,33 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
     setError(null);
     setGenerating(true);
     setGeneratePhase(0);
+    setLaunchReviewMode(false);
 
     const phaseTimer = window.setInterval(() => {
       setGeneratePhase((p) => Math.min(p + 1, GENERATE_PHASES.length - 1));
-    }, 900);
+    }, 700);
 
     startTransition(async () => {
       try {
-        await new Promise((r) => setTimeout(r, 3200));
-        const result = await completeOnboardingFromDraftAction({
+        await new Promise((r) => setTimeout(r, 2800));
+        const result = await generateLaunchPlanAction({
           ...draft,
           wizardStep: step,
           leadNotifyEmail: draft.leadNotifyEmail || draft.email,
         });
         window.clearInterval(phaseTimer);
-        if (!result.success) {
+        if (!result.success || !result.plan) {
           setGenerating(false);
-          setError(result.error ?? "Could not complete setup.");
+          setError("Could not generate launch system.");
           return;
         }
+        setLaunchPlan(result.plan);
+        setLaunchReviewMode(true);
         setGenerating(false);
-        setSetupComplete(result.redirectTo);
       } catch (err) {
         window.clearInterval(phaseTimer);
         setGenerating(false);
-        setError(err instanceof Error ? err.message : "Setup failed.");
+        setError(err instanceof Error ? err.message : "Generation failed.");
       }
     });
   }
@@ -228,6 +233,19 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
   }
 
   const StepIcon = STEPS[step]?.icon ?? Building2;
+
+  if (launchReviewMode && launchPlan) {
+    return (
+      <LaunchBuilderReview
+        draft={draft}
+        initialPlan={launchPlan}
+        onBack={() => {
+          setLaunchReviewMode(false);
+          setLaunchPlan(null);
+        }}
+      />
+    );
+  }
 
   if (setupComplete) {
     return (
@@ -449,8 +467,9 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
               ) : (
                 <>
                   <p className="text-muted-foreground">
-                    We&apos;ll provision your workspace, CRM pipeline, selected AI agents, and
-                    Mission Control dashboard.
+                    Diazites AI Launch Builder will generate your landing page, ads, creatives,
+                    workflows, pipeline, and nurture sequence — tailored to your niche. You can
+                    preview and edit every step before launch.
                   </p>
                   <ul className="mx-auto max-w-md space-y-2 text-left text-sm">
                     <li className="flex items-center gap-2">
@@ -515,7 +534,7 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
             ) : (
               <>
                 <Sparkles className="size-4" />
-                Generate workspace
+                Generate launch system
               </>
             )}
           </Button>

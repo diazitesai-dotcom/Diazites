@@ -10,6 +10,7 @@ import { createWorkflowRepository } from "@/repositories/workflow.repository";
 import { bootstrapBusinessSystem } from "@/services/platform/bootstrap-business-system.service";
 import { generateWorkflowFromPrompt } from "@/services/workflows/workflow-ai-generator.service";
 import type { WorkflowDefinition } from "@/types/diazites-platform";
+import type { BusinessProfile } from "@/types/platform-growth";
 import { SYSTEM_WORKFLOW_TEMPLATES } from "@/lib/workflows/workflow-templates";
 
 async function resolveContext() {
@@ -47,11 +48,21 @@ export async function bootstrapBusinessSystemAction(
   if (!ctx) return fail("No business found");
   if (!userGoal.trim()) return fail("Tell us what you want your business system to do");
 
+  const businesses = createBusinessRepository(ctx.supabase);
+  const { data: businessRow } = await businesses.getById(ctx.businessId);
+  const profile = (businessRow?.profile ?? {}) as BusinessProfile;
+
   const result = await bootstrapBusinessSystem(
     ctx.supabase,
     ctx.userId,
     ctx.businessId,
     userGoal.trim(),
+    {
+      industry: profile.industry,
+      businessType: profile.businessType,
+      services: profile.mainServices,
+      businessName: businessRow?.name as string | undefined,
+    },
   );
   if (!result.success) return result;
 

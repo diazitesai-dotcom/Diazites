@@ -25,7 +25,7 @@ function agentSelectionsToFeatureFlags(selectedAgents: string[] = []): Partial<P
     ad_accounts: selectedAgents.includes("ads"),
     sms: false,
     email_campaigns: selectedAgents.includes("email"),
-    workflows: selectedAgents.includes("pipeline"),
+    workflows: selectedAgents.some((key) => ["pipeline", "workflow"].includes(key)),
     merchant_services: selectedAgents.includes("merchant"),
   };
 }
@@ -116,7 +116,7 @@ export async function completeOnboardingProfile(
       agents_assigned: selectedAgents.length > 0,
       campaign_built: false,
       landing_page_ready: selectedAgents.includes("landing"),
-      ai_active: selectedAgents.some((k) => ["email", "pipeline"].includes(k)),
+      ai_active: selectedAgents.some((k) => ["email", "pipeline", "workflow"].includes(k)),
       team_invited: false,
     },
   });
@@ -169,12 +169,21 @@ export async function completeOnboardingProfile(
   }
 
   try {
-    await bootstrapBusinessSystem(client, userId, businessId, systemGoal);
+    const bootstrapResult = await bootstrapBusinessSystem(client, userId, businessId, systemGoal, {
+      industry: form.industry,
+      businessType: form.businessType,
+      services: form.services ?? form.mainServices,
+      businessName: form.businessName,
+    });
     await logAgentActivity(client, {
       businessId,
       agentKey: "workflow",
       actionType: "business_system_generated",
-      payload: { message: "Workflow Agent launched onboarding automations." },
+      payload: {
+        message: bootstrapResult.success
+          ? bootstrapResult.data.message
+          : "Workflow Agent launched onboarding automations.",
+      },
     });
   } catch {
     /* bootstrap is best-effort during onboarding */
