@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AuthSubmitButton } from "@/components/auth/auth-submit-button";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
 import { AUTH_BRAND } from "@/lib/auth/auth-branding";
+import { missionControlLandingPath } from "@/lib/auth/mission-control-routing";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,7 +46,7 @@ export function AuthCard({
       <CardContent>
         <SocialAuthButtons
           mode="login"
-          nextPath={returnPath ?? "/dashboard"}
+          nextPath={returnPath ?? missionControlLandingPath({ postLogin: true })}
           className="mb-4"
         />
         <form className="space-y-4" action={action}>

@@ -1,4 +1,5 @@
 import { AuthCard } from "@/components/auth/auth-card";
+import { missionControlLandingPath, MISSION_CONTROL_PATH } from "@/lib/auth/mission-control-routing";
 import { loginAction } from "@/services/auth/actions";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,8 @@ export default async function LoginPage({
   };
 
   const rawNext = sp.next;
-  const returnPath = typeof rawNext === "string" ? rawNext : "/dashboard";
+  const returnPath =
+    typeof rawNext === "string" ? rawNext : missionControlLandingPath({ postLogin: true });
 
   const errorMsg = typeof rawError === "string" ? safeDecode(rawError) : null;
   const successMsg =
@@ -56,7 +58,7 @@ export default async function LoginPage({
           action={loginAction}
           returnPath={returnPath}
           footerHref={
-            returnPath !== "/dashboard"
+            !returnPath.startsWith(MISSION_CONTROL_PATH)
               ? `/signup?next=${encodeURIComponent(returnPath)}`
               : "/signup"
           }

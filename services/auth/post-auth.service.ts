@@ -6,6 +6,7 @@ import { ensureBootstrapPlatformAdmin } from "@/lib/auth/bootstrap-platform-admi
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { storeSignupPromoCode } from "@/services/billing/promo-code.service";
 import { sendDiazitesWelcomeEmail } from "@/services/auth/welcome-email.service";
+import { missionControlLandingPath } from "@/lib/auth/mission-control-routing";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export type PostAuthResult = {
@@ -73,7 +74,9 @@ export async function completePostAuthSignup(
   await ensureBootstrapPlatformAdmin(user);
 
   const defaultNext = options?.defaultNext ?? "/onboarding?welcome=trial";
-  const redirectPath = hasBusiness ? "/dashboard" : defaultNext;
+  const redirectPath = hasBusiness
+    ? missionControlLandingPath({ postLogin: true })
+    : defaultNext;
 
   return { isNewUser, hasBusiness, redirectPath };
 }

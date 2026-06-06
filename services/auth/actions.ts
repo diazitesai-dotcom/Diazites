@@ -14,6 +14,11 @@ import { getPublicAppUrl } from "@/lib/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
 import type { BillingPlanName } from "@/types/backend";
+import {
+  isMissionControlPath,
+  missionControlLandingPath,
+  withPostLoginSessionIfMissionControl,
+} from "@/lib/auth/mission-control-routing";
 import { completePostAuthSignup } from "@/services/auth/post-auth.service";
 import { sendDiazitesWelcomeEmail } from "@/services/auth/welcome-email.service";
 
@@ -136,8 +141,13 @@ export async function loginAction(formData: FormData) {
   revalidatePath("/dashboard", "layout");
 
   const { data: business } = await createBusinessRepository(supabase).getByOwnerUserId(user.id);
-  const defaultPath = business ? "/dashboard" : onboardingEntryPath(true);
-  const next = sanitizeAppReturnPath(String(formData.get("next") ?? ""), defaultPath);
+  const defaultPath = business
+    ? missionControlLandingPath({ postLogin: true })
+    : onboardingEntryPath(true);
+  let next = sanitizeAppReturnPath(String(formData.get("next") ?? ""), defaultPath);
+  if (isMissionControlPath(next)) {
+    next = withPostLoginSessionIfMissionControl(next);
+  }
   redirect(next);
 }
 

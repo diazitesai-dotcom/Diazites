@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { sanitizeAppReturnPath } from "@/lib/ads-oauth-state";
 import { createUserProfile } from "@/lib/auth/user-profile";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
+import { missionControlLandingPath } from "@/lib/auth/mission-control-routing";
 import { completePostAuthSignup } from "@/services/auth/post-auth.service";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +63,9 @@ export async function GET(request: NextRequest) {
       });
       redirectPath = sanitizeAppReturnPath(
         result.redirectPath,
-        result.hasBusiness ? "/dashboard" : "/onboarding?welcome=trial",
+        result.hasBusiness
+          ? missionControlLandingPath({ postLogin: true })
+          : "/onboarding?welcome=trial",
       );
     } catch {
       await createUserProfile(supabase, {

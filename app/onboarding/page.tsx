@@ -6,6 +6,7 @@ import { TrialWelcomeBanner } from "@/components/onboarding/trial-welcome-banner
 import { Button } from "@/components/ui/button";
 import { draftFromOnboardingRow } from "@/lib/onboarding/draft";
 import { CORE_USER_FLOW } from "@/lib/platform/growth-spec";
+import { missionControlLandingPath } from "@/lib/auth/mission-control-routing";
 import { getOnboardingRoutingState } from "@/lib/auth/onboarding-routing";
 import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
 import { createUserProfile } from "@/lib/auth/user-profile";
@@ -44,7 +45,7 @@ export default async function OnboardingPage({
   );
 
   if (hasBusiness && onboardingComplete) {
-    redirect("/dashboard");
+    redirect(missionControlLandingPath({ postLogin: true }));
   }
 
   const profiles = createProfileRepository(supabase);

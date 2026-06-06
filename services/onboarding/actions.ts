@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { missionControlLandingPath } from "@/lib/auth/mission-control-routing";
 import {
   draftToWizardPayload,
   type OnboardingDraft,
@@ -125,7 +126,7 @@ export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) 
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  return { success: true as const, redirectTo: "/dashboard?onboarding=complete" };
+  return { success: true as const, redirectTo: missionControlLandingPath({ postLogin: true, extra: { onboarding: "complete" } }) };
 }
 
 /** @deprecated Prefer completeOnboardingFromDraftAction — kept for legacy form posts */
@@ -161,5 +162,5 @@ export async function saveOnboardingAction(formData: FormData) {
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  redirect("/dashboard?onboarding=complete");
+  redirect(missionControlLandingPath({ postLogin: true, extra: { onboarding: "complete" } }));
 }

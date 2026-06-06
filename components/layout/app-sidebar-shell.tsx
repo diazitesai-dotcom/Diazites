@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -24,6 +24,10 @@ import {
 import { useState } from "react";
 
 import { filterNavGroupsByPlan } from "@/lib/entitlements/nav-filter";
+import {
+  POST_LOGIN_SESSION_PARAM,
+  POST_LOGIN_SESSION_VALUE,
+} from "@/lib/auth/mission-control-routing";
 import type { EntitlementPlanKey } from "@/types/entitlements";
 import {
   GROWTH_SIDEBAR_GROUPS,
@@ -178,6 +182,21 @@ export function AppSidebarShell({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const postLogin = params.get(POST_LOGIN_SESSION_PARAM) === POST_LOGIN_SESSION_VALUE;
+    const onboardingComplete = params.get("onboarding") === "complete";
+    if (postLogin || onboardingComplete) {
+      setCollapsed(true);
+    }
+    if (postLogin) {
+      params.delete(POST_LOGIN_SESSION_PARAM);
+      const qs = params.toString();
+      const nextUrl = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
+      window.history.replaceState(null, "", nextUrl);
+    }
+  }, []);
 
   const renderNavLink = (
     item: NavItem & { locked?: boolean; lockReason?: string },
