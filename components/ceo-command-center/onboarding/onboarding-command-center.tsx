@@ -59,6 +59,28 @@ type LandingPageSettings = {
   brandTone: string;
 };
 
+type PipelineBuilderTab = "stages" | "automation" | "follow_up" | "preview";
+
+type PipelineWorkflowState = {
+  pipelineType: string;
+  leadOwner: string;
+  responseSpeed: string;
+  followUpStyle: string;
+  followUpChannels: string[];
+  qualificationQuestions: string;
+  bookingAction: string;
+  lostLeadRule: string;
+  stages: string[];
+  automations: Array<{ id: string; label: string; enabled: boolean }>;
+  followUpMessages: {
+    firstSms: string;
+    firstEmail: string;
+    voicemailScript: string;
+    followUpEmail: string;
+    finalReminder: string;
+  };
+};
+
 const STEP_ORDER: OnboardingStepId[] = [
   "business_profile",
   "offer_goals",
@@ -77,6 +99,13 @@ const LANDING_BUILDER_TABS: Array<{ id: LandingBuilderTab; label: string }> = [
   { id: "preview", label: "Preview" },
   { id: "edit", label: "Edit Sections" },
   { id: "settings", label: "Settings" },
+];
+
+const PIPELINE_BUILDER_TABS: Array<{ id: PipelineBuilderTab; label: string }> = [
+  { id: "stages", label: "Pipeline Stages" },
+  { id: "automation", label: "Automation" },
+  { id: "follow_up", label: "Follow-Up" },
+  { id: "preview", label: "Preview" },
 ];
 
 const PRIMARY_GOAL_OPTIONS: Array<{ value: OfferGoalsFields["primaryGoal"]; label: string }> = [
@@ -152,6 +181,41 @@ const FALLBACK_LANDING_PAGE: LandingPageOption = {
   description: "Capture leads with a compelling offer and fast form.",
   type: "lead_gen",
 };
+
+const DEFAULT_PIPELINE_STAGES = [
+  "New Lead",
+  "Contacted",
+  "Qualified",
+  "Appointment Booked",
+  "Proposal / Offer Sent",
+  "Won",
+  "Lost / Nurture",
+];
+
+const DEFAULT_AUTOMATION_ACTIONS = [
+  "Create lead record",
+  "Assign owner/agent",
+  "Send confirmation email",
+  "Send SMS follow-up",
+  "Notify business owner",
+  "Add to CRM/pipeline",
+  "Trigger AI call or AI chat follow-up",
+  "Create task if no response",
+];
+
+const FOLLOW_UP_STYLE_OPTIONS = [
+  "Fast response",
+  "Standard",
+  "Long nurture",
+  "Missed call recovery",
+  "No-show recovery",
+  "Quote follow-up",
+  "Abandoned form follow-up",
+];
+
+const FOLLOW_UP_CHANNEL_OPTIONS = ["SMS", "Email", "Call", "WhatsApp"];
+
+const PIPELINE_TYPE_OPTIONS = ["Sales", "Booking", "Donation", "Enrollment", "Support"];
 
 const formatOptionLabel = <T extends string>(
   options: Array<{ value: T; label: string }>,
@@ -236,6 +300,44 @@ function createLandingPageSettings(
   };
 }
 
+function createPipelineWorkflowState(
+  profile: BusinessProfileFields,
+  offerGoals: OfferGoalsFields,
+): PipelineWorkflowState {
+  const conversion = formatOptionLabel(
+    CONVERSION_ACTION_OPTIONS,
+    offerGoals.preferredConversionAction,
+  ).toLowerCase();
+  const offer = profile.mainOffer || "your offer";
+
+  return {
+    pipelineType: "Sales",
+    leadOwner: "AI agent + business owner",
+    responseSpeed: "Instant response, then 5-minute follow-up",
+    followUpStyle: "Fast response",
+    followUpChannels: ["SMS", "Email", "Call"],
+    qualificationQuestions:
+      "What service are you interested in?\nWhat is your timeline?\nWhat is the best way to reach you?",
+    bookingAction: `Move qualified leads to Appointment Booked after the ${conversion}.`,
+    lostLeadRule: "Move unresponsive leads to Lost / Nurture after 7 days and keep weekly follow-up active.",
+    stages: DEFAULT_PIPELINE_STAGES,
+    automations: DEFAULT_AUTOMATION_ACTIONS.map((label) => ({
+      id: slugify(label),
+      label,
+      enabled: true,
+    })),
+    followUpMessages: {
+      firstSms: `Thanks for your interest in ${offer}. We received your request and will follow up shortly.`,
+      firstEmail: `Thanks for reaching out. Here is what happens next for ${offer}.`,
+      voicemailScript:
+        "Hi, this is the Diazites AI assistant calling about your request. We wanted to help you take the next step.",
+      followUpEmail: "Just checking in to see if you still want help with your request.",
+      finalReminder:
+        "Last reminder for now. Reply when you are ready and we will reopen your request.",
+    },
+  };
+}
+
 function stepToProgressStatus(
   stepId: OnboardingStepId,
   currentIndex: number,
@@ -283,6 +385,11 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
       initialData.businessProfile,
       initialData.offerGoals,
     ),
+  );
+  const [pipelineBuilderTab, setPipelineBuilderTab] =
+    useState<PipelineBuilderTab>("stages");
+  const [pipelineWorkflow, setPipelineWorkflow] = useState<PipelineWorkflowState>(() =>
+    createPipelineWorkflowState(initialData.businessProfile, initialData.offerGoals),
   );
 
   const [integrations, setIntegrations] = useState(initialData.integrations);
@@ -342,6 +449,62 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
     value: LandingPageSettings[Key],
   ) => {
     setLandingPageSettings((current) => ({ ...current, [key]: value }));
+  };
+
+  const updatePipelineWorkflow = <Key extends keyof PipelineWorkflowState>(
+    key: Key,
+    value: PipelineWorkflowState[Key],
+  ) => {
+    setPipelineWorkflow((current) => ({ ...current, [key]: value }));
+  };
+
+  const updatePipelineStage = (index: number, value: string) => {
+    setPipelineWorkflow((current) => ({
+      ...current,
+      stages: current.stages.map((stage, stageIndex) => (stageIndex === index ? value : stage)),
+    }));
+  };
+
+  const addPipelineStage = () => {
+    setPipelineWorkflow((current) => ({
+      ...current,
+      stages: [...current.stages, `New Stage ${current.stages.length + 1}`],
+    }));
+  };
+
+  const removePipelineStage = (index: number) => {
+    setPipelineWorkflow((current) => ({
+      ...current,
+      stages: current.stages.filter((_, stageIndex) => stageIndex !== index),
+    }));
+  };
+
+  const toggleAutomation = (id: string) => {
+    setPipelineWorkflow((current) => ({
+      ...current,
+      automations: current.automations.map((automation) =>
+        automation.id === id ? { ...automation, enabled: !automation.enabled } : automation,
+      ),
+    }));
+  };
+
+  const toggleFollowUpChannel = (channel: string) => {
+    setPipelineWorkflow((current) => ({
+      ...current,
+      followUpChannels: current.followUpChannels.includes(channel)
+        ? current.followUpChannels.filter((item) => item !== channel)
+        : [...current.followUpChannels, channel],
+    }));
+  };
+
+  const updateFollowUpMessage = (
+    key: keyof PipelineWorkflowState["followUpMessages"],
+    value: string,
+  ) => {
+    setPipelineWorkflow((current) => ({
+      ...current,
+      followUpMessages: { ...current.followUpMessages, [key]: value },
+    }));
   };
 
   return (
@@ -811,7 +974,304 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
             </div>
           )}
 
-          {(currentStepId === "pipeline_workflow" || currentStepId === "ai_agents" || currentStepId === "tracking") && (
+          {currentStepId === "pipeline_workflow" && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Pipeline & Workflow Builder</h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Design how new leads move from first contact to booked, followed up, and closed.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-2">
+                {PIPELINE_BUILDER_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setPipelineBuilderTab(tab.id)}
+                    className={cn(
+                      "rounded-xl px-3 py-2 text-xs font-medium transition",
+                      pipelineBuilderTab === tab.id
+                        ? "bg-violet-600/30 text-violet-100"
+                        : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200",
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {pipelineBuilderTab === "stages" && (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-slate-400">Pipeline Type</span>
+                      <select
+                        value={pipelineWorkflow.pipelineType}
+                        onChange={(e) => updatePipelineWorkflow("pipelineType", e.target.value)}
+                        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                      >
+                        {PIPELINE_TYPE_OPTIONS.map((option) => (
+                          <option key={option} value={option} className="bg-[#0c1222]">
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-slate-400">Lead Owner</span>
+                      <input
+                        value={pipelineWorkflow.leadOwner}
+                        onChange={(e) => updatePipelineWorkflow("leadOwner", e.target.value)}
+                        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-slate-400">Response Speed Goal</span>
+                      <input
+                        value={pipelineWorkflow.responseSpeed}
+                        onChange={(e) => updatePipelineWorkflow("responseSpeed", e.target.value)}
+                        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                      />
+                    </label>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {pipelineWorkflow.stages.map((stage, index) => (
+                      <div
+                        key={`${stage}-${index}`}
+                        className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3"
+                      >
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-xs font-semibold text-violet-200">
+                          {index + 1}
+                        </span>
+                        <input
+                          value={stage}
+                          onChange={(e) => updatePipelineStage(index, e.target.value)}
+                          className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                        />
+                        {pipelineWorkflow.stages.length > 3 ? (
+                          <button
+                            type="button"
+                            onClick={() => removePipelineStage(index)}
+                            className="rounded-lg border border-white/10 px-2.5 py-2 text-xs text-slate-400 hover:text-rose-200"
+                          >
+                            Remove
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addPipelineStage}
+                    className="rounded-xl bg-violet-600/30 px-4 py-2 text-sm font-medium text-violet-100"
+                  >
+                    Add Stage
+                  </button>
+                </div>
+              )}
+
+              {pipelineBuilderTab === "automation" && (
+                <div className="grid gap-4 lg:grid-cols-[1fr_0.8fr]">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {pipelineWorkflow.automations.map((automation) => (
+                      <button
+                        key={automation.id}
+                        type="button"
+                        onClick={() => toggleAutomation(automation.id)}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl border p-4 text-left transition",
+                          automation.enabled
+                            ? "border-violet-500/40 bg-violet-500/10"
+                            : "border-white/[0.08] bg-white/[0.02]",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
+                            automation.enabled
+                              ? "border-violet-400 bg-violet-500 text-white"
+                              : "border-white/20 text-transparent",
+                          )}
+                        >
+                          <Check className="h-3 w-3" />
+                        </span>
+                        <span className="text-sm text-white">{automation.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="space-y-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-slate-400">Qualification Questions</span>
+                      <textarea
+                        value={pipelineWorkflow.qualificationQuestions}
+                        rows={5}
+                        onChange={(e) =>
+                          updatePipelineWorkflow("qualificationQuestions", e.target.value)
+                        }
+                        className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-slate-400">Booking Action</span>
+                      <textarea
+                        value={pipelineWorkflow.bookingAction}
+                        rows={3}
+                        onChange={(e) => updatePipelineWorkflow("bookingAction", e.target.value)}
+                        className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {pipelineBuilderTab === "follow_up" && (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-slate-400">Follow-Up Style</span>
+                      <select
+                        value={pipelineWorkflow.followUpStyle}
+                        onChange={(e) => updatePipelineWorkflow("followUpStyle", e.target.value)}
+                        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                      >
+                        {FOLLOW_UP_STYLE_OPTIONS.map((option) => (
+                          <option key={option} value={option} className="bg-[#0c1222]">
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-slate-400">Lost Lead / Nurture Rule</span>
+                      <input
+                        value={pipelineWorkflow.lostLeadRule}
+                        onChange={(e) => updatePipelineWorkflow("lostLeadRule", e.target.value)}
+                        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                      />
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {FOLLOW_UP_CHANNEL_OPTIONS.map((channel) => {
+                      const selected = pipelineWorkflow.followUpChannels.includes(channel);
+
+                      return (
+                        <button
+                          key={channel}
+                          type="button"
+                          onClick={() => toggleFollowUpChannel(channel)}
+                          className={cn(
+                            "rounded-xl border px-3 py-2 text-xs font-medium transition",
+                            selected
+                              ? "border-violet-500/50 bg-violet-500/15 text-violet-100"
+                              : "border-white/[0.08] bg-white/[0.02] text-slate-400",
+                          )}
+                        >
+                          {channel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {[
+                      ["firstSms", "First SMS"],
+                      ["firstEmail", "First Email"],
+                      ["voicemailScript", "Voicemail / Call Script"],
+                      ["followUpEmail", "Follow-Up Email"],
+                      ["finalReminder", "Final Reminder"],
+                    ].map(([key, label]) => (
+                      <label
+                        key={key}
+                        className={cn("block", key === "finalReminder" && "md:col-span-2")}
+                      >
+                        <span className="mb-1 block text-xs text-slate-400">{label}</span>
+                        <textarea
+                          value={
+                            pipelineWorkflow.followUpMessages[
+                              key as keyof PipelineWorkflowState["followUpMessages"]
+                            ]
+                          }
+                          rows={key === "finalReminder" ? 3 : 2}
+                          onChange={(e) =>
+                            updateFollowUpMessage(
+                              key as keyof PipelineWorkflowState["followUpMessages"],
+                              e.target.value,
+                            )
+                          }
+                          className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {pipelineBuilderTab === "preview" && (
+                <div className="space-y-5">
+                  <div className="grid gap-3 md:grid-cols-6">
+                    {[
+                      "Landing Page Form",
+                      "New Lead",
+                      "SMS Sent",
+                      "AI Agent Qualifies",
+                      "Appointment Booked",
+                      "Pipeline Updated",
+                    ].map((step, index) => (
+                      <div
+                        key={step}
+                        className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 text-center"
+                      >
+                        <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/15 text-xs font-semibold text-violet-200">
+                          {index + 1}
+                        </span>
+                        <p className="mt-3 text-xs font-medium text-white">{step}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+                      <p className="text-sm font-semibold text-white">Workflow summary</p>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        {profile.businessName || "Your business"} will capture{" "}
+                        {formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal).toLowerCase()} from the{" "}
+                        {selectedLandingPage.title.toLowerCase()}, then route each lead through a{" "}
+                        {pipelineWorkflow.pipelineType.toLowerCase()} pipeline for {profile.mainOffer || "the main offer"}.
+                      </p>
+                      <div className="mt-4 grid gap-2 text-xs text-slate-400">
+                        <p>
+                          <span className="text-slate-300">Target customer:</span>{" "}
+                          {profile.targetCustomer || "Not specified yet"}
+                        </p>
+                        <p>
+                          <span className="text-slate-300">Owner:</span> {pipelineWorkflow.leadOwner}
+                        </p>
+                        <p>
+                          <span className="text-slate-300">Response:</span>{" "}
+                          {pipelineWorkflow.responseSpeed}
+                        </p>
+                        <p>
+                          <span className="text-slate-300">Channels:</span>{" "}
+                          {pipelineWorkflow.followUpChannels.join(", ")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4">
+                      <p className="text-sm font-semibold text-violet-100">How this connects</p>
+                      <ul className="mt-3 space-y-2 text-xs leading-5 text-violet-100/80">
+                        <li>Step 2 defines the goal and conversion action.</li>
+                        <li>Step 3 builds the landing page that captures the lead.</li>
+                        <li>Step 4 defines what happens after someone converts.</li>
+                        <li>Step 5 connects the tools needed to run the workflow.</li>
+                        <li>Step 6 activates AI agents to qualify, follow up, and book.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {(currentStepId === "ai_agents" || currentStepId === "tracking") && (
             <div className="space-y-4 py-8 text-center">
               <Sparkles className="mx-auto h-10 w-10 text-violet-400" />
               <h2 className="text-lg font-semibold capitalize text-white">
