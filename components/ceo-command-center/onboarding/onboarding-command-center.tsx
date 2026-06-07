@@ -23,7 +23,6 @@ import {
 } from "@/lib/ceo-command-center/business-profile-utils";
 import { cn } from "@/lib/utils";
 import type {
-  BusinessProfileFields,
   OfferGoalsFields,
   OnboardingCommandCenterData,
   OnboardingStepId,
