@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
+  Activity,
   BarChart3,
   Bot,
   Calendar,
+  ChevronDown,
   CreditCard,
-  Crown,
+  Crosshair,
   Globe,
   LayoutDashboard,
   LogOut,
@@ -19,15 +22,17 @@ import {
   TrendingUp,
   Users,
   Zap,
-  Crosshair,
 } from "lucide-react";
 
-import { CircularProgress } from "@/components/ceo-command-center/shared/circular-progress";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/services/auth/actions";
 
-const NAV_ITEMS = [
+const TOP_NAV_ITEMS = [
+  { href: "/dashboard/analytics", label: "Overall Health", icon: Activity },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+] as const;
+
+const BUSINESS_TOOL_ITEMS = [
   { href: "/dashboard/analytics", label: "Revenue Center", icon: TrendingUp },
   { href: "/dashboard/leads", label: "Leads & CRM", icon: Users },
   { href: "/dashboard/calendar", label: "Calendars", icon: Calendar },
@@ -41,11 +46,9 @@ const NAV_ITEMS = [
   { href: "/dashboard/analytics", label: "Competitors", icon: Crosshair },
   { href: "/dashboard/ai-text", label: "AI Content Factory", icon: Sparkles },
   { href: "/dashboard/merchant-services", label: "Payments", icon: CreditCard },
-  {
-    href: "/dashboard/organization?tab=billing&upgrade=agents",
-    label: "Upgrade Plan",
-    icon: Crown,
-  },
+] as const;
+
+const BOTTOM_NAV_ITEMS = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -54,8 +57,51 @@ type SidebarProps = {
   healthChange?: number;
 };
 
-export function Sidebar({ healthScore = 84, healthChange = 12 }: SidebarProps) {
+export function Sidebar({ healthScore = 84 }: SidebarProps) {
   const pathname = usePathname();
+  const [toolsOpen, setToolsOpen] = useState(true);
+
+  const isActive = (href: string) =>
+    href === "/dashboard" ? pathname === "/dashboard" : pathname === href || pathname.startsWith(`${href}/`);
+
+  const renderNavItem = (
+    item: (typeof TOP_NAV_ITEMS)[number] | (typeof BUSINESS_TOOL_ITEMS)[number] | (typeof BOTTOM_NAV_ITEMS)[number],
+    options?: { showHealthScore?: boolean },
+  ) => {
+    const Icon = item.icon;
+    const active = isActive(item.href);
+
+    return (
+      <Link
+        key={item.href + item.label}
+        href={item.href}
+        className={cn(
+          "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all",
+          active
+            ? "bg-gradient-to-r from-violet-600/25 to-indigo-600/15 text-white shadow-[inset_0_0_0_1px_rgba(139,92,246,0.25)]"
+            : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200",
+        )}
+      >
+        <Icon
+          className={cn(
+            "h-4 w-4 shrink-0",
+            active ? "text-violet-300" : "text-slate-500 group-hover:text-slate-300",
+          )}
+        />
+        <span className="flex-1 truncate">{item.label}</span>
+        {options?.showHealthScore ? (
+          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+            {healthScore}
+          </span>
+        ) : null}
+        {"badge" in item && item.badge ? (
+          <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+            {item.badge}
+          </span>
+        ) : null}
+      </Link>
+    );
+  };
 
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-white/[0.06] bg-[#070b14]/95 backdrop-blur-xl">
@@ -66,88 +112,46 @@ export function Sidebar({ healthScore = 84, healthChange = 12 }: SidebarProps) {
         </p>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <div className="space-y-0.5">
+          {renderNavItem(TOP_NAV_ITEMS[0], { showHealthScore: true })}
+          {renderNavItem(TOP_NAV_ITEMS[1])}
+        </div>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all",
-                active
-                  ? "bg-gradient-to-r from-violet-600/25 to-indigo-600/15 text-white shadow-[inset_0_0_0_1px_rgba(139,92,246,0.25)]"
-                  : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200",
-              )}
-            >
-              <Icon
-                className={cn(
-                  "h-4 w-4 shrink-0",
-                  active ? "text-violet-300" : "text-slate-500 group-hover:text-slate-300",
-                )}
-              />
-              <span className="flex-1 truncate">{item.label}</span>
-              {"badge" in item && item.badge ? (
-                <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                  {item.badge}
-                </span>
-              ) : null}
-            </Link>
-          );
-        })}
+        <div className="my-4 border-t border-white/[0.06]" />
+
+        <button
+          type="button"
+          onClick={() => setToolsOpen((open) => !open)}
+          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:bg-white/[0.03] hover:text-slate-300"
+          aria-expanded={toolsOpen}
+        >
+          <span className="flex-1">My Business Tools</span>
+          <ChevronDown
+            className={cn("h-4 w-4 transition-transform", !toolsOpen && "-rotate-90")}
+          />
+        </button>
+
+        {toolsOpen ? (
+          <div className="mt-1 space-y-0.5">
+            {BUSINESS_TOOL_ITEMS.map((item) => renderNavItem(item))}
+          </div>
+        ) : null}
       </nav>
 
-      <div className="mx-3 mb-3 rounded-2xl border border-amber-400/20 bg-gradient-to-br from-amber-500/10 to-violet-600/10 p-4">
-        <p className="text-xs font-semibold text-amber-100">Unlock more agents</p>
-        <p className="mt-1 text-[11px] leading-4 text-slate-400">
-          Upgrade to add more AI employees, campaigns, automations, and feature tabs.
-        </p>
-        <Link
-          href="/dashboard/organization?tab=billing&upgrade=agents"
-          className="mt-3 block w-full rounded-lg bg-amber-400/15 py-2 text-center text-xs font-semibold text-amber-100 transition hover:bg-amber-400/25"
-        >
-          View upgrade options
-        </Link>
-      </div>
+      <div className="border-t border-white/[0.06] px-3 py-4">
+        <div className="space-y-0.5">{BOTTOM_NAV_ITEMS.map((item) => renderNavItem(item))}</div>
 
-      <div className="mx-3 mb-3 rounded-2xl border border-white/[0.08] bg-gradient-to-br from-violet-950/40 to-indigo-950/30 p-4">
-        <p className="text-xs font-medium text-slate-400">Business Health Score</p>
-        <div className="mt-3 flex items-center gap-3">
-          <CircularProgress
-            value={healthScore}
-            size={56}
-            strokeWidth={5}
-            label={`${healthScore}`}
-            sublabel="/100"
-            gradientId="sidebar-health-gradient"
-          />
-          <div>
-            <p className="text-lg font-bold text-emerald-400">+{healthChange}%</p>
-            <p className="text-[10px] text-slate-500">vs last month</p>
-          </div>
-        </div>
-        <Link
-          href="/dashboard/analytics"
-          className="mt-3 block w-full rounded-lg bg-violet-600/20 py-2 text-center text-xs font-medium text-violet-200 transition hover:bg-violet-600/30"
-        >
-          View Full Report
-        </Link>
+        <form action={signOutAction} className="mt-2">
+          <button
+            type="submit"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-400 transition hover:bg-white/[0.04] hover:text-slate-200"
+          >
+            <LogOut className="h-4 w-4 text-slate-500" />
+            <span className="flex-1 text-left">Sign Out</span>
+          </button>
+        </form>
       </div>
-
-      <form action={signOutAction} className="mx-3 mb-4">
-        <button
-          type="submit"
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.06] hover:text-white"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign out of session
-        </button>
-      </form>
     </aside>
   );
 }
