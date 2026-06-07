@@ -17,6 +17,10 @@ import {
 import { ProgressTracker } from "@/components/ceo-command-center/progress-tracker";
 import { useBusinessWebsiteAutofill } from "@/components/ceo-command-center/onboarding/use-business-website-autofill";
 import { FIELD_LABELS } from "@/lib/ceo-command-center/business-profile-autofill";
+import {
+  BUSINESS_PROFILE_FIELD_KEYS,
+  sanitizeBusinessProfile,
+} from "@/lib/ceo-command-center/business-profile-utils";
 import { cn } from "@/lib/utils";
 import type {
   BusinessProfileFields,
@@ -68,7 +72,10 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
     scanMessage,
     scanNow,
     handleWebsiteBlur,
-  } = useBusinessWebsiteAutofill(initialData.businessProfile.website || "");
+  } = useBusinessWebsiteAutofill(
+    initialData.businessProfile.website || "",
+    initialData.businessProfile,
+  );
   const [selectedLandingId, setSelectedLandingId] = useState<string | null>("lead_gen");
 
   const [integrations, setIntegrations] = useState(initialData.integrations);
@@ -183,14 +190,16 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                 </p>
               ) : null}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {(Object.keys(profile) as (keyof BusinessProfileFields)[]).map((key) => (
+                {BUSINESS_PROFILE_FIELD_KEYS.map((key) => (
                   <label key={key} className="block">
                     <span className="mb-1 block text-xs font-medium text-slate-400">
                       {FIELD_LABELS[key]}
                     </span>
                     <input
                       value={profile[key]}
-                      onChange={(e) => setProfile((p) => ({ ...p, [key]: e.target.value }))}
+                      onChange={(e) =>
+                        setProfile((p) => sanitizeBusinessProfile({ ...p, [key]: e.target.value }))
+                      }
                       disabled={isScanning}
                       className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-violet-500/40 focus:outline-none disabled:opacity-60"
                     />

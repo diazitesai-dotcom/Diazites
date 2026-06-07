@@ -6,6 +6,7 @@ import {
   fetchWebsiteForAutofill,
 } from "@/lib/onboarding/fetch-website-contact";
 import { normalizeWebsiteUrl } from "@/lib/onboarding/fetch-website-text";
+import { sanitizeBusinessProfile } from "@/lib/ceo-command-center/business-profile-utils";
 import { fail, ok, type ServiceResult } from "@/lib/result";
 import { callJsonResponses, isOpenAiConfigured } from "@/services/engine/ai/openai-client";
 import type { BusinessProfileFields } from "@/types/ceo-command-center";
@@ -156,22 +157,25 @@ function mergeProfile(
     return current[key] ?? "";
   };
 
-  return {
-    businessName: pick("businessName"),
-    industry: pick("industry"),
-    services: pick("services"),
-    address: pick("address"),
-    phone: pick("phone"),
-    email: pick("email"),
-    website: url,
-    businessHours: pick("businessHours"),
-    targetCustomer: pick("targetCustomer"),
-    keywords: pick("keywords"),
-    seoMetaTitle: pick("seoMetaTitle"),
-    seoMetaDescription: pick("seoMetaDescription"),
-    mainOffer: pick("mainOffer"),
-    businessDescription: pick("businessDescription"),
-  };
+  return sanitizeBusinessProfile(
+    {
+      businessName: pick("businessName"),
+      industry: pick("industry"),
+      services: pick("services"),
+      address: pick("address"),
+      phone: pick("phone"),
+      email: pick("email"),
+      website: url,
+      businessHours: pick("businessHours"),
+      targetCustomer: pick("targetCustomer"),
+      keywords: pick("keywords"),
+      seoMetaTitle: pick("seoMetaTitle"),
+      seoMetaDescription: pick("seoMetaDescription"),
+      mainOffer: pick("mainOffer"),
+      businessDescription: pick("businessDescription"),
+    },
+    url,
+  );
 }
 
 export async function autofillCeoBusinessProfileFromWebsite(

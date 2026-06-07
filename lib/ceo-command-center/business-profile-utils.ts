@@ -1,5 +1,46 @@
 import type { BusinessProfileFields } from "@/types/ceo-command-center";
 
+/** Only these fields render in onboarding — legacy keys are stripped on load/scan. */
+export const BUSINESS_PROFILE_FIELD_KEYS = [
+  "businessName",
+  "industry",
+  "services",
+  "address",
+  "phone",
+  "email",
+  "website",
+  "businessHours",
+  "targetCustomer",
+  "keywords",
+  "seoMetaTitle",
+  "seoMetaDescription",
+  "mainOffer",
+  "businessDescription",
+] as const satisfies readonly (keyof BusinessProfileFields)[];
+
+export function sanitizeBusinessProfile(
+  input: Partial<BusinessProfileFields> & Record<string, unknown>,
+  website = "",
+): BusinessProfileFields {
+  const empty = createEmptyBusinessProfile(website);
+  const out = { ...empty };
+
+  for (const key of BUSINESS_PROFILE_FIELD_KEYS) {
+    const value = input[key];
+    if (typeof value === "string" && value.trim()) {
+      out[key] = value.trim();
+    }
+  }
+
+  if (website.trim()) {
+    out.website = website.trim();
+  } else   if (typeof input.website === "string" && input.website.trim()) {
+    out.website = input.website.trim();
+  }
+
+  return out;
+}
+
 export function createEmptyBusinessProfile(website = ""): BusinessProfileFields {
   return {
     businessName: "",

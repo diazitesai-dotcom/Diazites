@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { autofillCeoBusinessProfileFromWebsite } from "@/lib/ceo-command-center/business-profile-autofill";
-import { createEmptyBusinessProfile } from "@/lib/ceo-command-center/business-profile-utils";
+import { createEmptyBusinessProfile, sanitizeBusinessProfile } from "@/lib/ceo-command-center/business-profile-utils";
 import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({
-    profile: result.data.profile,
+    profile: sanitizeBusinessProfile(result.data.profile, websiteUrl),
     usedAi: result.data.usedAi,
   });
 }

@@ -6,6 +6,7 @@ import {
   createEmptyBusinessProfile,
   isScannableWebsiteUrl,
   normalizeWebsiteUrlClient,
+  sanitizeBusinessProfile,
 } from "@/lib/ceo-command-center/business-profile-utils";
 import type { BusinessProfileFields } from "@/types/ceo-command-center";
 
@@ -16,10 +17,13 @@ type ScanResult = {
   usedAi: boolean;
 };
 
-export function useBusinessWebsiteAutofill(initialWebsite = "") {
+export function useBusinessWebsiteAutofill(
+  initialWebsite = "",
+  initialProfile?: Partial<BusinessProfileFields>,
+) {
   const [websiteUrl, setWebsiteUrl] = useState(initialWebsite);
   const [profile, setProfile] = useState<BusinessProfileFields>(() =>
-    createEmptyBusinessProfile(initialWebsite),
+    sanitizeBusinessProfile(initialProfile ?? {}, initialWebsite),
   );
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -61,7 +65,7 @@ export function useBusinessWebsiteAutofill(initialWebsite = "") {
         throw new Error(payload.error ?? "Could not scan website.");
       }
 
-      setProfile(payload.profile);
+      setProfile(sanitizeBusinessProfile(payload.profile, normalized));
       setWebsiteUrl(payload.profile.website || normalized);
       lastScannedUrlRef.current = normalized;
       setScanMessage(
