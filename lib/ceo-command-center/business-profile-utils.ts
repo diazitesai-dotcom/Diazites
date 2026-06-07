@@ -15,9 +15,6 @@ export function createEmptyBusinessProfile(website = ""): BusinessProfileFields 
     seoMetaTitle: "",
     seoMetaDescription: "",
     mainOffer: "",
-    competitors: "",
-    bestCallToAction: "",
-    brandVoice: "",
     businessDescription: "",
   };
 }

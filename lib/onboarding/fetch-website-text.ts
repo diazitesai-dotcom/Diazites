@@ -41,17 +41,27 @@ function isOwnAppHostname(host: string): boolean {
   return candidates.has(key) || host.toLowerCase().endsWith(".vercel.app");
 }
 
-function builtInMarketingSnapshot(url: string): { text: string; title: string } | null {
+function builtInMarketingSnapshot(url: string): { text: string; title: string; html: string } | null {
   try {
     if (!isOwnAppHostname(new URL(url).hostname)) return null;
   } catch {
     return null;
   }
 
+  const contactHtml = `
+    <address>hello@diazites.com</address>
+    <a href="mailto:hello@diazites.com">hello@diazites.com</a>
+    <a href="/contact">Contact us</a>
+  `;
+
   // Avoid server-side self-fetch loops on Vercel when operators test with diazites.com.
   const text = [
     `TITLE: ${BRAND_HEADLINE}`,
     `DESCRIPTION: ${BRAND_SUBHEADLINE}`,
+    `EMAIL: hello@diazites.com`,
+    `CONTACT PAGE:`,
+    `URL: ${url.replace(/\/$/, "")}/contact`,
+    `EMAIL: hello@diazites.com`,
     `SERVICES: ${TRUST_BADGES.join(", ")}`,
     `AGENTS: ${ONBOARDING_AI_AGENTS.map((a) => a.label).join(", ")}`,
     "INDUSTRY: SaaS, AI automation, marketing technology",
@@ -63,6 +73,7 @@ function builtInMarketingSnapshot(url: string): { text: string; title: string } 
   return {
     title: BRAND_HEADLINE,
     text: text.slice(0, MAX_TEXT_CHARS),
+    html: contactHtml,
   };
 }
 
@@ -292,12 +303,14 @@ function stripHtmlToText(html: string): string {
   return `${prefix} ${text}`.trim().slice(0, MAX_TEXT_CHARS);
 }
 
-export async function fetchWebsiteText(rawUrl: string): Promise<{
+export type WebsiteFetchResult = {
   url: string;
   text: string;
   title?: string;
   html?: string;
-}> {
+};
+
+export async function fetchWebsiteText(rawUrl: string): Promise<WebsiteFetchResult> {
   const url = normalizeWebsiteUrl(rawUrl);
   if (!url) {
     throw new Error("Enter a valid public website URL (https://…).");
@@ -305,7 +318,7 @@ export async function fetchWebsiteText(rawUrl: string): Promise<{
 
   const builtIn = builtInMarketingSnapshot(url);
   if (builtIn) {
-    return { url, text: builtIn.text, title: builtIn.title, html: undefined };
+    return { url, text: builtIn.text, title: builtIn.title, html: builtIn.html };
   }
 
   const controller = new AbortController();

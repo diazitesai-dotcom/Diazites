@@ -1,7 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-import { fetchWebsiteText, normalizeWebsiteUrl } from "@/lib/onboarding/fetch-website-text";
+import {
+  extractContactDetailsFromHtml,
+  fetchWebsiteForAutofill,
+} from "@/lib/onboarding/fetch-website-contact";
+import { normalizeWebsiteUrl } from "@/lib/onboarding/fetch-website-text";
 import { fail, ok, type ServiceResult } from "@/lib/result";
 import { callJsonResponses, isOpenAiConfigured } from "@/services/engine/ai/openai-client";
 import type { BusinessProfileFields } from "@/types/ceo-command-center";
@@ -20,9 +24,6 @@ const CeoBusinessProfileSchema = z.object({
   seoMetaTitle: z.string().optional(),
   seoMetaDescription: z.string().optional(),
   mainOffer: z.string().optional(),
-  competitors: z.string().optional(),
-  bestCallToAction: z.string().optional(),
-  brandVoice: z.string().optional(),
   businessDescription: z.string().optional(),
 });
 
@@ -42,9 +43,6 @@ const FIELD_LABELS: Record<keyof BusinessProfileFields, string> = {
   seoMetaTitle: "SEO Meta Title",
   seoMetaDescription: "SEO Meta Description",
   mainOffer: "Main Offer",
-  competitors: "Competitors",
-  bestCallToAction: "Best Call-To-Action",
-  brandVoice: "Brand Voice",
   businessDescription: "Business Description",
 };
 
@@ -102,11 +100,29 @@ function extractPatterns(text: string): Partial<BusinessProfileFields> {
   return out;
 }
 
+function extractContactFields(
+  homepageHtml?: string,
+  contactHtml?: string,
+  contactText?: string,
+): Partial<BusinessProfileFields> {
+  const mergedHtml = [contactHtml ?? "", homepageHtml ?? ""].join("\n");
+  const fromHtml = extractContactDetailsFromHtml(mergedHtml);
+  const fromText = contactText ? extractPatterns(contactText) : {};
+
+  return {
+    phone: fromHtml.phone ?? fromText.phone,
+    email: fromHtml.email ?? fromText.email,
+    address: fromHtml.address ?? fromText.address,
+  };
+}
+
 function heuristicProfile(
   url: string,
   text: string,
   title?: string,
   html?: string,
+  contactHtml?: string,
+  contactText?: string,
 ): Partial<BusinessProfileFields> {
   const businessName = title?.split(/[|\-–—]/)[0]?.trim() ?? "";
   const descMatch = text.match(/DESCRIPTION:\s([^]+?)(?:\sOG:|$)/i);
@@ -122,10 +138,9 @@ function heuristicProfile(
     services: description.slice(0, 300),
     targetCustomer: description.slice(0, 200),
     keywords: domain.replace(/^www\./i, "").replace(/\./g, " ").trim(),
-    bestCallToAction: "Get Started",
-    brandVoice: "Professional, trustworthy, local expert",
     ...(html ? extractFromJsonLd(html) : {}),
     ...extractPatterns(text),
+    ...extractContactFields(html, contactHtml, contactText),
   };
 }
 
@@ -155,9 +170,6 @@ function mergeProfile(
     seoMetaTitle: pick("seoMetaTitle"),
     seoMetaDescription: pick("seoMetaDescription"),
     mainOffer: pick("mainOffer"),
-    competitors: pick("competitors"),
-    bestCallToAction: pick("bestCallToAction"),
-    brandVoice: pick("brandVoice"),
     businessDescription: pick("businessDescription"),
   };
 }
@@ -175,19 +187,35 @@ export async function autofillCeoBusinessProfileFromWebsite(
   let pageText: string;
   let pageTitle: string | undefined;
   let pageHtml: string | undefined;
+  let contactHtml: string | undefined;
+  let contactText: string | undefined;
+  let contactUrl: string | undefined;
+
   try {
-    const fetched = await fetchWebsiteText(normalized);
+    const fetched = await fetchWebsiteForAutofill(normalized);
     pageText = fetched.text;
     pageTitle = fetched.title;
     pageHtml = fetched.html;
+    contactHtml = fetched.contactHtml;
+    contactText = fetched.contactText;
+    contactUrl = fetched.contactUrl;
   } catch (e) {
     return fail(e instanceof Error ? e.message : "Could not read website.", "FETCH_FAILED");
   }
 
+  const contactHint = extractContactFields(pageHtml, contactHtml, contactText);
+
   if (!isOpenAiConfigured()) {
-    const partial = heuristicProfile(normalized, pageText, pageTitle, pageHtml);
+    const partial = heuristicProfile(
+      normalized,
+      pageText,
+      pageTitle,
+      pageHtml,
+      contactHtml,
+      contactText,
+    );
     return ok({
-      profile: mergeProfile(currentProfile, partial, normalized),
+      profile: mergeProfile(currentProfile, { ...partial, ...contactHint }, normalized),
       usedAi: false,
     });
   }
@@ -198,33 +226,45 @@ export async function autofillCeoBusinessProfileFromWebsite(
     purpose: "onboarding.ceo_business_profile_autofill",
     schema: CeoBusinessProfileSchema,
     system:
-      "You extract structured business profile data from website content for a local/service business onboarding form. Return only fields you can infer confidently; omit unknown fields.",
+      "You extract structured business profile data from website content for a local/service business onboarding form. Prioritize the CONTACT PAGE section for phone, email, and address. Return only fields you can infer confidently; omit unknown fields.",
     prompt: `Analyze this business website and extract onboarding profile fields.
 
 Website URL: ${normalized}
 Page title: ${pageTitle ?? "(unknown)"}
+${contactUrl ? `Contact page scanned: ${contactUrl}` : "No separate contact page found — check homepage footer/header."}
 
-Website text excerpt:
+Website text excerpt (homepage + contact page):
 """
 ${pageText.slice(0, 14000)}
 """
 
 Return JSON with any of these optional string fields:
-businessName, industry, services, address, phone, email, website, businessHours, targetCustomer, keywords (comma-separated), seoMetaTitle (≤60 chars), seoMetaDescription (≤160 chars), mainOffer, competitors (comma-separated names), bestCallToAction, brandVoice, businessDescription.
+businessName, industry, services, address, phone, email, website, businessHours, targetCustomer, keywords (comma-separated), seoMetaTitle (≤60 chars), seoMetaDescription (≤160 chars), mainOffer, businessDescription.
 
-Be specific to this business. Use concise, operator-ready values.`,
+For phone, email, and address: use the Contact Us / contact page content first. Be specific to this business. Use concise, operator-ready values.`,
   });
 
   if (!aiResult.success) {
-    const partial = heuristicProfile(normalized, pageText, pageTitle, pageHtml);
+    const partial = heuristicProfile(
+      normalized,
+      pageText,
+      pageTitle,
+      pageHtml,
+      contactHtml,
+      contactText,
+    );
     return ok({
-      profile: mergeProfile(currentProfile, partial, normalized),
+      profile: mergeProfile(currentProfile, { ...partial, ...contactHint }, normalized),
       usedAi: false,
     });
   }
 
   return ok({
-    profile: mergeProfile(currentProfile, { ...aiResult.data, website: normalized }, normalized),
+    profile: mergeProfile(
+      currentProfile,
+      { ...aiResult.data, ...contactHint, website: normalized },
+      normalized,
+    ),
     usedAi: true,
   });
 }

@@ -179,12 +179,9 @@ export function getOnboardingCommandCenterMockData(): OnboardingCommandCenterDat
       keywords: "",
       seoMetaTitle: "",
       seoMetaDescription: "",
-      mainOffer: "",
-      competitors: "",
-      bestCallToAction: "",
-      brandVoice: "",
-      businessDescription: "",
-    },
+    mainOffer: "",
+    businessDescription: "",
+  },
     landingPages: [
       {
         id: "lead_gen",

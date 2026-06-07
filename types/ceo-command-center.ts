@@ -155,9 +155,6 @@ export type BusinessProfileFields = {
   seoMetaTitle: string;
   seoMetaDescription: string;
   mainOffer: string;
-  competitors: string;
-  bestCallToAction: string;
-  brandVoice: string;
   businessDescription: string;
 };
 
