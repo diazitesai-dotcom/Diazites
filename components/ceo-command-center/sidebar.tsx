@@ -7,8 +7,10 @@ import {
   Bot,
   Calendar,
   CreditCard,
+  Crown,
   Globe,
   LayoutDashboard,
+  LogOut,
   MessageSquare,
   Settings,
   Sparkles,
@@ -22,6 +24,7 @@ import {
 
 import { CircularProgress } from "@/components/ceo-command-center/shared/circular-progress";
 import { cn } from "@/lib/utils";
+import { signOutAction } from "@/services/auth/actions";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -38,6 +41,11 @@ const NAV_ITEMS = [
   { href: "/dashboard/analytics", label: "Competitors", icon: Crosshair },
   { href: "/dashboard/ai-text", label: "AI Content Factory", icon: Sparkles },
   { href: "/dashboard/merchant-services", label: "Payments", icon: CreditCard },
+  {
+    href: "/dashboard/organization?tab=billing&upgrade=agents",
+    label: "Upgrade Plan",
+    icon: Crown,
+  },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -94,7 +102,20 @@ export function Sidebar({ healthScore = 84, healthChange = 12 }: SidebarProps) {
         })}
       </nav>
 
-      <div className="mx-3 mb-4 rounded-2xl border border-white/[0.08] bg-gradient-to-br from-violet-950/40 to-indigo-950/30 p-4">
+      <div className="mx-3 mb-3 rounded-2xl border border-amber-400/20 bg-gradient-to-br from-amber-500/10 to-violet-600/10 p-4">
+        <p className="text-xs font-semibold text-amber-100">Unlock more agents</p>
+        <p className="mt-1 text-[11px] leading-4 text-slate-400">
+          Upgrade to add more AI employees, campaigns, automations, and feature tabs.
+        </p>
+        <Link
+          href="/dashboard/organization?tab=billing&upgrade=agents"
+          className="mt-3 block w-full rounded-lg bg-amber-400/15 py-2 text-center text-xs font-semibold text-amber-100 transition hover:bg-amber-400/25"
+        >
+          View upgrade options
+        </Link>
+      </div>
+
+      <div className="mx-3 mb-3 rounded-2xl border border-white/[0.08] bg-gradient-to-br from-violet-950/40 to-indigo-950/30 p-4">
         <p className="text-xs font-medium text-slate-400">Business Health Score</p>
         <div className="mt-3 flex items-center gap-3">
           <CircularProgress
@@ -117,6 +138,16 @@ export function Sidebar({ healthScore = 84, healthChange = 12 }: SidebarProps) {
           View Full Report
         </Link>
       </div>
+
+      <form action={signOutAction} className="mx-3 mb-4">
+        <button
+          type="submit"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.06] hover:text-white"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out of session
+        </button>
+      </form>
     </aside>
   );
 }

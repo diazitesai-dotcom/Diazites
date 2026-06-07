@@ -1,8 +1,10 @@
 "use client";
 
-import { Bell, ChevronDown, HelpCircle, MessageCircle, Rocket } from "lucide-react";
+import Link from "next/link";
+import { Bell, ChevronDown, Crown, HelpCircle, LogOut, MessageCircle, Rocket } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { signOutAction } from "@/services/auth/actions";
 
 type HeaderProps = {
   userName?: string;
@@ -43,6 +45,14 @@ export function Header({ userName = "Tim", userInitials = "TM", onLaunch }: Head
           <HelpCircle className="h-4 w-4" />
         </button>
 
+        <Link
+          href="/dashboard/organization?tab=billing&upgrade=agents"
+          className="hidden items-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2.5 text-sm font-semibold text-amber-100 transition hover:bg-amber-400/15 lg:inline-flex"
+        >
+          <Crown className="h-4 w-4" />
+          Upgrade
+        </Link>
+
         <div className="ml-1 flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2 py-1.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-xs font-semibold text-white">
             {userInitials}
@@ -50,6 +60,16 @@ export function Header({ userName = "Tim", userInitials = "TM", onLaunch }: Head
           <span className="hidden text-sm font-medium text-white sm:inline">{userName}</span>
           <ChevronDown className="h-4 w-4 text-slate-500" />
         </div>
+
+        <form action={signOutAction} className="hidden md:block">
+          <button
+            type="submit"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/[0.06] hover:text-white"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </button>
+        </form>
 
         <button
           type="button"
