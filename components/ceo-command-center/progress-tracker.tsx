@@ -5,6 +5,7 @@ import type { ProgressStep } from "@/types/ceo-command-center";
 
 type ProgressTrackerProps = {
   steps: ProgressStep[];
+  onStepClick?: (step: ProgressStep) => void;
 };
 
 const statusStyles: Record<ProgressStep["status"], string> = {
@@ -21,7 +22,7 @@ const lineStyles: Record<ProgressStep["status"], string> = {
   pending: "bg-white/10",
 };
 
-export function ProgressTracker({ steps }: ProgressTrackerProps) {
+export function ProgressTracker({ steps, onStepClick }: ProgressTrackerProps) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-white/[0.08] bg-[#0c1222]/60 px-4 py-5 backdrop-blur-xl">
       <div className="flex min-w-[900px] items-start justify-between gap-0">
@@ -37,9 +38,14 @@ export function ProgressTracker({ steps }: ProgressTrackerProps) {
           return (
             <div key={step.id} className="flex flex-1 items-start">
               <div className="flex flex-col items-center">
-                <div
+                <button
+                  type="button"
+                  onClick={() => onStepClick?.(step)}
+                  disabled={!onStepClick}
                   className={cn(
                     "flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-bold transition-all",
+                    onStepClick && "cursor-pointer hover:scale-105 focus:outline-none focus:ring-2 focus:ring-violet-400/50 focus:ring-offset-2 focus:ring-offset-[#0c1222]",
+                    !onStepClick && "cursor-default",
                     statusStyles[step.status],
                   )}
                 >
@@ -48,16 +54,21 @@ export function ProgressTracker({ steps }: ProgressTrackerProps) {
                   ) : (
                     step.id
                   )}
-                </div>
-                <p
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onStepClick?.(step)}
+                  disabled={!onStepClick}
                   className={cn(
                     "mt-2 max-w-[5.5rem] text-center text-[10px] leading-tight sm:text-xs",
+                    onStepClick && "cursor-pointer hover:text-violet-200 focus:outline-none focus:underline",
+                    !onStepClick && "cursor-default",
                     step.status === "pending" ? "text-slate-500" : "text-slate-300",
                     step.status === "review" && "font-medium text-pink-200",
                   )}
                 >
                   {step.label}
-                </p>
+                </button>
               </div>
               {!isLast ? (
                 <div className="mt-[1.125rem] h-0.5 flex-1 self-start">

@@ -413,6 +413,11 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
     if (prev) setCurrentStepId(prev);
   };
 
+  const goToStepNumber = (stepNumber: number) => {
+    const step = initialData.steps.find((item) => item.number === stepNumber);
+    if (step) setCurrentStepId(step.id);
+  };
+
   const handleLaunch = () => {
     router.push("/dashboard?onboarding=complete");
   };
@@ -531,7 +536,7 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
           </Link>
         </header>
 
-        <ProgressTracker steps={progressSteps} />
+        <ProgressTracker steps={progressSteps} onStepClick={(step) => goToStepNumber(step.id)} />
 
         <div className="mt-8 rounded-2xl border border-white/[0.08] bg-[#0c1222]/80 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl">
           {currentStepId === "business_profile" && (
