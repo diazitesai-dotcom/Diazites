@@ -330,4 +330,19 @@
       opacity: 0.85;
     }
   }
+
+  /* CEO Command Center — dark SaaS dashboard theme */
+  .ceo-command-center {
+    --ceo-bg: #050810;
+    --ceo-card: #0c1222;
+    --ceo-border: rgba(255, 255, 255, 0.08);
+    --ceo-accent-violet: #8b5cf6;
+    --ceo-accent-indigo: #6366f1;
+    --ceo-accent-emerald: #22c55e;
+    color-scheme: dark;
+  }
+
+  .ceo-command-center ::selection {
+    background: rgba(139, 92, 246, 0.35);
+  }
 }

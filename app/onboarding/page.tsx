@@ -1,18 +1,13 @@
 import { redirect } from "next/navigation";
 
-import { PageHeader } from "@/components/layout/page-header";
-import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
-import { TrialWelcomeBanner } from "@/components/onboarding/trial-welcome-banner";
+import { OnboardingCommandCenter } from "@/components/ceo-command-center/onboarding/onboarding-command-center";
 import { Button } from "@/components/ui/button";
-import { draftFromOnboardingRow } from "@/lib/onboarding/draft";
-import { CORE_USER_FLOW } from "@/lib/platform/growth-spec";
+import { getOnboardingCommandCenterMockData } from "@/lib/ceo-command-center/mock-data";
 import { missionControlLandingPath } from "@/lib/auth/mission-control-routing";
 import { getOnboardingRoutingState } from "@/lib/auth/onboarding-routing";
 import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
 import { createUserProfile } from "@/lib/auth/user-profile";
 import { requireAuth } from "@/lib/auth/session";
-import { createOnboardingRepository } from "@/repositories/onboarding.repository";
-import { createProfileRepository } from "@/repositories/profile.repository";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signOutAction } from "@/services/auth/actions";
 
@@ -37,31 +32,16 @@ export default async function OnboardingPage({
   });
 
   const sp = await searchParams;
-  const showTrialWelcome = sp.welcome === "trial";
+  const forceOnboarding = sp.step === "launch";
 
   const { hasBusiness, onboardingComplete } = await getOnboardingRoutingState(
     supabase,
     user.id,
   );
 
-  if (hasBusiness && onboardingComplete) {
+  if (hasBusiness && onboardingComplete && !forceOnboarding) {
     redirect(missionControlLandingPath({ postLogin: true }));
   }
-
-  const profiles = createProfileRepository(supabase);
-  const { data: profile } = await profiles.getByUserId(user.id);
-
-  const onboardingRepo = createOnboardingRepository(supabase);
-  const { data: onboardingRow } = await onboardingRepo.getByUserId(user.id);
-  const initialDraft = draftFromOnboardingRow(onboardingRow, {
-    email: user.email ?? "",
-    ownerName:
-      profile?.full_name ??
-      (user.user_metadata?.full_name as string | undefined) ??
-      "",
-    businessName: (user.user_metadata?.company_name as string | undefined) ?? "",
-    phone: (user.user_metadata?.phone as string | undefined) ?? "",
-  });
 
   const rawError = sp.error;
   const errorMsg =
@@ -75,48 +55,35 @@ export default async function OnboardingPage({
         })()
       : null;
 
+  const mockData = getOnboardingCommandCenterMockData();
+  const initialData =
+    sp.step === "launch"
+      ? { ...mockData, currentStepId: "launch" as const }
+      : mockData;
+
   return (
-    <main className="relative min-h-screen px-4 py-10 sm:px-6">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_45%_at_50%_-10%,rgba(139,92,246,0.15),transparent)]" />
-      <div className="relative mx-auto max-w-6xl space-y-10">
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            Signed in as <span className="text-foreground">{user.email}</span>
-          </p>
-          <form action={signOutAction}>
-            <Button type="submit" variant="ghost" size="sm" className="rounded-lg">
-              Sign out
-            </Button>
-          </form>
-        </div>
-
-        {errorMsg ? (
-          <p
-            role="alert"
-            className="rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm text-red-100"
-          >
-            {errorMsg}
-          </p>
-        ) : null}
-
-        {showTrialWelcome ? <TrialWelcomeBanner /> : null}
-        <PageHeader
-          eyebrow="Onboarding"
-          title="Build your AI growth system"
-          description="Five guided steps after account creation — business profile, workspace type, AI agents, integrations, and workspace generation. Mission Control unlocks when you're done."
-        />
-        <OnboardingWizard initialDraft={initialDraft} />
-        <details className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 text-sm text-muted-foreground">
-          <summary className="cursor-pointer font-medium text-foreground">
-            What happens after setup
-          </summary>
-          <ol className="mt-3 list-decimal space-y-1 pl-5">
-            {CORE_USER_FLOW.slice(0, 8).map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-        </details>
+    <div className="relative min-h-screen">
+      <div className="absolute right-4 top-4 z-10 flex items-center gap-4 sm:right-6 sm:top-6">
+        <p className="hidden text-sm text-slate-400 sm:block">
+          Signed in as <span className="text-slate-200">{user.email}</span>
+        </p>
+        <form action={signOutAction}>
+          <Button type="submit" variant="ghost" size="sm" className="rounded-lg text-slate-400">
+            Sign out
+          </Button>
+        </form>
       </div>
-    </main>
+
+      {errorMsg ? (
+        <p
+          role="alert"
+          className="relative z-10 mx-auto mt-16 max-w-5xl rounded-xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm text-red-100"
+        >
+          {errorMsg}
+        </p>
+      ) : null}
+
+      <OnboardingCommandCenter initialData={initialData} />
+    </div>
   );
 }

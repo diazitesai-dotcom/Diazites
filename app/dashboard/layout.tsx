@@ -2,9 +2,9 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { AgentDeploymentShell } from "@/components/agents/agent-deployment-shell";
+import { CeoCommandCenterShell } from "@/components/ceo-command-center/ceo-command-center-shell";
 import { SetupReturnBar } from "@/components/dashboard/setup-return-bar";
 import { AdminAccessDeniedBanner } from "@/components/layout/admin-access-denied-banner";
-import { AppSidebarShell } from "@/components/layout/app-sidebar-shell";
 import { OnboardingCompleteBanner } from "@/components/onboarding/onboarding-complete-banner";
 import { getCurrentUserAccess } from "@/lib/access-control/access-control.service";
 import { getOnboardingRoutingState, onboardingEntryPath, shouldRequireOnboarding } from "@/lib/auth/onboarding-routing";
@@ -79,24 +79,20 @@ export default async function DashboardLayout({
     }
   }
 
+  void enabledServiceKeys;
+  void entitlementPlanKey;
+  void isOwnerAdmin;
+
   return (
-    <AppSidebarShell
-      variant="dashboard"
-      brandHref="/dashboard"
-      brandTitle="Diazites"
-      footerLink={{ href: "/", label: "Marketing site" }}
-      account={account}
-      enabledServiceKeys={enabledServiceKeys}
-      entitlementPlanKey={entitlementPlanKey}
-      isOwnerAdmin={isOwnerAdmin}
-      showPlatformAdminNav={Boolean(account?.isPlatformAdmin || isOwnerAdmin)}
-    >
+    <CeoCommandCenterShell healthScore={84} healthChange={12}>
       <SetupReturnBar />
       <Suspense fallback={null}>
         <AdminAccessDeniedBanner />
         <OnboardingCompleteBanner />
-        <AgentDeploymentShell>{children}</AgentDeploymentShell>
+        <AgentDeploymentShell>
+          <div className="flex min-h-0 flex-1 flex-col px-4 py-6 md:px-6 md:py-8">{children}</div>
+        </AgentDeploymentShell>
       </Suspense>
-    </AppSidebarShell>
+    </CeoCommandCenterShell>
   );
 }
