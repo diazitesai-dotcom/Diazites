@@ -1,0 +1,10 @@
+---
+description: Primary Diazites developer admin account
+alwaysApply: true
+---
+
+# Primary Developer Admin
+
+- Treat `diazites.ai@gmail.com` as the primary Diazites developer/admin account.
+- This account should be able to manage users, platform settings, plan upgrades/downgrades, feature/tab access, and overall platform administration.
+- When changing auth, onboarding, dashboard routing, billing, entitlements, or admin access logic, preserve this account's platform-admin behavior and avoid making it behave like a normal customer account.

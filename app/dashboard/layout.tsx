@@ -27,6 +27,14 @@ export default async function DashboardLayout({
   const account = await getAccountContext();
 
   if (account && !account.isPlatformAdmin) {
+    const granted = await ensureBootstrapPlatformAdmin({
+      id: account.userId,
+      email: account.email,
+    });
+    if (granted) {
+      redirect("/admin");
+    }
+
     try {
       const supabase = await createServerSupabaseClient();
       const routing = await getOnboardingRoutingState(supabase, account.userId);
@@ -35,14 +43,6 @@ export default async function DashboardLayout({
       }
     } catch {
       /* allow dashboard if routing check fails */
-    }
-
-    const granted = await ensureBootstrapPlatformAdmin({
-      id: account.userId,
-      email: account.email,
-    });
-    if (granted) {
-      redirect("/admin");
     }
   }
 
@@ -84,7 +84,7 @@ export default async function DashboardLayout({
   void isOwnerAdmin;
 
   return (
-    <CeoCommandCenterShell healthScore={84} healthChange={12}>
+    <CeoCommandCenterShell>
       <SetupReturnBar />
       <Suspense fallback={null}>
         <AdminAccessDeniedBanner />

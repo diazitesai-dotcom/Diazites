@@ -3,13 +3,18 @@ import type { User } from "@supabase/supabase-js";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { createAdminUsersRepository } from "@/repositories/admin-users.repository";
 
+export const PRIMARY_DEVELOPER_ADMIN_EMAIL = "diazites.ai@gmail.com";
+
 function getBootstrapEmails(): string[] {
   const raw = process.env.PLATFORM_BOOTSTRAP_ADMIN_EMAIL?.trim();
-  if (!raw) return [];
-  return raw
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
+  const configured = raw
+    ? raw
+        .split(",")
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+
+  return Array.from(new Set([PRIMARY_DEVELOPER_ADMIN_EMAIL, ...configured]));
 }
 
 /**
@@ -36,7 +41,9 @@ export async function ensureBootstrapPlatformAdmin(
   const { isAdmin } = await adminRepo.isAdmin(user.id);
   if (isAdmin) return true;
 
-  const allowIfExists = process.env.PLATFORM_BOOTSTRAP_ALLOW_IF_ADMINS_EXIST === "true";
+  const isPrimaryDeveloperAdmin = userEmail === PRIMARY_DEVELOPER_ADMIN_EMAIL;
+  const allowIfExists =
+    isPrimaryDeveloperAdmin || process.env.PLATFORM_BOOTSTRAP_ALLOW_IF_ADMINS_EXIST === "true";
   if (!allowIfExists) {
     const { count } = await adminRepo.countAdmins();
     if ((count ?? 0) > 0) return false;

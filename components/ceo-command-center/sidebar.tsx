@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  Activity,
   BarChart3,
   Bot,
   Calendar,
@@ -28,8 +27,7 @@ import { cn } from "@/lib/utils";
 import { signOutAction } from "@/services/auth/actions";
 
 const TOP_NAV_ITEMS = [
-  { href: "/dashboard/analytics", label: "Overall Health", icon: Activity },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Full Dashboard", icon: LayoutDashboard },
 ] as const;
 
 const BUSINESS_TOOL_ITEMS = [
@@ -52,21 +50,15 @@ const BOTTOM_NAV_ITEMS = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ] as const;
 
-type SidebarProps = {
-  healthScore?: number;
-  healthChange?: number;
-};
-
-export function Sidebar({ healthScore = 84 }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname();
-  const [toolsOpen, setToolsOpen] = useState(true);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === "/dashboard" : pathname === href || pathname.startsWith(`${href}/`);
 
   const renderNavItem = (
     item: (typeof TOP_NAV_ITEMS)[number] | (typeof BUSINESS_TOOL_ITEMS)[number] | (typeof BOTTOM_NAV_ITEMS)[number],
-    options?: { showHealthScore?: boolean },
   ) => {
     const Icon = item.icon;
     const active = isActive(item.href);
@@ -89,11 +81,6 @@ export function Sidebar({ healthScore = 84 }: SidebarProps) {
           )}
         />
         <span className="flex-1 truncate">{item.label}</span>
-        {options?.showHealthScore ? (
-          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-            {healthScore}
-          </span>
-        ) : null}
         {"badge" in item && item.badge ? (
           <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
             {item.badge}
@@ -114,8 +101,7 @@ export function Sidebar({ healthScore = 84 }: SidebarProps) {
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <div className="space-y-0.5">
-          {renderNavItem(TOP_NAV_ITEMS[0], { showHealthScore: true })}
-          {renderNavItem(TOP_NAV_ITEMS[1])}
+          {renderNavItem(TOP_NAV_ITEMS[0])}
         </div>
 
         <div className="my-4 border-t border-white/[0.06]" />
