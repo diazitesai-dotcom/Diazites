@@ -183,6 +183,7 @@ export function getOnboardingCommandCenterMockData(): OnboardingCommandCenterDat
       businessDescription: "",
     },
     offerGoals: {
+      offerType: "consultation",
       primaryGoal: "leads",
       monthlyTarget: "100 qualified leads",
       averageDealValue: "$500",

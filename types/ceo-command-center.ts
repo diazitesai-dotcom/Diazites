@@ -158,11 +158,48 @@ export type BusinessProfileFields = {
   businessDescription: string;
 };
 
-export type PrimaryGoal = "leads" | "phone_calls" | "forms" | "bookings" | "revenue" | "sales";
+export type PrimaryGoal =
+  | "leads"
+  | "phone_calls"
+  | "forms"
+  | "bookings"
+  | "quote_requests"
+  | "sales"
+  | "revenue"
+  | "email_sms_list"
+  | "donations_sponsors"
+  | "program_enrollments"
+  | "local_visits"
+  | "customer_reactivation";
 
-export type PreferredConversionAction = "call" | "form" | "booking" | "checkout";
+export type PreferredConversionAction =
+  | "call"
+  | "form"
+  | "booking"
+  | "checkout"
+  | "quote_request"
+  | "application"
+  | "email_signup"
+  | "sms_signup"
+  | "whatsapp"
+  | "live_chat"
+  | "donation"
+  | "download";
+
+export type OfferType =
+  | "consultation"
+  | "estimate"
+  | "paid_service"
+  | "product_purchase"
+  | "appointment"
+  | "program_enrollment"
+  | "donation"
+  | "trial_demo"
+  | "limited_offer"
+  | "lead_magnet";
 
 export type OfferGoalsFields = {
+  offerType: OfferType;
   primaryGoal: PrimaryGoal;
   monthlyTarget: string;
   averageDealValue: string;

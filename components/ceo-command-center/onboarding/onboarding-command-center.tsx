@@ -50,8 +50,14 @@ const PRIMARY_GOAL_OPTIONS: Array<{ value: OfferGoalsFields["primaryGoal"]; labe
   { value: "phone_calls", label: "Get phone calls" },
   { value: "forms", label: "Get form submissions" },
   { value: "bookings", label: "Book appointments" },
-  { value: "revenue", label: "Hit a revenue target" },
+  { value: "quote_requests", label: "Get quote requests" },
   { value: "sales", label: "Sell products or services" },
+  { value: "revenue", label: "Hit a revenue target" },
+  { value: "email_sms_list", label: "Grow email/SMS list" },
+  { value: "donations_sponsors", label: "Get donations or sponsors" },
+  { value: "program_enrollments", label: "Increase program enrollments" },
+  { value: "local_visits", label: "Drive walk-ins / local visits" },
+  { value: "customer_reactivation", label: "Reactivate past customers" },
 ];
 
 const CONVERSION_ACTION_OPTIONS: Array<{
@@ -62,6 +68,27 @@ const CONVERSION_ACTION_OPTIONS: Array<{
   { value: "form", label: "Form submission" },
   { value: "booking", label: "Booked appointment" },
   { value: "checkout", label: "Checkout / payment" },
+  { value: "quote_request", label: "Quote request" },
+  { value: "application", label: "Application" },
+  { value: "email_signup", label: "Email signup" },
+  { value: "sms_signup", label: "SMS signup" },
+  { value: "whatsapp", label: "WhatsApp message" },
+  { value: "live_chat", label: "Live chat" },
+  { value: "donation", label: "Donation" },
+  { value: "download", label: "Download / lead magnet" },
+];
+
+const OFFER_TYPE_OPTIONS: Array<{ value: OfferGoalsFields["offerType"]; label: string }> = [
+  { value: "consultation", label: "Free consultation" },
+  { value: "estimate", label: "Free estimate / quote" },
+  { value: "paid_service", label: "Paid service" },
+  { value: "product_purchase", label: "Product purchase" },
+  { value: "appointment", label: "Appointment booking" },
+  { value: "program_enrollment", label: "Program enrollment" },
+  { value: "donation", label: "Donation / sponsorship" },
+  { value: "trial_demo", label: "Trial / demo" },
+  { value: "limited_offer", label: "Limited-time offer" },
+  { value: "lead_magnet", label: "Lead magnet / download" },
 ];
 
 const formatOptionLabel = <T extends string>(
@@ -249,16 +276,33 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                 build around.
               </p>
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="block">
+                <label className="block md:col-span-2">
                   <span className="mb-1 block text-xs text-slate-400">Main Offer</span>
-                  <input
+                  <textarea
                     value={profile.mainOffer}
+                    rows={3}
                     onChange={(e) =>
                       setProfile((p) => sanitizeBusinessProfile({ ...p, mainOffer: e.target.value }))
                     }
-                    placeholder="Free estimate, consultation, audit, starter package..."
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                    placeholder="Describe the offer prospects will see, e.g. free consultation, quote, audit, program enrollment..."
+                    className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
                   />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-slate-400">Offer Type</span>
+                  <select
+                    value={offerGoals.offerType}
+                    onChange={(e) =>
+                      updateOfferGoals("offerType", e.target.value as OfferGoalsFields["offerType"])
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                  >
+                    {OFFER_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value} className="bg-[#0c1222]">
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-xs text-slate-400">Primary Goal</span>
@@ -320,14 +364,16 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
               <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4 text-sm text-violet-100">
                 <p className="font-medium">Agent build instruction</p>
                 <p className="mt-1 text-xs leading-5 text-violet-100/80">
-                  Build the funnel around{" "}
-                  {formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal).toLowerCase()}{" "}
-                  with a{" "}
+                  Build a{" "}
+                  {formatOptionLabel(OFFER_TYPE_OPTIONS, offerGoals.offerType).toLowerCase()}{" "}
+                  funnel to{" "}
+                  {formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal).toLowerCase()},
+                  using{" "}
                   {formatOptionLabel(
                     CONVERSION_ACTION_OPTIONS,
                     offerGoals.preferredConversionAction,
                   ).toLowerCase()}{" "}
-                  as the main conversion event.
+                  as the main conversion event and {offerGoals.monthlyTarget} as the monthly target.
                 </p>
               </div>
             </div>
@@ -378,7 +424,8 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                 {currentStepId.replace(/_/g, " ")}
               </h2>
               <p className="mx-auto max-w-md text-sm text-slate-400">
-                AI is configuring your {currentStepId.replace(/_/g, " ")} to drive{" "}
+                AI is configuring your {currentStepId.replace(/_/g, " ")} around a{" "}
+                {formatOptionLabel(OFFER_TYPE_OPTIONS, offerGoals.offerType).toLowerCase()} that drives{" "}
                 {formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal).toLowerCase()} via{" "}
                 {formatOptionLabel(
                   CONVERSION_ACTION_OPTIONS,
@@ -437,6 +484,7 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                   ["Niche", profile.industry],
                   ["Location", "Austin, TX"],
                   ["Offer", profile.mainOffer],
+                  ["Offer Type", formatOptionLabel(OFFER_TYPE_OPTIONS, offerGoals.offerType)],
                   ["Primary Goal", formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal)],
                   [
                     "Conversion",
