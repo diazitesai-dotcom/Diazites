@@ -14,8 +14,35 @@ import { completeOnboardingProfile } from "@/services/onboarding/onboarding-comp
 import { autofillOnboardingFromWebsite } from "@/services/onboarding/website-autofill.service";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
 import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
+import { createBusinessRepository } from "@/repositories/business.repository";
+import { createOnboardingRepository } from "@/repositories/onboarding.repository";
 import type { BillingPlanName } from "@/types/backend";
 import type { CampaignGoalId, OnboardingWizardPayload } from "@/types/platform-growth";
+import type {
+  BusinessProfileFields,
+  OfferGoalsFields,
+} from "@/types/ceo-command-center";
+
+function goalToCampaignGoal(goal: OfferGoalsFields["primaryGoal"]): CampaignGoalId {
+  if (goal === "bookings") return "book_appointments";
+  if (goal === "forms") return "form_submissions";
+  if (goal === "sales" || goal === "revenue") return "sell_products";
+  if (goal === "email_sms_list") return "grow_email_list";
+  if (goal === "local_visits") return "local_ads";
+  return "generate_leads";
+}
+
+function parseCurrency(value: string): number {
+  const parsed = Number(value.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function fallbackBusinessName(profile: BusinessProfileFields, email?: string | null): string {
+  const fromProfile = profile.businessName.trim();
+  if (fromProfile) return fromProfile;
+  const fromEmail = email?.split("@")[0]?.replace(/[._-]+/g, " ").trim();
+  return fromEmail || "Diazites Business";
+}
 
 function parseOnboardingForm(formData: FormData): OnboardingWizardPayload {
   const campaignGoal = String(formData.get("campaign_goal") ?? "generate_leads");
@@ -127,6 +154,149 @@ export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
   return { success: true as const, redirectTo: missionControlLandingPath({ postLogin: true, extra: { onboarding: "complete" } }) };
+}
+
+export async function completeCommandCenterOnboardingAction(
+  profile: BusinessProfileFields,
+  offerGoals: OfferGoalsFields,
+) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false as const, error: "Not signed in." };
+
+  const ensured = await ensurePublicUserRecord(user.id, user.email);
+  if (!ensured.success) {
+    return { success: false as const, error: ensured.error };
+  }
+
+  const businessName = fallbackBusinessName(profile, user.email);
+  const campaignGoal = goalToCampaignGoal(offerGoals.primaryGoal);
+  const monthlyBudget = parseCurrency(offerGoals.averageDealValue);
+  const selectedAgents = ["landing", "pipeline", "workflow", "email"];
+  const businessProfile = {
+    industry: profile.industry || undefined,
+    businessType: offerGoals.offerType,
+    businessEmail: profile.email || user.email || undefined,
+    businessAddress: profile.address || undefined,
+    serviceAreas: profile.address || undefined,
+    mainServices: profile.services || undefined,
+    targetAudience: profile.targetCustomer || undefined,
+    idealCustomer: profile.targetCustomer || undefined,
+    offerPromotion: profile.mainOffer || undefined,
+    campaignGoal,
+    brandTone: "Professional, helpful, conversion-focused",
+    existingWebsite: profile.website || undefined,
+    leadNotifyEmail: profile.email || user.email || undefined,
+    leadNotifyPhone: profile.phone || undefined,
+  };
+
+  const businesses = createBusinessRepository(supabase);
+  const { data: existingBusiness } = await businesses.getByOwnerUserId(user.id);
+
+  if (existingBusiness) {
+    await businesses.update(existingBusiness.id, {
+      name: businessName,
+      website: profile.website || null,
+      serviceArea: profile.address || null,
+      services: profile.services || null,
+      businessHours: profile.businessHours || null,
+      monthlyBudget,
+    });
+    await businesses.updateProfile(existingBusiness.id, businessProfile);
+
+    const onboarding = createOnboardingRepository(supabase);
+    await onboarding.upsertFull({
+      userId: user.id,
+      businessName,
+      ownerName: (user.user_metadata?.full_name as string | undefined) ?? "",
+      email: user.email ?? profile.email,
+      phone: profile.phone,
+      website: profile.website,
+      serviceArea: profile.address,
+      cityState: profile.address,
+      services: profile.services,
+      businessHours: profile.businessHours,
+      monthlyBudget,
+      stage: "live",
+      status: "completed",
+      profileData: {
+        ...businessProfile,
+        mainOffer: profile.mainOffer,
+        monthlyTarget: offerGoals.monthlyTarget,
+        averageDealValue: offerGoals.averageDealValue,
+        preferredConversionAction: offerGoals.preferredConversionAction,
+        selectedAgents,
+        accountIntent: "direct",
+        wizardStep: 10,
+      },
+      checklist: {
+        profile_complete: true,
+        integrations_connected: false,
+        agents_assigned: true,
+        campaign_built: true,
+        landing_page_ready: true,
+        ai_active: true,
+        team_invited: false,
+      },
+    });
+  } else {
+    const result = await completeOnboardingProfile(
+      supabase,
+      user.id,
+      {
+        businessName,
+        ownerName: (user.user_metadata?.full_name as string | undefined) ?? "",
+        email: user.email ?? profile.email,
+        phone: profile.phone,
+        website: profile.website,
+        businessEmail: profile.email || user.email || undefined,
+        businessAddress: profile.address || undefined,
+        serviceArea: profile.address,
+        cityState: profile.address,
+        services: profile.services,
+        businessHours: profile.businessHours,
+        monthlyBudget,
+        industry: profile.industry || undefined,
+        businessType: offerGoals.offerType,
+        mainServices: profile.services || undefined,
+        targetAudience: profile.targetCustomer || undefined,
+        idealCustomer: profile.targetCustomer || undefined,
+        offerPromotion: profile.mainOffer || undefined,
+        campaignGoal,
+        brandTone: "Professional, helpful, conversion-focused",
+        existingWebsite: profile.website || undefined,
+        leadNotifyEmail: profile.email || user.email || undefined,
+        leadNotifyPhone: profile.phone || undefined,
+        accountIntent: "direct",
+        selectedAgents,
+        skippedConnections: [],
+      },
+      {
+        trialPlanName: normalizeSignupPlan(
+          (user.user_metadata?.selected_plan as string | undefined) ?? "Starter",
+        ) as BillingPlanName,
+      },
+    );
+
+    if (!result.success) {
+      return { success: false as const, error: result.error };
+    }
+  }
+
+  revalidatePath("/", "layout");
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/onboarding", "layout");
+
+  return {
+    success: true as const,
+    redirectTo: missionControlLandingPath({
+      postLogin: true,
+      extra: { onboarding: "complete" },
+    }),
+  };
 }
 
 /** @deprecated Prefer completeOnboardingFromDraftAction — kept for legacy form posts */

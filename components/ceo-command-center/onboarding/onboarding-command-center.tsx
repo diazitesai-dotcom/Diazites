@@ -22,6 +22,7 @@ import {
   sanitizeBusinessProfile,
 } from "@/lib/ceo-command-center/business-profile-utils";
 import { cn } from "@/lib/utils";
+import { completeCommandCenterOnboardingAction } from "@/services/onboarding/actions";
 import type {
   BusinessProfileFields,
   LandingPageOption,
@@ -391,6 +392,8 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
   const [pipelineWorkflow, setPipelineWorkflow] = useState<PipelineWorkflowState>(() =>
     createPipelineWorkflowState(initialData.businessProfile, initialData.offerGoals),
   );
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState<string | null>(null);
 
   const [integrations, setIntegrations] = useState(initialData.integrations);
 
@@ -418,8 +421,24 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
     if (step) setCurrentStepId(step.id);
   };
 
-  const handleLaunch = () => {
-    router.push("/dashboard?onboarding=complete");
+  const handleLaunch = async () => {
+    setIsLaunching(true);
+    setLaunchError(null);
+
+    try {
+      const result = await completeCommandCenterOnboardingAction(profile, offerGoals);
+      if (!result.success) {
+        setLaunchError(result.error);
+        return;
+      }
+
+      router.push(result.redirectTo);
+      router.refresh();
+    } catch (error) {
+      setLaunchError(error instanceof Error ? error.message : "Could not complete onboarding.");
+    } finally {
+      setIsLaunching(false);
+    }
   };
 
   const toggleIntegration = (id: string) => {
@@ -1417,11 +1436,21 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
               <button
                 type="button"
                 onClick={handleLaunch}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-violet-900/40"
+                disabled={isLaunching}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-violet-900/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <Rocket className="h-5 w-5" />
-                Launch My System
+                {isLaunching ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Rocket className="h-5 w-5" />
+                )}
+                {isLaunching ? "Launching..." : "Launch My System"}
               </button>
+              {launchError ? (
+                <p role="alert" className="mx-auto max-w-md text-sm text-rose-300">
+                  {launchError}
+                </p>
+              ) : null}
               <p className="text-xs text-slate-500">
                 After launch you&apos;ll be taken to{" "}
                 <ExternalLink className="inline h-3 w-3" /> /dashboard
