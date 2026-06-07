@@ -24,6 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import type {
   BusinessProfileFields,
+  OfferGoalsFields,
   OnboardingCommandCenterData,
   OnboardingStepId,
 } from "@/types/ceo-command-center";
@@ -44,6 +45,30 @@ const STEP_ORDER: OnboardingStepId[] = [
   "review",
   "launch",
 ];
+
+const PRIMARY_GOAL_OPTIONS: Array<{ value: OfferGoalsFields["primaryGoal"]; label: string }> = [
+  { value: "leads", label: "Generate leads" },
+  { value: "phone_calls", label: "Get phone calls" },
+  { value: "forms", label: "Get form submissions" },
+  { value: "bookings", label: "Book appointments" },
+  { value: "revenue", label: "Hit a revenue target" },
+  { value: "sales", label: "Sell products or services" },
+];
+
+const CONVERSION_ACTION_OPTIONS: Array<{
+  value: OfferGoalsFields["preferredConversionAction"];
+  label: string;
+}> = [
+  { value: "call", label: "Phone call" },
+  { value: "form", label: "Form submission" },
+  { value: "booking", label: "Booked appointment" },
+  { value: "checkout", label: "Checkout / payment" },
+];
+
+const formatOptionLabel = <T extends string>(
+  options: Array<{ value: T; label: string }>,
+  value: T,
+) => options.find((option) => option.value === value)?.label ?? value;
 
 function stepToProgressStatus(
   stepId: OnboardingStepId,
@@ -76,6 +101,7 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
     initialData.businessProfile.website || "",
     initialData.businessProfile,
   );
+  const [offerGoals, setOfferGoals] = useState<OfferGoalsFields>(initialData.offerGoals);
   const [selectedLandingId, setSelectedLandingId] = useState<string | null>("lead_gen");
 
   const [integrations, setIntegrations] = useState(initialData.integrations);
@@ -105,6 +131,13 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
     setIntegrations((prev) =>
       prev.map((item) => (item.id === id ? { ...item, connected: !item.connected } : item)),
     );
+  };
+
+  const updateOfferGoals = <Key extends keyof OfferGoalsFields>(
+    key: Key,
+    value: OfferGoalsFields[Key],
+  ) => {
+    setOfferGoals((current) => ({ ...current, [key]: value }));
   };
 
   return (
@@ -210,26 +243,93 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
           )}
 
           {currentStepId === "offer_goals" && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <h2 className="text-lg font-semibold text-white">Offer & Goals</h2>
               <p className="text-sm text-slate-400">
-                Define your primary offer and revenue targets for the AI system.
+                Define the offer, business outcome, and conversion action the AI system should
+                build around.
               </p>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-1 block text-xs text-slate-400">Main Offer</span>
                   <input
-                    defaultValue={profile.mainOffer}
+                    value={profile.mainOffer}
+                    onChange={(e) =>
+                      setProfile((p) => sanitizeBusinessProfile({ ...p, mainOffer: e.target.value }))
+                    }
+                    placeholder="Free estimate, consultation, audit, starter package..."
                     className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs text-slate-400">Monthly Revenue Goal</span>
+                  <span className="mb-1 block text-xs text-slate-400">Primary Goal</span>
+                  <select
+                    value={offerGoals.primaryGoal}
+                    onChange={(e) =>
+                      updateOfferGoals(
+                        "primaryGoal",
+                        e.target.value as OfferGoalsFields["primaryGoal"],
+                      )
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                  >
+                    {PRIMARY_GOAL_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value} className="bg-[#0c1222]">
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-slate-400">Preferred Conversion</span>
+                  <select
+                    value={offerGoals.preferredConversionAction}
+                    onChange={(e) =>
+                      updateOfferGoals(
+                        "preferredConversionAction",
+                        e.target.value as OfferGoalsFields["preferredConversionAction"],
+                      )
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                  >
+                    {CONVERSION_ACTION_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value} className="bg-[#0c1222]">
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-slate-400">Monthly Target</span>
                   <input
-                    defaultValue="$50,000"
+                    value={offerGoals.monthlyTarget}
+                    onChange={(e) => updateOfferGoals("monthlyTarget", e.target.value)}
+                    placeholder="100 leads, 40 calls, $50,000 revenue..."
                     className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
                   />
                 </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-slate-400">Average Deal Value</span>
+                  <input
+                    value={offerGoals.averageDealValue}
+                    onChange={(e) => updateOfferGoals("averageDealValue", e.target.value)}
+                    placeholder="$500"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                  />
+                </label>
+              </div>
+              <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4 text-sm text-violet-100">
+                <p className="font-medium">Agent build instruction</p>
+                <p className="mt-1 text-xs leading-5 text-violet-100/80">
+                  Build the funnel around{" "}
+                  {formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal).toLowerCase()}{" "}
+                  with a{" "}
+                  {formatOptionLabel(
+                    CONVERSION_ACTION_OPTIONS,
+                    offerGoals.preferredConversionAction,
+                  ).toLowerCase()}{" "}
+                  as the main conversion event.
+                </p>
               </div>
             </div>
           )}
@@ -279,8 +379,13 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                 {currentStepId.replace(/_/g, " ")}
               </h2>
               <p className="mx-auto max-w-md text-sm text-slate-400">
-                AI is configuring your {currentStepId.replace(/_/g, " ")} based on your business profile.
-                Click continue to proceed.
+                AI is configuring your {currentStepId.replace(/_/g, " ")} to drive{" "}
+                {formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal).toLowerCase()} via{" "}
+                {formatOptionLabel(
+                  CONVERSION_ACTION_OPTIONS,
+                  offerGoals.preferredConversionAction,
+                ).toLowerCase()}
+                .
               </p>
             </div>
           )}
@@ -333,6 +438,16 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                   ["Niche", profile.industry],
                   ["Location", "Austin, TX"],
                   ["Offer", profile.mainOffer],
+                  ["Primary Goal", formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal)],
+                  [
+                    "Conversion",
+                    formatOptionLabel(
+                      CONVERSION_ACTION_OPTIONS,
+                      offerGoals.preferredConversionAction,
+                    ),
+                  ],
+                  ["Monthly Target", offerGoals.monthlyTarget],
+                  ["Average Deal Value", offerGoals.averageDealValue],
                   ["Budget", "$70/day"],
                   ["Target Customer", profile.targetCustomer],
                   ["Keywords", profile.keywords],

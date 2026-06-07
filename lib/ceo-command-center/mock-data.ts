@@ -179,9 +179,15 @@ export function getOnboardingCommandCenterMockData(): OnboardingCommandCenterDat
       keywords: "",
       seoMetaTitle: "",
       seoMetaDescription: "",
-    mainOffer: "",
-    businessDescription: "",
-  },
+      mainOffer: "",
+      businessDescription: "",
+    },
+    offerGoals: {
+      primaryGoal: "leads",
+      monthlyTarget: "100 qualified leads",
+      averageDealValue: "$500",
+      preferredConversionAction: "form",
+    },
     landingPages: [
       {
         id: "lead_gen",

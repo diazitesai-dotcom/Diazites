@@ -158,6 +158,17 @@ export type BusinessProfileFields = {
   businessDescription: string;
 };
 
+export type PrimaryGoal = "leads" | "phone_calls" | "forms" | "bookings" | "revenue" | "sales";
+
+export type PreferredConversionAction = "call" | "form" | "booking" | "checkout";
+
+export type OfferGoalsFields = {
+  primaryGoal: PrimaryGoal;
+  monthlyTarget: string;
+  averageDealValue: string;
+  preferredConversionAction: PreferredConversionAction;
+};
+
 export type LandingPageOption = {
   id: string;
   title: string;
@@ -182,6 +193,7 @@ export type OnboardingCommandCenterData = {
   steps: OnboardingStep[];
   currentStepId: OnboardingStepId;
   businessProfile: BusinessProfileFields;
+  offerGoals: OfferGoalsFields;
   landingPages: LandingPageOption[];
   integrations: IntegrationOption[];
   reviewChecklist: ReviewChecklistItem[];
