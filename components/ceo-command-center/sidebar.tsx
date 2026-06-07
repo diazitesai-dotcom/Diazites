@@ -112,7 +112,7 @@ export function Sidebar() {
           className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:bg-white/[0.03] hover:text-slate-300"
           aria-expanded={toolsOpen}
         >
-          <span className="flex-1">My Business Tools</span>
+          <span className="flex-1">My Business Agent Tools</span>
           <ChevronDown
             className={cn("h-4 w-4 transition-transform", !toolsOpen && "-rotate-90")}
           />
