@@ -10,8 +10,27 @@ import { createUserProfile } from "@/lib/auth/user-profile";
 import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signOutAction } from "@/services/auth/actions";
+import type { OnboardingStepId } from "@/types/ceo-command-center";
 
 export const dynamic = "force-dynamic";
+
+const ONBOARDING_STEP_IDS = new Set<OnboardingStepId>([
+  "business_profile",
+  "offer_goals",
+  "landing_pages",
+  "pipeline_workflow",
+  "connect_accounts",
+  "ai_agents",
+  "ads_agent",
+  "tracking",
+  "review",
+  "launch",
+]);
+
+function getRequestedOnboardingStep(step: string | string[] | undefined): OnboardingStepId | null {
+  if (typeof step !== "string") return null;
+  return ONBOARDING_STEP_IDS.has(step as OnboardingStepId) ? (step as OnboardingStepId) : null;
+}
 
 export default async function OnboardingPage({
   searchParams,
@@ -32,7 +51,8 @@ export default async function OnboardingPage({
   });
 
   const sp = await searchParams;
-  const forceOnboarding = sp.step === "launch";
+  const requestedStep = getRequestedOnboardingStep(sp.step);
+  const forceOnboarding = requestedStep !== null;
 
   const { hasBusiness, onboardingComplete } = await getOnboardingRoutingState(
     supabase,
@@ -56,10 +76,7 @@ export default async function OnboardingPage({
       : null;
 
   const mockData = getOnboardingCommandCenterMockData();
-  const initialData =
-    sp.step === "launch"
-      ? { ...mockData, currentStepId: "launch" as const }
-      : mockData;
+  const initialData = requestedStep ? { ...mockData, currentStepId: requestedStep } : mockData;
 
   return (
     <div className="relative min-h-screen">
