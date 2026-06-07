@@ -23,6 +23,8 @@ import {
 } from "@/lib/ceo-command-center/business-profile-utils";
 import { cn } from "@/lib/utils";
 import type {
+  BusinessProfileFields,
+  LandingPageOption,
   OfferGoalsFields,
   OnboardingCommandCenterData,
   OnboardingStepId,
@@ -30,6 +32,31 @@ import type {
 
 type OnboardingCommandCenterProps = {
   initialData: OnboardingCommandCenterData;
+};
+
+type LandingBuilderTab = "templates" | "preview" | "edit" | "settings";
+
+type LandingPageCtaType = "call" | "form" | "booking" | "checkout";
+
+type LandingPageDraft = {
+  heroHeadline: string;
+  subheadline: string;
+  ctaText: string;
+  offerDetails: string;
+  benefits: string;
+  formFields: string;
+  socialProof: string;
+  faq: string;
+  thankYouMessage: string;
+};
+
+type LandingPageSettings = {
+  ctaType: LandingPageCtaType;
+  buttonText: string;
+  pageSlug: string;
+  trackingEvent: string;
+  thankYouRedirect: string;
+  brandTone: string;
 };
 
 const STEP_ORDER: OnboardingStepId[] = [
@@ -43,6 +70,13 @@ const STEP_ORDER: OnboardingStepId[] = [
   "tracking",
   "review",
   "launch",
+];
+
+const LANDING_BUILDER_TABS: Array<{ id: LandingBuilderTab; label: string }> = [
+  { id: "templates", label: "Templates" },
+  { id: "preview", label: "Preview" },
+  { id: "edit", label: "Edit Sections" },
+  { id: "settings", label: "Settings" },
 ];
 
 const PRIMARY_GOAL_OPTIONS: Array<{ value: OfferGoalsFields["primaryGoal"]; label: string }> = [
@@ -91,10 +125,116 @@ const OFFER_TYPE_OPTIONS: Array<{ value: OfferGoalsFields["offerType"]; label: s
   { value: "lead_magnet", label: "Lead magnet / download" },
 ];
 
+const LANDING_TEMPLATE_METADATA: Record<
+  LandingPageOption["type"],
+  { bestFor: string; mainCta: string; sections: string[] }
+> = {
+  lead_gen: {
+    bestFor: "Lead capture, quote requests, applications, and list growth",
+    mainCta: "Submit form",
+    sections: ["Hero", "Offer", "Benefits", "Lead form", "Testimonials", "FAQ"],
+  },
+  booking: {
+    bestFor: "Consultations, inspections, appointments, and sales calls",
+    mainCta: "Book appointment",
+    sections: ["Hero", "Service details", "Calendar CTA", "Next steps", "Trust", "FAQ"],
+  },
+  special_offer: {
+    bestFor: "Promotions, limited-time offers, launches, and paid campaigns",
+    mainCta: "Claim offer",
+    sections: ["Hero", "Urgency", "Offer details", "Proof", "CTA", "FAQ"],
+  },
+};
+
+const FALLBACK_LANDING_PAGE: LandingPageOption = {
+  id: "lead_gen",
+  title: "Lead Generation Page",
+  description: "Capture leads with a compelling offer and fast form.",
+  type: "lead_gen",
+};
+
 const formatOptionLabel = <T extends string>(
   options: Array<{ value: T; label: string }>,
   value: T,
 ) => options.find((option) => option.value === value)?.label ?? value;
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+}
+
+function getDefaultCtaType(
+  preferredConversionAction: OfferGoalsFields["preferredConversionAction"],
+): LandingPageCtaType {
+  if (
+    preferredConversionAction === "call" ||
+    preferredConversionAction === "booking" ||
+    preferredConversionAction === "checkout"
+  ) {
+    return preferredConversionAction;
+  }
+  return "form";
+}
+
+function getDefaultButtonText(ctaType: LandingPageCtaType) {
+  if (ctaType === "call") return "Call Now";
+  if (ctaType === "booking") return "Book Appointment";
+  if (ctaType === "checkout") return "Get Started";
+  return "Submit Request";
+}
+
+function createLandingPageDraft(
+  page: LandingPageOption,
+  profile: BusinessProfileFields,
+  offerGoals: OfferGoalsFields,
+): LandingPageDraft {
+  const businessName = profile.businessName || "Your Business";
+  const targetCustomer = profile.targetCustomer || "your ideal customers";
+  const offer = profile.mainOffer || page.title;
+  const conversion = formatOptionLabel(
+    CONVERSION_ACTION_OPTIONS,
+    offerGoals.preferredConversionAction,
+  ).toLowerCase();
+
+  return {
+    heroHeadline: `${businessName}: ${offer}`,
+    subheadline: `A focused ${page.title.toLowerCase()} built to help ${targetCustomer} take action.`,
+    ctaText: getDefaultButtonText(getDefaultCtaType(offerGoals.preferredConversionAction)),
+    offerDetails: `${offer} positioned as a ${formatOptionLabel(
+      OFFER_TYPE_OPTIONS,
+      offerGoals.offerType,
+    ).toLowerCase()} for ${targetCustomer}.`,
+    benefits: "Clear offer\nFast follow-up\nSimple next step\nBuilt for measurable conversions",
+    formFields:
+      page.type === "booking"
+        ? "Name\nEmail\nPhone\nPreferred appointment time"
+        : "Name\nEmail\nPhone\nWhat do you need help with?",
+    socialProof: "Trusted by customers who want a clear path from interest to action.",
+    faq: `What happens after I ${conversion}?\nHow soon will someone follow up?\nWho is this best for?`,
+    thankYouMessage: "Thanks. Your request was received and the team will follow up shortly.",
+  };
+}
+
+function createLandingPageSettings(
+  page: LandingPageOption,
+  profile: BusinessProfileFields,
+  offerGoals: OfferGoalsFields,
+): LandingPageSettings {
+  const ctaType = getDefaultCtaType(offerGoals.preferredConversionAction);
+  const baseSlug = slugify(profile.businessName || page.title) || page.id;
+
+  return {
+    ctaType,
+    buttonText: getDefaultButtonText(ctaType),
+    pageSlug: `${baseSlug}-${page.type.replace(/_/g, "-")}`,
+    trackingEvent: `${page.type}_conversion`,
+    thankYouRedirect: "/thank-you",
+    brandTone: "Professional, helpful, conversion-focused",
+  };
+}
 
 function stepToProgressStatus(
   stepId: OnboardingStepId,
@@ -110,6 +250,7 @@ function stepToProgressStatus(
 
 export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenterProps) {
   const router = useRouter();
+  const initialLandingPage = initialData.landingPages[0] ?? FALLBACK_LANDING_PAGE;
   const [currentStepId, setCurrentStepId] = useState<OnboardingStepId>(
     initialData.currentStepId,
   );
@@ -128,11 +269,27 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
     initialData.businessProfile,
   );
   const [offerGoals, setOfferGoals] = useState<OfferGoalsFields>(initialData.offerGoals);
-  const [selectedLandingId, setSelectedLandingId] = useState<string | null>("lead_gen");
+  const [selectedLandingId, setSelectedLandingId] = useState<string | null>(
+    initialLandingPage.id,
+  );
+  const [landingBuilderTab, setLandingBuilderTab] =
+    useState<LandingBuilderTab>("templates");
+  const [landingPageDraft, setLandingPageDraft] = useState<LandingPageDraft>(() =>
+    createLandingPageDraft(initialLandingPage, initialData.businessProfile, initialData.offerGoals),
+  );
+  const [landingPageSettings, setLandingPageSettings] = useState<LandingPageSettings>(() =>
+    createLandingPageSettings(
+      initialLandingPage,
+      initialData.businessProfile,
+      initialData.offerGoals,
+    ),
+  );
 
   const [integrations, setIntegrations] = useState(initialData.integrations);
 
   const currentIndex = STEP_ORDER.indexOf(currentStepId);
+  const selectedLandingPage =
+    initialData.landingPages.find((page) => page.id === selectedLandingId) ?? initialLandingPage;
   const progressSteps = initialData.steps.map((step, index) => ({
     id: step.number,
     label: step.label,
@@ -164,6 +321,27 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
     value: OfferGoalsFields[Key],
   ) => {
     setOfferGoals((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleLandingTemplateAction = (page: LandingPageOption, tab: LandingBuilderTab) => {
+    setSelectedLandingId(page.id);
+    setLandingBuilderTab(tab);
+    setLandingPageDraft(createLandingPageDraft(page, profile, offerGoals));
+    setLandingPageSettings(createLandingPageSettings(page, profile, offerGoals));
+  };
+
+  const updateLandingPageDraft = <Key extends keyof LandingPageDraft>(
+    key: Key,
+    value: LandingPageDraft[Key],
+  ) => {
+    setLandingPageDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateLandingPageSettings = <Key extends keyof LandingPageSettings>(
+    key: Key,
+    value: LandingPageSettings[Key],
+  ) => {
+    setLandingPageSettings((current) => ({ ...current, [key]: value }));
   };
 
   return (
@@ -380,40 +558,256 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
           )}
 
           {currentStepId === "landing_pages" && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-white">Landing Pages</h2>
-              <p className="text-sm text-slate-400">Choose a landing page template to launch with.</p>
-              <div className="grid gap-4 md:grid-cols-3">
-                {initialData.landingPages.map((page) => (
-                  <article
-                    key={page.id}
+            <div className="space-y-5">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Landing Page Builder</h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  Choose a landing page template, preview the page, and edit each section before
+                  the AI system builds your funnel.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-2">
+                {LANDING_BUILDER_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setLandingBuilderTab(tab.id)}
                     className={cn(
-                      "rounded-2xl border p-4 transition",
-                      selectedLandingId === page.id
-                        ? "border-violet-500/50 bg-violet-500/10"
-                        : "border-white/[0.08] bg-white/[0.02]",
+                      "rounded-xl px-3 py-2 text-xs font-medium transition",
+                      landingBuilderTab === tab.id
+                        ? "bg-violet-600/30 text-violet-100"
+                        : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200",
                     )}
                   >
-                    <h3 className="font-semibold text-white">{page.title}</h3>
-                    <p className="mt-2 text-xs text-slate-400">{page.description}</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button type="button" className="rounded-lg border border-white/10 px-2.5 py-1 text-xs text-slate-300">
-                        Preview
-                      </button>
-                      <button type="button" className="rounded-lg border border-white/10 px-2.5 py-1 text-xs text-slate-300">
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLandingId(page.id)}
-                        className="rounded-lg bg-violet-600/30 px-2.5 py-1 text-xs font-medium text-violet-100"
-                      >
-                        Select
-                      </button>
-                    </div>
-                  </article>
+                    {tab.label}
+                  </button>
                 ))}
               </div>
+
+              {landingBuilderTab === "templates" && (
+                <div className="grid gap-4 md:grid-cols-3">
+                  {initialData.landingPages.map((page) => {
+                    const metadata = LANDING_TEMPLATE_METADATA[page.type];
+
+                    return (
+                      <article
+                        key={page.id}
+                        className={cn(
+                          "rounded-2xl border p-4 transition",
+                          selectedLandingId === page.id
+                            ? "border-violet-500/50 bg-violet-500/10"
+                            : "border-white/[0.08] bg-white/[0.02]",
+                        )}
+                      >
+                        <h3 className="font-semibold text-white">{page.title}</h3>
+                        <p className="mt-2 text-xs text-slate-400">{page.description}</p>
+                        <div className="mt-4 space-y-2 text-xs text-slate-400">
+                          <p>
+                            <span className="font-medium text-slate-300">Best for:</span>{" "}
+                            {metadata.bestFor}
+                          </p>
+                          <p>
+                            <span className="font-medium text-slate-300">Main CTA:</span>{" "}
+                            {metadata.mainCta}
+                          </p>
+                          <p>
+                            <span className="font-medium text-slate-300">Sections:</span>{" "}
+                            {metadata.sections.join(", ")}
+                          </p>
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleLandingTemplateAction(page, "preview")}
+                            className="rounded-lg border border-white/10 px-2.5 py-1 text-xs text-slate-300"
+                          >
+                            Preview
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleLandingTemplateAction(page, "edit")}
+                            className="rounded-lg border border-white/10 px-2.5 py-1 text-xs text-slate-300"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleLandingTemplateAction(page, "templates")}
+                            className="rounded-lg bg-violet-600/30 px-2.5 py-1 text-xs font-medium text-violet-100"
+                          >
+                            Select
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+
+              {landingBuilderTab === "preview" && (
+                <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+                  <article className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02]">
+                    <div className="bg-gradient-to-br from-violet-600/25 to-indigo-600/10 p-6">
+                      <p className="text-xs font-medium uppercase tracking-[0.2em] text-violet-200">
+                        {selectedLandingPage.title}
+                      </p>
+                      <h3 className="mt-3 text-2xl font-semibold text-white">
+                        {landingPageDraft.heroHeadline}
+                      </h3>
+                      <p className="mt-3 text-sm leading-6 text-slate-300">
+                        {landingPageDraft.subheadline}
+                      </p>
+                      <button
+                        type="button"
+                        className="mt-5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white"
+                      >
+                        {landingPageDraft.ctaText}
+                      </button>
+                    </div>
+                    <div className="grid gap-4 p-5 md:grid-cols-2">
+                      <div className="rounded-xl border border-white/[0.06] bg-[#0c1222]/80 p-4">
+                        <p className="text-xs font-medium text-slate-400">Offer</p>
+                        <p className="mt-2 text-sm text-white">{landingPageDraft.offerDetails}</p>
+                      </div>
+                      <div className="rounded-xl border border-white/[0.06] bg-[#0c1222]/80 p-4">
+                        <p className="text-xs font-medium text-slate-400">Benefits</p>
+                        <ul className="mt-2 space-y-1 text-sm text-white">
+                          {landingPageDraft.benefits.split("\n").map((benefit) => (
+                            <li key={benefit}>• {benefit}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="rounded-xl border border-white/[0.06] bg-[#0c1222]/80 p-4">
+                        <p className="text-xs font-medium text-slate-400">
+                          {selectedLandingPage.type === "booking"
+                            ? "Booking block"
+                            : selectedLandingPage.type === "special_offer"
+                              ? "Offer block"
+                              : "Lead form"}
+                        </p>
+                        <p className="mt-2 text-sm text-white">
+                          {landingPageDraft.formFields.split("\n").join(" • ")}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/[0.06] bg-[#0c1222]/80 p-4">
+                        <p className="text-xs font-medium text-slate-400">Trust</p>
+                        <p className="mt-2 text-sm text-white">{landingPageDraft.socialProof}</p>
+                      </div>
+                      <div className="rounded-xl border border-white/[0.06] bg-[#0c1222]/80 p-4 md:col-span-2">
+                        <p className="text-xs font-medium text-slate-400">FAQ</p>
+                        <p className="mt-2 whitespace-pre-line text-sm text-white">
+                          {landingPageDraft.faq}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                  <aside className="space-y-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
+                    <p className="text-sm font-semibold text-white">Selected template</p>
+                    <p className="text-xs text-slate-400">{selectedLandingPage.description}</p>
+                    <div className="space-y-2 text-xs text-slate-400">
+                      <p>
+                        <span className="text-slate-300">Offer type:</span>{" "}
+                        {formatOptionLabel(OFFER_TYPE_OPTIONS, offerGoals.offerType)}
+                      </p>
+                      <p>
+                        <span className="text-slate-300">Goal:</span>{" "}
+                        {formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal)}
+                      </p>
+                      <p>
+                        <span className="text-slate-300">Conversion:</span>{" "}
+                        {formatOptionLabel(
+                          CONVERSION_ACTION_OPTIONS,
+                          offerGoals.preferredConversionAction,
+                        )}
+                      </p>
+                    </div>
+                  </aside>
+                </div>
+              )}
+
+              {landingBuilderTab === "edit" && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {[
+                    ["heroHeadline", "Hero headline"],
+                    ["subheadline", "Subheadline"],
+                    ["ctaText", "CTA text"],
+                    ["offerDetails", "Offer details"],
+                    ["benefits", "Benefits"],
+                    ["formFields", "Form fields"],
+                    ["socialProof", "Social proof / testimonials"],
+                    ["faq", "FAQ"],
+                    ["thankYouMessage", "Thank-you message"],
+                  ].map(([key, label]) => (
+                    <label key={key} className={cn("block", key === "offerDetails" && "md:col-span-2")}>
+                      <span className="mb-1 block text-xs text-slate-400">{label}</span>
+                      <textarea
+                        value={landingPageDraft[key as keyof LandingPageDraft]}
+                        rows={key === "offerDetails" ? 3 : 2}
+                        onChange={(e) =>
+                          updateLandingPageDraft(
+                            key as keyof LandingPageDraft,
+                            e.target.value,
+                          )
+                        }
+                        className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {landingBuilderTab === "settings" && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-slate-400">CTA Type</span>
+                    <select
+                      value={landingPageSettings.ctaType}
+                      onChange={(e) => {
+                        const nextCta = e.target.value as LandingPageCtaType;
+                        updateLandingPageSettings("ctaType", nextCta);
+                        updateLandingPageSettings("buttonText", getDefaultButtonText(nextCta));
+                      }}
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                    >
+                      {["call", "form", "booking", "checkout"].map((option) => (
+                        <option key={option} value={option} className="bg-[#0c1222]">
+                          {option.replace(/^\w/, (char) => char.toUpperCase())}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {[
+                    ["buttonText", "Button text"],
+                    ["pageSlug", "Page slug"],
+                    ["trackingEvent", "Tracking event"],
+                    ["thankYouRedirect", "Thank-you redirect"],
+                    ["brandTone", "Brand tone"],
+                  ].map(([key, label]) => (
+                    <label key={key} className="block">
+                      <span className="mb-1 block text-xs text-slate-400">{label}</span>
+                      <input
+                        value={landingPageSettings[key as keyof LandingPageSettings]}
+                        onChange={(e) =>
+                          updateLandingPageSettings(
+                            key as keyof LandingPageSettings,
+                            e.target.value,
+                          )
+                        }
+                        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                      />
+                    </label>
+                  ))}
+                  <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4 text-sm text-violet-100 md:col-span-2">
+                    <p className="font-medium">Tracking setup</p>
+                    <p className="mt-1 text-xs leading-5 text-violet-100/80">
+                      Track {landingPageSettings.trackingEvent} when visitors complete the{" "}
+                      {landingPageSettings.ctaType} CTA, then send them to{" "}
+                      {landingPageSettings.thankYouRedirect}.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
