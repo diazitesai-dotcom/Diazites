@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
   BarChart3,
@@ -29,7 +29,7 @@ import { signOutAction } from "@/services/auth/actions";
 
 const TOP_NAV_ITEMS = [
   { href: "/dashboard", label: "Full Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/settings?tab=homepage", label: "Home Page", icon: Home },
+  { href: "/dashboard?section=home", label: "Home", icon: Home },
 ] as const;
 
 const BUSINESS_TOOL_ITEMS = [
@@ -54,13 +54,20 @@ const BOTTOM_NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [toolsOpen, setToolsOpen] = useState(false);
 
   const isActive = (href: string) => {
-    const routePath = href.split("?")[0] ?? href;
-    return routePath === "/dashboard"
-      ? pathname === "/dashboard"
-      : pathname === routePath || pathname.startsWith(`${routePath}/`);
+    const [routePath = href, rawSearch = ""] = href.split("?");
+    const routeParams = new URLSearchParams(rawSearch);
+    const routeSection = routeParams.get("section");
+    const currentSection = searchParams.get("section");
+
+    if (routePath === "/dashboard") {
+      return pathname === "/dashboard" && currentSection === routeSection;
+    }
+
+    return pathname === routePath || pathname.startsWith(`${routePath}/`);
   };
 
   const renderNavItem = (

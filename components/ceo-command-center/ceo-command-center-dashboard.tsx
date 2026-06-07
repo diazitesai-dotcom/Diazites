@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
   Bot,
@@ -82,6 +82,7 @@ function readHomepageToolIds(): HomepageToolId[] {
 
 export function CeoCommandCenterDashboard({ data }: CeoCommandCenterDashboardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [visibleToolIds, setVisibleToolIds] = useState<HomepageToolId[]>(DEFAULT_HOMEPAGE_TOOL_IDS);
   const leadTotal = data.leadSources.reduce((sum, s) => sum + s.count, 0);
   const openOnboardingStep = (step: ProgressStep) => {
@@ -109,6 +110,17 @@ export function CeoCommandCenterDashboard({ data }: CeoCommandCenterDashboardPro
       window.removeEventListener("storage", handleStorage);
     };
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get("section") !== "home") return;
+
+    window.setTimeout(() => {
+      document.getElementById("home-shortcuts")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+  }, [searchParams]);
 
   return (
     <>
@@ -147,7 +159,10 @@ export function CeoCommandCenterDashboard({ data }: CeoCommandCenterDashboardPro
         </div>
         <ProgressTracker steps={data.progressSteps} onStepClick={openOnboardingStep} />
 
-        <section className="rounded-2xl border border-white/[0.08] bg-[#0c1222]/80 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+        <section
+          id="home-shortcuts"
+          className="scroll-mt-6 rounded-2xl border border-white/[0.08] bg-[#0c1222]/80 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-xl"
+        >
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
