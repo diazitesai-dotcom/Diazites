@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -8,12 +8,15 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Loader2,
   Rocket,
   Scan,
   Sparkles,
 } from "lucide-react";
 
+import { scanBusinessProfileAction } from "@/actions/ceo-onboarding.actions";
 import { ProgressTracker } from "@/components/ceo-command-center/progress-tracker";
+import { FIELD_LABELS } from "@/lib/ceo-command-center/business-profile-autofill";
 import { cn } from "@/lib/utils";
 import type {
   BusinessProfileFields,
@@ -56,9 +59,13 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
     initialData.currentStepId,
   );
   const [profile, setProfile] = useState<BusinessProfileFields>(initialData.businessProfile);
+  const [websiteUrl, setWebsiteUrl] = useState(initialData.businessProfile.website || "");
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
+  const [isScanPending, startScanTransition] = useTransition();
   const [selectedLandingId, setSelectedLandingId] = useState<string | null>("lead_gen");
+
   const [integrations, setIntegrations] = useState(initialData.integrations);
-  const [scanning, setScanning] = useState(false);
 
   const currentIndex = STEP_ORDER.indexOf(currentStepId);
   const progressSteps = initialData.steps.map((step, index) => ({
@@ -78,8 +85,31 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
   };
 
   const handleScanBusiness = () => {
-    setScanning(true);
-    setTimeout(() => setScanning(false), 1200);
+    const url = websiteUrl.trim();
+    if (!url) {
+      setScanError("Enter your business website URL first.");
+      setScanMessage(null);
+      return;
+    }
+
+    setScanError(null);
+    setScanMessage(null);
+
+    startScanTransition(async () => {
+      const result = await scanBusinessProfileAction(url, profile);
+      if (!result.success) {
+        setScanError(result.error);
+        return;
+      }
+
+      setProfile(result.data.profile);
+      setWebsiteUrl(result.data.profile.website || url);
+      setScanMessage(
+        result.data.usedAi
+          ? "AI filled in your business details — review and edit anything before continuing."
+          : "We pulled basics from your site. Add OPENAI_API_KEY for richer AI autofill.",
+      );
+    });
   };
 
   const toggleIntegration = (id: string) => {
@@ -130,24 +160,51 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
               <div className="flex flex-col gap-3 sm:flex-row">
                 <input
                   type="url"
-                  defaultValue="https://summitroofing.com"
+                  value={websiteUrl}
+                  onChange={(e) => setWebsiteUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleScanBusiness();
+                    }
+                  }}
                   placeholder="https://yourbusiness.com"
                   className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
                 />
                 <button
                   type="button"
                   onClick={handleScanBusiness}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white"
+                  disabled={isScanPending || !websiteUrl.trim()}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Scan className="h-4 w-4" />
-                  {scanning ? "Scanning…" : "Scan Business"}
+                  {isScanPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Scanning…
+                    </>
+                  ) : (
+                    <>
+                      <Scan className="h-4 w-4" />
+                      Scan Business
+                    </>
+                  )}
                 </button>
               </div>
+              {scanError ? (
+                <p role="alert" className="text-sm text-rose-300">
+                  {scanError}
+                </p>
+              ) : null}
+              {scanMessage ? (
+                <p role="status" className="text-sm text-emerald-300">
+                  {scanMessage}
+                </p>
+              ) : null}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {(Object.keys(profile) as (keyof BusinessProfileFields)[]).map((key) => (
                   <label key={key} className="block">
-                    <span className="mb-1 block text-xs font-medium capitalize text-slate-400">
-                      {key.replace(/([A-Z])/g, " $1").trim()}
+                    <span className="mb-1 block text-xs font-medium text-slate-400">
+                      {FIELD_LABELS[key]}
                     </span>
                     <input
                       value={profile[key]}
