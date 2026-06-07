@@ -99,8 +99,7 @@ function isNavItemActive(pathname: string, href: string): boolean {
   if (href === ROUTES.campaignOps) {
     return (
       pathname === ROUTES.campaignOps ||
-      pathname.startsWith("/dashboard/ads") ||
-      pathname.startsWith("/dashboard/campaigns")
+      pathname.startsWith("/dashboard/integrations")
     );
   }
   if (href === ROUTES.organization) {
@@ -118,18 +117,17 @@ function isNavItemActive(pathname: string, href: string): boolean {
     return pathname === ROUTES.onboarding || pathname.startsWith(`${ROUTES.onboarding}/`);
   }
   if (href === ROUTES.tasks) return pathname.startsWith(ROUTES.tasks);
-  if (href === ROUTES.followUp) return pathname.startsWith(ROUTES.followUp);
-  if (href === ROUTES.inbox) return pathname.startsWith(ROUTES.inbox);
-  if (href === ROUTES.calendar) return pathname.startsWith(ROUTES.calendar);
-  if (href === ROUTES.analytics) return pathname.startsWith(ROUTES.analytics);
-  if (href === ROUTES.automationCenter) {
-    return (
-      pathname === ROUTES.automationCenter ||
-      pathname.startsWith("/dashboard/automations")
-    );
+  if (href === ROUTES.calendar) {
+    return pathname.startsWith(ROUTES.calendar) || pathname.startsWith("/dashboard/follow-up");
+  }
+  if (href === ROUTES.analytics || href === ROUTES.analyticsTraffic) {
+    return pathname.startsWith(ROUTES.analytics);
   }
   if (href === ROUTES.automationPipelines) {
-    return pathname.startsWith(ROUTES.automationPipelines);
+    return (
+      pathname.startsWith(ROUTES.automationPipelines) ||
+      pathname === ROUTES.automationCenter
+    );
   }
   if (href === ROUTES.workflows) return pathname.startsWith(ROUTES.workflows);
   if (href === ROUTES.aiCallCommandCenter) return pathname.startsWith(ROUTES.aiCallCommandCenter);

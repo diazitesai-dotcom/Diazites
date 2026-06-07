@@ -205,7 +205,7 @@ export const POST_SETUP_CHECKLIST_META: Array<{
     key: "integrations_connected",
     label: "Connect integrations",
     description: "Link ads, CRM, email, or payments.",
-    href: "/dashboard/integrations",
+    href: "/dashboard/campaign-ops",
   },
   {
     key: "agents_assigned",

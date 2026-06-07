@@ -27,7 +27,7 @@ export function MissionCommandPalette() {
     { id: "crm", label: "Open CRM", hint: "Leads pipeline", run: () => router.push("/dashboard/leads") },
     { id: "agents", label: "Open Agent Manager", run: () => router.push("/dashboard/agents") },
     { id: "campaigns", label: "Open Campaign Ops", run: () => router.push("/dashboard/campaign-ops") },
-    { id: "integrations", label: "Open Growth Integrations Hub", run: () => router.push("/dashboard/integrations") },
+    { id: "zernio", label: "Connect Zernio", run: () => router.push("/dashboard/campaign-ops") },
     { id: "funnel", label: "Open Funnel Builder", run: () => router.push("/dashboard/funnel") },
     {
       id: "retarget",

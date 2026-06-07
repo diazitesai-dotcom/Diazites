@@ -402,25 +402,25 @@ export function buildAdopsPayload(input: {
 
   const alerts: AdopsPagePayload["alerts"] = [];
   if (platformHealth.meta === "token_expiring") {
-    alerts.push({ id: "meta-token", message: "Meta token expires in 2 days.", tone: "amber", href: "/dashboard/integrations" });
+    alerts.push({ id: "meta-token", message: "Meta token expires in 2 days.", tone: "amber", href: "/dashboard/campaign-ops" });
   }
   if (liveCampaigns.some((c) => c.aiHealth === "failed_tracking")) {
-    alerts.push({ id: "tracking", message: "Tracking degraded — 27% event loss detected.", tone: "rose", href: "/dashboard/integrations" });
+    alerts.push({ id: "tracking", message: "Tracking degraded — 27% event loss detected.", tone: "rose", href: "/dashboard/analytics" });
   }
   if (liveCampaigns.some((c) => c.status === "requires_approval")) {
-    alerts.push({ id: "approval", message: "3 campaigns require approval.", tone: "violet", href: "/dashboard/approvals" });
+    alerts.push({ id: "approval", message: "3 campaigns require approval.", tone: "violet", href: "/dashboard/campaign-ops" });
   }
   if (connected === 0 && zernioAccounts.length === 0) {
-    alerts.push({ id: "ads-missing", message: "Ad accounts not connected — estimated 18–32% more leads left on table.", tone: "amber", href: "/dashboard/integrations" });
+    alerts.push({ id: "ads-missing", message: "Ad accounts not connected — estimated 18–32% more leads left on table.", tone: "amber", href: "/dashboard/campaign-ops" });
   } else if (zernioLinkedPlatforms.length > 0 && connected > 0) {
     alerts.push({
       id: "zernio-linked",
       message: `${zernioLinkedPlatforms.length} platform${zernioLinkedPlatforms.length === 1 ? "" : "s"} linked via Zernio — manage apps on Integrations.`,
       tone: "cyan",
-      href: "/dashboard/integrations?focus=zernio",
+      href: "/dashboard/campaign-ops?focus=zernio",
     });
   } else if (totalLeads > 0) {
-    alerts.push({ id: "scale", message: "AI found +18% scale opportunity on top campaign.", tone: "cyan", href: "/dashboard/optimization" });
+    alerts.push({ id: "scale", message: "AI found +18% scale opportunity on top campaign.", tone: "cyan", href: "/dashboard/analytics" });
   }
 
   const globalFeed = ADOPS_PLATFORMS.flatMap((p) => buildSyntheticFeed(p.id)).slice(0, 8);

@@ -94,7 +94,7 @@ export async function publishZernioPostAction(formData: FormData) {
     metadata: { postId: result.data.postId, mode },
   });
 
-  revalidatePath("/dashboard/integrations");
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/campaign-ops");
   return { success: true as const, data: result.data };
 }
@@ -159,7 +159,7 @@ export async function connectZernioWithApiKeyAction(formData: FormData) {
   );
 
   revalidatePath("/dashboard");
-  revalidatePath("/dashboard/integrations");
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/campaign-ops");
   return { success: true as const, data: { accountCount } };
 }
@@ -178,7 +178,7 @@ export async function disconnectZernioAction() {
   const { error } = await ctx.supabase.from("ad_accounts").delete().eq("id", row.id);
   if (error) return { success: false as const, error: error.message };
 
-  revalidatePath("/dashboard/integrations");
+  revalidatePath("/dashboard/campaign-ops");
   revalidatePath("/dashboard/campaign-ops");
   return { success: true as const };
 }

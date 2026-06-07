@@ -94,7 +94,7 @@ export function buildMissionControlPayload(input: {
     campaignStatus:
       activeCampaigns > 0
         ? `${activeCampaigns} campaign${activeCampaigns === 1 ? "" : "s"} live`
-        : "No live campaigns — launch from Growth Engine",
+        : "No live campaigns — connect Zernio to launch",
     agentStatus:
       activeAgentCount > 0
         ? `${activeAgentCount} agent${activeAgentCount === 1 ? "" : "s"} active`
@@ -109,7 +109,7 @@ export function buildMissionControlPayload(input: {
     recommendedNextAction: !hasMeta
       ? "Connect Meta Ads and launch a retargeting test"
       : activeCampaigns === 0
-        ? "Run Growth Engine to generate and launch first campaign"
+        ? "Connect Zernio and launch your first campaign"
         : qualAgent?.status !== "active"
           ? "Activate Lead Qualification Agent for faster routing"
           : "Review AI optimization recommendations",
@@ -124,7 +124,7 @@ export function buildMissionControlPayload(input: {
     leverageRecommendation: !hasMeta
       ? "Connect Meta Ads and deploy retargeting"
       : activeCampaigns === 0
-        ? "Launch Growth Engine end-to-end"
+        ? "Connect Zernio and launch campaigns"
         : qualAgent?.status !== "active"
           ? "Activate Lead Qualification Agent"
           : "Approve top optimization budget shift",
@@ -276,10 +276,10 @@ export function buildMissionControlPayload(input: {
       }
     : activeCampaigns === 0
       ? {
-          title: "Run Growth Engine for first campaign launch",
+          title: "Connect Zernio & launch first campaign",
           impact: "Go from zero to live campaigns in under 15 minutes",
-          href: "/dashboard/engine",
-          cta: "Launch Engine",
+          href: ROUTES.campaignOps,
+          cta: "Connect Zernio",
           confidence: 91,
           risk: "low",
           deployEtaSeconds: 180,
@@ -305,9 +305,9 @@ export function buildMissionControlPayload(input: {
             },
           }
         : {
-            title: "Apply top optimization recommendation",
+            title: "Review traffic & agent activity",
             impact: "Projected +8–14% ROAS from approved budget shift",
-            href: "/dashboard/optimization",
+            href: ROUTES.analytics,
             cta: "Deploy",
             confidence: 82,
             risk: "low",
@@ -444,7 +444,7 @@ export function buildMissionControlPayload(input: {
       impact: "+11% ROAS without increasing spend",
       priority: "low",
       cta: "Deploy",
-      href: "/dashboard/optimization",
+      href: ROUTES.analytics,
       reasoning: "Paused ad sets are holding budget that top performers could absorb.",
       confidence: 84,
       risk: "medium",
@@ -457,7 +457,7 @@ export function buildMissionControlPayload(input: {
       impact: "Recover 2–3 stalled opportunities",
       priority: "high",
       cta: "Deploy",
-      href: "/dashboard/automations",
+      href: ROUTES.automationPipelines,
       reasoning: "Qualified pipeline stalled beyond SLA — automation can re-engage.",
       confidence: 91,
       risk: "low",
@@ -574,7 +574,7 @@ export function buildMissionControlPayload(input: {
       id: "zernio",
       name: "Zernio",
       status: zernioConnected ? "connected" : "missing",
-      href: "/dashboard/integrations?focus=zernio",
+      href: `${ROUTES.campaignOps}?focus=zernio`,
       category: "ads",
       healthDetail: zernioConnected
         ? "API key connected · multi-platform broker"
@@ -635,28 +635,28 @@ export function buildMissionControlPayload(input: {
       id: "ghl",
       name: "GoHighLevel",
       status: "missing",
-      href: "/dashboard/integrations",
+      href: ROUTES.campaignOps,
       category: "crm",
     },
     {
       id: "salesforce",
       name: "Salesforce",
       status: "missing",
-      href: "/dashboard/integrations",
+      href: ROUTES.campaignOps,
       category: "crm",
     },
     {
       id: "shopify",
       name: "Shopify",
       status: "missing",
-      href: "/dashboard/integrations",
+      href: ROUTES.campaignOps,
       category: "commerce",
     },
     {
       id: "zapier",
       name: "Zapier",
       status: "pending",
-      href: "/dashboard/integrations",
+      href: ROUTES.campaignOps,
       category: "comms",
       healthDetail: "Webhook ready — no Zaps active",
     },
@@ -679,7 +679,7 @@ export function buildMissionControlPayload(input: {
       id: "analytics",
       name: "Analytics",
       status: pixelOk ? "connected" : trackingRequired ? "needs_attention" : "pending",
-      href: ROUTES.integrationsHub,
+      href: ROUTES.analytics,
       category: "analytics",
       healthDetail: pixelOk
         ? "Attribution events active"
@@ -689,7 +689,7 @@ export function buildMissionControlPayload(input: {
       id: "pixel",
       name: "Pixel / Domain",
       status: pixelOk ? "connected" : trackingRequired ? "error" : "pending",
-      href: ROUTES.integrationsHub,
+      href: ROUTES.analytics,
       category: "analytics",
       healthDetail: pixelOk
         ? "Pixel verified"
@@ -716,7 +716,7 @@ export function buildMissionControlPayload(input: {
       id: "sendgrid",
       name: "SendGrid",
       status: "expired",
-      href: "/dashboard/integrations",
+      href: ROUTES.campaignOps,
       category: "comms",
       healthDetail: "Token expired — reconnect",
     },

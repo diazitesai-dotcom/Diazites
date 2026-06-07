@@ -1,36 +1,20 @@
-import Link from "next/link";
-import { Suspense } from "react";
-
-import { CampaignOpsClient } from "@/components/campaign-ops/campaign-ops-client";
-import { PageHeader } from "@/components/layout/page-header";
-import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { buildAdopsPayload } from "@/lib/ads/build-adops-payload";
-import { markIntegrationsConnectedForUser } from "@/lib/integrations/integration-connection-status";
-import {
-  loadZernioAccountsForAdops,
-  persistZernioConnectedPlatforms,
-} from "@/lib/integrations/load-zernio-accounts-for-adops";
-import { loadCampaignsPageData } from "@/lib/dashboard/load-campaigns-page";
-import { loadRevenueAttribution } from "@/lib/revenue/load-revenue-attribution";
-import { isZernioConfigured } from "@/lib/zernio";
-import { cn } from "@/lib/utils";
 import { requireDashboardService } from "@/lib/access-control/guard";
 import { requireAuth } from "@/lib/auth/session";
+import { isAdAccountRowConnected } from "@/lib/integrations/ad-account-connection";
+import {
+  resolveLinkedIntegrationId,
+  type LinkedAdAccount,
+} from "@/lib/integrations/integration-connect-config";
+import { ensureZernioEngineAccessToken, listBusinessAdConnections } from "@/lib/integrations/business-ad-connections";
+import { markIntegrationsConnectedForUser } from "@/lib/integrations/integration-connection-status";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import {
-  createAdAccountRepository,
-  createAdCampaignRepository,
-  type AdAccountRow,
-  type AdCampaignRow,
-} from "@/repositories/ad-account.repository";
 import { createBusinessRepository } from "@/repositories/business.repository";
-import { createEngineRepository, type AssetRow } from "@/repositories/engine.repository";
-import { getActiveEngineRun } from "@/services/engine/orchestrator.service";
-import {
-  ZAPIER_SUBSCRIBABLE_EVENTS,
-  listZapierRulesForBusiness,
-} from "@/services/integrations/zapier.service";
+import { isZernioConfigured } from "@/lib/zernio";
+import { ZernioCampaignConnectClient } from "@/components/campaign-ops/zernio-campaign-connect-client";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -44,18 +28,11 @@ export default async function CampaignOpsPage() {
 
   if (!business) {
     return (
-      <div className="mx-auto max-w-6xl space-y-10">
-        <PageHeader
-          eyebrow="Campaign Ops"
-          title="Live campaign operations"
-          description="Connect ad platforms and run autonomous paid media with full agent visibility."
-        />
+      <div className="mx-auto max-w-3xl space-y-10 py-4">
         <Card className="border-white/[0.06]">
           <CardHeader>
             <CardTitle>Finish onboarding first</CardTitle>
-            <CardDescription>
-              Connect your business profile so agents can deploy and optimize campaigns.
-            </CardDescription>
+            <CardDescription>Connect your business to enable Zernio campaign connections.</CardDescription>
           </CardHeader>
           <CardContent>
             <Link href="/onboarding" className={cn(buttonVariants({ variant: "default" }), "rounded-xl")}>
@@ -67,75 +44,30 @@ export default async function CampaignOpsPage() {
     );
   }
 
-  const accountsRepo = createAdAccountRepository(supabase);
-  const campaignsRepo = createAdCampaignRepository(supabase);
-  const engineRepo = createEngineRepository(supabase);
+  await ensureZernioEngineAccessToken(supabase, business.id);
+  const adConnections = await listBusinessAdConnections(supabase, business.id);
 
-  const [accountsRes, campaignsRes, activeRunRes, zapierRulesRes, registry, revenueAttribution] =
-    await Promise.all([
-      accountsRepo.listByBusiness(business.id),
-      campaignsRepo.listByBusiness(business.id, 50),
-      getActiveEngineRun(supabase, business.id),
-      listZapierRulesForBusiness(supabase, business.id),
-      loadCampaignsPageData(),
-      loadRevenueAttribution(supabase, user.id, business.id),
-    ]);
-
-  const accounts = (accountsRes.data ?? []) as AdAccountRow[];
-  const campaigns = (campaignsRes.data ?? []) as AdCampaignRow[];
-  const activeRun = activeRunRes.success ? activeRunRes.data : null;
-
-  let winningAd: AssetRow | null = null;
-  if (activeRun) {
-    const { data: assets } = await engineRepo.listAssetsForRun(activeRun.id);
-    winningAd =
-      ((assets ?? []) as AssetRow[]).find((a) => a.kind === "ad" && a.is_winner) ?? null;
-  }
-
-  const zernioAccounts = await loadZernioAccountsForAdops(supabase, business.id);
-  if (zernioAccounts.length > 0) {
-    await persistZernioConnectedPlatforms(
-      supabase,
-      business.id,
-      zernioAccounts.map((a) => a.platform),
-      zernioAccounts.length,
-    );
+  let linkedAccount: LinkedAdAccount | null = null;
+  for (const acc of adConnections) {
+    if (!isAdAccountRowConnected(acc)) continue;
+    const integrationId = resolveLinkedIntegrationId(acc);
+    if (integrationId !== "zernio") continue;
+    const meta = (acc.meta ?? {}) as Record<string, unknown>;
+    linkedAccount = {
+      id: acc.id ?? "zernio",
+      accountName: typeof meta.accountLabel === "string" ? meta.accountLabel : "Zernio",
+      credentialsHint:
+        typeof meta.connectedAppCount === "number"
+          ? `${meta.connectedAppCount} app(s) connected`
+          : "API key connected",
+    };
     await markIntegrationsConnectedForUser(supabase, user.id);
+    break;
   }
-
-  const payload = buildAdopsPayload({
-    businessName: business.name,
-    accounts,
-    campaigns,
-    zernioAccounts,
-    hasWinningAd: Boolean(winningAd && activeRun),
-    winningAdMeta:
-      winningAd && activeRun
-        ? {
-            runId: activeRun.id,
-            assetId: winningAd.id,
-            defaultName: `Engine · ${business.name} · variant ${winningAd.variant_label}`,
-          }
-        : null,
-  });
 
   return (
-    <CampaignOpsClient
-      payload={payload}
-      registryCampaigns={registry.campaigns}
-      attributedCampaigns={revenueAttribution.campaigns}
-      zapierEvents={ZAPIER_SUBSCRIBABLE_EVENTS.map((e) => ({
-        type: e.type as string,
-        label: e.label,
-        description: e.description,
-      }))}
-      zapierRules={(zapierRulesRes.success ? zapierRulesRes.data : []).map((r) => ({
-        id: r.id,
-        name: r.name,
-        triggerEvent: r.trigger_event,
-        url: r.zapierUrl,
-        enabled: r.enabled,
-      }))}
+    <ZernioCampaignConnectClient
+      linkedAccount={linkedAccount}
       zernioConfigured={isZernioConfigured()}
     />
   );

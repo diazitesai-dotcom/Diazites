@@ -1,74 +1,7 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import { OptimizationDashboard } from "@/components/optimization/optimization-dashboard";
-import { PageHeader } from "@/components/layout/page-header";
-import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireAuth } from "@/lib/auth/session";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { cn } from "@/lib/utils";
-import { createBusinessRepository } from "@/repositories/business.repository";
-import {
-  createEngineDecisionRepository,
-  createOptimizationRunRepository,
-  type EngineDecisionRow,
-  type OptimizationRunRow,
-} from "@/repositories/engine-telemetry.repository";
+import { ROUTES } from "@/lib/navigation/platform-nav";
 
-export const dynamic = "force-dynamic";
-
-export default async function OptimizationPage() {
-  const user = await requireAuth();
-  const supabase = await createServerSupabaseClient();
-
-  const businesses = createBusinessRepository(supabase);
-  const { data: business } = await businesses.getByOwnerUserId(user.id);
-
-  if (!business) {
-    return (
-      <div className="mx-auto max-w-6xl space-y-10">
-        <PageHeader
-          eyebrow="Optimization Lab"
-          title="Continuous AI performance tuning"
-          description="Budget, creative, funnel, and audience optimization with experiments and rollbacks."
-        />
-        <Card className="border-white/[0.06]">
-          <CardHeader>
-            <CardTitle>Finish onboarding first</CardTitle>
-            <CardDescription>Connect your business profile so the loop has signals to analyze.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href="/onboarding"
-              className={cn(buttonVariants({ variant: "default" }), "rounded-xl")}
-            >
-              Go to onboarding
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const decisionsRepo = createEngineDecisionRepository(supabase);
-  const runsRepo = createOptimizationRunRepository(supabase);
-
-  const [decisionsRes, runsRes] = await Promise.all([
-    decisionsRepo.listForBusiness(business.id, 100),
-    runsRepo.listForBusiness(business.id, 20),
-  ]);
-
-  const decisions = (decisionsRes.data ?? []) as EngineDecisionRow[];
-  const runs = (runsRes.data ?? []) as OptimizationRunRow[];
-
-  return (
-    <div className="mx-auto max-w-6xl space-y-10">
-      <PageHeader
-        eyebrow="Optimization Lab"
-        title="Continuous AI performance tuning"
-        description="Scaling opportunities, predictive recommendations, experiment tracking, AI tuning history, and forecasting."
-      />
-      <OptimizationDashboard decisions={decisions} runs={runs} />
-    </div>
-  );
+export default function OptimizationRedirectPage() {
+  redirect(ROUTES.analyticsTraffic);
 }

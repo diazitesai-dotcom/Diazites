@@ -432,7 +432,7 @@ export function OnboardingWizard({ initialDraft }: { initialDraft?: OnboardingDr
                       <p className="mt-1 text-xs text-muted-foreground">{conn.description}</p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Link
-                          href={`/dashboard/integrations?connect=${conn.key}`}
+                          href={`/dashboard/campaign-ops?connect=${conn.key}`}
                           className="text-xs font-medium text-violet-400 hover:underline"
                         >
                           Connect in dashboard →

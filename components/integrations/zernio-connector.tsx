@@ -92,7 +92,7 @@ export function ZernioConnector({ configured }: ZernioConnectorProps) {
             Zernio
           </a>
           . Prefer connecting on{" "}
-          <a href="/dashboard/integrations?focus=zernio" className="text-violet-300 underline">
+          <a href="/dashboard/campaign-ops?focus=zernio" className="text-violet-300 underline">
             Integrations → Zernio
           </a>{" "}
           next to Google Ads.

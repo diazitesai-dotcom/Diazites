@@ -314,7 +314,7 @@ export function SetupAssistant({
 
     const href =
       action.kind === "open_diagnostics"
-        ? (action.href ?? "/dashboard/integrations")
+        ? (action.href ?? "/dashboard/campaign-ops")
         : action.kind === "navigate" || action.kind === "approve"
           ? action.href
           : undefined;

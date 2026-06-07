@@ -18,17 +18,17 @@ export async function GET(request: Request) {
 
   if (oauthError) {
     return NextResponse.redirect(
-      `${appUrl}/dashboard/integrations?error=${encodeURIComponent(oauthError)}`,
+      `${appUrl}/dashboard/campaign-ops?error=${encodeURIComponent(oauthError)}`,
     );
   }
 
   if (!code || !state) {
-    return NextResponse.redirect(`${appUrl}/dashboard/integrations?error=missing_oauth_params`);
+    return NextResponse.redirect(`${appUrl}/dashboard/campaign-ops?error=missing_oauth_params`);
   }
 
   const decoded = decodeAdsOAuthState(state);
   if (!decoded) {
-    return NextResponse.redirect(`${appUrl}/dashboard/integrations?error=invalid_oauth_state`);
+    return NextResponse.redirect(`${appUrl}/dashboard/campaign-ops?error=invalid_oauth_state`);
   }
 
   const returnBase = `${appUrl}${decoded.returnTo}`;

@@ -24,26 +24,15 @@ const STARTER_VISIBLE_PATHS = new Set<string>([
   ROUTES.agents,
   ROUTES.aiCallCommandCenter,
   ROUTES.workflows,
-  ROUTES.automationCenter,
   ROUTES.automationPipelines,
   ROUTES.emailCampaignCenter,
   ROUTES.merchantServices,
-  ROUTES.analytics,
-  ROUTES.followUp,
-  ROUTES.inbox,
+  ROUTES.analyticsTraffic,
   ROUTES.calendar,
-  ROUTES.integrationsHub,
   ROUTES.businessProfile,
   ROUTES.onboarding,
   ROUTES.tasks,
-  ROUTES.approvalCenter,
-]);
-
-/** Shown on Starter with upgrade badge (not hidden). */
-const STARTER_LOCKED_PATHS = new Set<string>([
-  ROUTES.growthEngine,
-  ROUTES.optimizationLab,
-  ROUTES.reportsIntelligence,
+  ROUTES.organization,
 ]);
 
 function pathOf(href: string): string {
@@ -79,15 +68,6 @@ export function filterNavGroupsByPlan(
       const p = pathOf(item.href);
       if (STARTER_VISIBLE_PATHS.has(p)) {
         items.push({ ...item });
-        continue;
-      }
-      if (STARTER_LOCKED_PATHS.has(p)) {
-        items.push({
-          ...item,
-          locked: true,
-          upgradePlan: "growth",
-          lockReason: "Available on Growth and above.",
-        });
       }
     }
 
