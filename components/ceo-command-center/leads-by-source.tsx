@@ -9,12 +9,27 @@ type LeadsBySourceProps = {
 };
 
 export function LeadsBySource({ sources, total }: LeadsBySourceProps) {
-  let cumulative = 0;
-  const segments = sources.map((source) => {
-    const start = cumulative;
-    cumulative += source.percent;
-    return { ...source, start, end: cumulative };
-  });
+  if (sources.length === 0 || total === 0) {
+    return (
+      <CardShell title="Leads by Source">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-8 text-center">
+          <p className="text-sm font-medium text-slate-300">No lead source data yet</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Lead sources will appear after real leads are captured.
+          </p>
+        </div>
+      </CardShell>
+    );
+  }
+
+  const segments = sources.reduce<Array<LeadSource & { start: number; end: number }>>(
+    (items, source) => {
+      const start = items.at(-1)?.end ?? 0;
+      const end = start + source.percent;
+      return [...items, { ...source, start, end }];
+    },
+    [],
+  );
 
   const gradientStops = segments
     .map((s) => `${s.color} ${s.start}% ${s.end}%`)

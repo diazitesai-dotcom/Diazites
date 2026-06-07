@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { CeoCommandCenterDashboard } from "@/components/ceo-command-center/ceo-command-center-dashboard";
 import { buttonVariants } from "@/components/ui/button";
-import { getCeoCommandCenterMockData } from "@/lib/ceo-command-center/mock-data";
+import { buildCeoCommandCenterDataFromOverview } from "@/lib/ceo-command-center/dashboard-real-data";
 import { loadDashboardOverview } from "@/lib/dashboard/load-dashboard-overview";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,7 @@ export default async function DashboardPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const [overview, sp] = await Promise.all([loadDashboardOverview(), searchParams]);
-  const data = getCeoCommandCenterMockData();
+  const data = buildCeoCommandCenterDataFromOverview(overview);
   const onboardingComplete = sp.onboarding === "complete";
 
   if (!overview && !onboardingComplete) {

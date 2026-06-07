@@ -21,6 +21,14 @@ export function AiEmployees({ employees }: AiEmployeesProps) {
         </Link>
       }
     >
+      {employees.length === 0 ? (
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-8 text-center">
+          <p className="text-sm font-medium text-slate-300">No AI employees active yet</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Activated AI employees will appear after your agents are configured.
+          </p>
+        </div>
+      ) : (
       <ul className="space-y-2">
         {employees.map((emp) => (
           <li
@@ -42,6 +50,7 @@ export function AiEmployees({ employees }: AiEmployeesProps) {
           </li>
         ))}
       </ul>
+      )}
       <Link
         href="/dashboard/agents"
         className="mt-4 block w-full rounded-lg border border-white/[0.08] bg-white/[0.03] py-2 text-center text-xs font-medium text-slate-300 transition hover:bg-white/[0.06]"

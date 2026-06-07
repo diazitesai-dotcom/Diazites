@@ -8,6 +8,14 @@ type RecentActivityProps = {
 export function RecentActivity({ items }: RecentActivityProps) {
   return (
     <CardShell title="Recent Activity">
+      {items.length === 0 ? (
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-8 text-center">
+          <p className="text-sm font-medium text-slate-300">No activity yet</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Real system activity will appear here as agents, leads, and campaigns run.
+          </p>
+        </div>
+      ) : (
       <ul className="space-y-3">
         {items.map((item, index) => (
           <li key={item.id} className="flex gap-3">
@@ -24,6 +32,7 @@ export function RecentActivity({ items }: RecentActivityProps) {
           </li>
         ))}
       </ul>
+      )}
     </CardShell>
   );
 }

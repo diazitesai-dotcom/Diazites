@@ -16,6 +16,19 @@ type PipelineOverviewProps = {
 };
 
 export function PipelineOverview({ stages }: PipelineOverviewProps) {
+  if (stages.length === 0) {
+    return (
+      <CardShell title="Pipeline Overview">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-8 text-center">
+          <p className="text-sm font-medium text-slate-300">No pipeline data yet</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Pipeline stages will update when real leads move through the CRM.
+          </p>
+        </div>
+      </CardShell>
+    );
+  }
+
   const maxCount = Math.max(...stages.map((s) => s.count), 1);
 
   return (

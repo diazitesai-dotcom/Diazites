@@ -27,6 +27,14 @@ export function Tasks({ items }: TasksProps) {
         </Link>
       }
     >
+      {items.length === 0 ? (
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-8 text-center">
+          <p className="text-sm font-medium text-slate-300">No tasks yet</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Real follow-up tasks and AI recommendations will appear here.
+          </p>
+        </div>
+      ) : (
       <ul className="space-y-2">
         {items.map((task) => (
           <li
@@ -45,6 +53,7 @@ export function Tasks({ items }: TasksProps) {
           </li>
         ))}
       </ul>
+      )}
     </CardShell>
   );
 }

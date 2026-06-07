@@ -45,6 +45,12 @@ export function AiCoachCard({ data }: AiCoachCardProps) {
 
         <div>
           <p className="mb-2 text-xs font-medium text-slate-500">Recommendations</p>
+          {data.recommendations.length === 0 ? (
+            <div className="rounded-lg border border-white/[0.05] bg-white/[0.02] px-3 py-3 text-xs text-slate-400">
+              No AI recommendations yet. Recommendations will appear after real activity is
+              recorded.
+            </div>
+          ) : (
           <ul className="space-y-2">
             {data.recommendations.map((rec) => (
               <li
@@ -56,6 +62,7 @@ export function AiCoachCard({ data }: AiCoachCardProps) {
               </li>
             ))}
           </ul>
+          )}
         </div>
 
         <button
