@@ -50,10 +50,63 @@ const FIELD_LABELS: Record<keyof BusinessProfileFields, string> = {
 
 export { FIELD_LABELS };
 
+function extractFromJsonLd(html: string): Partial<BusinessProfileFields> {
+  const out: Partial<BusinessProfileFields> = {};
+  const blocks = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  if (!blocks) return out;
+
+  for (const block of blocks) {
+    const inner = block.replace(/<script[^>]*>/i, "").replace(/<\/script>/i, "").trim();
+    try {
+      const parsed = JSON.parse(inner) as Record<string, unknown>;
+      const nodes = Array.isArray(parsed["@graph"])
+        ? (parsed["@graph"] as Record<string, unknown>[])
+        : [parsed];
+
+      for (const node of nodes) {
+        const type = String(node["@type"] ?? "");
+        if (!/Organization|LocalBusiness|Corporation|Store|ProfessionalService/i.test(type)) {
+          continue;
+        }
+        if (typeof node.name === "string" && !out.businessName) out.businessName = node.name;
+        if (typeof node.telephone === "string" && !out.phone) out.phone = node.telephone;
+        if (typeof node.email === "string" && !out.email) out.email = node.email;
+        if (typeof node.description === "string" && !out.businessDescription) {
+          out.businessDescription = node.description;
+        }
+        if (node.address && typeof node.address === "object") {
+          const addr = node.address as Record<string, unknown>;
+          const parts = [addr.streetAddress, addr.addressLocality, addr.addressRegion, addr.postalCode]
+            .filter((p) => typeof p === "string" && p.trim())
+            .join(", ");
+          if (parts && !out.address) out.address = parts;
+        }
+        if (node.openingHoursSpecification && !out.businessHours) {
+          out.businessHours = JSON.stringify(node.openingHoursSpecification).slice(0, 200);
+        }
+      }
+    } catch {
+      /* ignore invalid JSON-LD */
+    }
+  }
+
+  return out;
+}
+
+function extractPatterns(text: string): Partial<BusinessProfileFields> {
+  const out: Partial<BusinessProfileFields> = {};
+  const phone = text.match(/(?:\+1[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}/);
+  const email = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  if (phone?.[0]) out.phone = phone[0];
+  if (email?.[0] && !email[0].includes("example.com")) out.email = email[0];
+  return out;
+}
+
 function heuristicProfile(
   url: string,
   text: string,
   title?: string,
+  html?: string,
 ): Partial<BusinessProfileFields> {
   const businessName = title?.split(/[|\-–—]/)[0]?.trim() ?? "";
   const descMatch = text.match(/DESCRIPTION:\s([^]+?)(?:\sOG:|$)/i);
@@ -68,9 +121,11 @@ function heuristicProfile(
     businessDescription: description,
     services: description.slice(0, 300),
     targetCustomer: description.slice(0, 200),
-    keywords: domain.replace(/\./g, " ").replace(/www\s?/i, "").trim(),
+    keywords: domain.replace(/^www\./i, "").replace(/\./g, " ").trim(),
     bestCallToAction: "Get Started",
     brandVoice: "Professional, trustworthy, local expert",
+    ...(html ? extractFromJsonLd(html) : {}),
+    ...extractPatterns(text),
   };
 }
 
@@ -119,16 +174,18 @@ export async function autofillCeoBusinessProfileFromWebsite(
 
   let pageText: string;
   let pageTitle: string | undefined;
+  let pageHtml: string | undefined;
   try {
     const fetched = await fetchWebsiteText(normalized);
     pageText = fetched.text;
     pageTitle = fetched.title;
+    pageHtml = fetched.html;
   } catch (e) {
     return fail(e instanceof Error ? e.message : "Could not read website.", "FETCH_FAILED");
   }
 
   if (!isOpenAiConfigured()) {
-    const partial = heuristicProfile(normalized, pageText, pageTitle);
+    const partial = heuristicProfile(normalized, pageText, pageTitle, pageHtml);
     return ok({
       profile: mergeProfile(currentProfile, partial, normalized),
       usedAi: false,
@@ -159,7 +216,7 @@ Be specific to this business. Use concise, operator-ready values.`,
   });
 
   if (!aiResult.success) {
-    const partial = heuristicProfile(normalized, pageText, pageTitle);
+    const partial = heuristicProfile(normalized, pageText, pageTitle, pageHtml);
     return ok({
       profile: mergeProfile(currentProfile, partial, normalized),
       usedAi: false,

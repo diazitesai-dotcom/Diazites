@@ -2,13 +2,10 @@
 
 import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
 import { autofillCeoBusinessProfileFromWebsite } from "@/lib/ceo-command-center/business-profile-autofill";
+import { createEmptyBusinessProfile } from "@/lib/ceo-command-center/business-profile-utils";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { BusinessProfileFields } from "@/types/ceo-command-center";
 
-export async function scanBusinessProfileAction(
-  websiteUrl: string,
-  currentProfile: BusinessProfileFields,
-) {
+export async function scanBusinessProfileAction(websiteUrl: string) {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -23,7 +20,7 @@ export async function scanBusinessProfileAction(
   const result = await autofillCeoBusinessProfileFromWebsite(
     supabase,
     websiteUrl,
-    currentProfile,
+    createEmptyBusinessProfile(websiteUrl),
   );
 
   if (!result.success) {

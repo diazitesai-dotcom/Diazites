@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -14,8 +14,8 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { scanBusinessProfileAction } from "@/actions/ceo-onboarding.actions";
 import { ProgressTracker } from "@/components/ceo-command-center/progress-tracker";
+import { useBusinessWebsiteAutofill } from "@/components/ceo-command-center/onboarding/use-business-website-autofill";
 import { FIELD_LABELS } from "@/lib/ceo-command-center/business-profile-autofill";
 import { cn } from "@/lib/utils";
 import type {
@@ -58,11 +58,17 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
   const [currentStepId, setCurrentStepId] = useState<OnboardingStepId>(
     initialData.currentStepId,
   );
-  const [profile, setProfile] = useState<BusinessProfileFields>(initialData.businessProfile);
-  const [websiteUrl, setWebsiteUrl] = useState(initialData.businessProfile.website || "");
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [scanMessage, setScanMessage] = useState<string | null>(null);
-  const [isScanPending, startScanTransition] = useTransition();
+  const {
+    websiteUrl,
+    setWebsiteUrl,
+    profile,
+    setProfile,
+    isScanning,
+    scanError,
+    scanMessage,
+    scanNow,
+    handleWebsiteBlur,
+  } = useBusinessWebsiteAutofill(initialData.businessProfile.website || "");
   const [selectedLandingId, setSelectedLandingId] = useState<string | null>("lead_gen");
 
   const [integrations, setIntegrations] = useState(initialData.integrations);
@@ -84,42 +90,14 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
     if (prev) setCurrentStepId(prev);
   };
 
-  const handleScanBusiness = () => {
-    const url = websiteUrl.trim();
-    if (!url) {
-      setScanError("Enter your business website URL first.");
-      setScanMessage(null);
-      return;
-    }
-
-    setScanError(null);
-    setScanMessage(null);
-
-    startScanTransition(async () => {
-      const result = await scanBusinessProfileAction(url, profile);
-      if (!result.success) {
-        setScanError(result.error);
-        return;
-      }
-
-      setProfile(result.data.profile);
-      setWebsiteUrl(result.data.profile.website || url);
-      setScanMessage(
-        result.data.usedAi
-          ? "AI filled in your business details — review and edit anything before continuing."
-          : "We pulled basics from your site. Add OPENAI_API_KEY for richer AI autofill.",
-      );
-    });
+  const handleLaunch = () => {
+    router.push("/dashboard?onboarding=complete");
   };
 
   const toggleIntegration = (id: string) => {
     setIntegrations((prev) =>
       prev.map((item) => (item.id === id ? { ...item, connected: !item.connected } : item)),
     );
-  };
-
-  const handleLaunch = () => {
-    router.push("/dashboard?onboarding=complete");
   };
 
   return (
@@ -154,7 +132,7 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
               <div>
                 <h2 className="text-lg font-semibold text-white">Business Profile</h2>
                 <p className="mt-1 text-sm text-slate-400">
-                  Enter your website and let AI fill in your business details.
+                  Paste your website URL — fields auto-fill as soon as we detect a valid link.
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -162,10 +140,11 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                   type="url"
                   value={websiteUrl}
                   onChange={(e) => setWebsiteUrl(e.target.value)}
+                  onBlur={handleWebsiteBlur}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      handleScanBusiness();
+                      scanNow();
                     }
                   }}
                   placeholder="https://yourbusiness.com"
@@ -173,11 +152,11 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                 />
                 <button
                   type="button"
-                  onClick={handleScanBusiness}
-                  disabled={isScanPending || !websiteUrl.trim()}
+                  onClick={scanNow}
+                  disabled={isScanning || !websiteUrl.trim()}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isScanPending ? (
+                  {isScanning ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Scanning…
@@ -190,6 +169,9 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                   )}
                 </button>
               </div>
+              {isScanning ? (
+                <p className="text-sm text-violet-300">Analyzing website and filling your profile…</p>
+              ) : null}
               {scanError ? (
                 <p role="alert" className="text-sm text-rose-300">
                   {scanError}
@@ -209,7 +191,8 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                     <input
                       value={profile[key]}
                       onChange={(e) => setProfile((p) => ({ ...p, [key]: e.target.value }))}
-                      className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-violet-500/40 focus:outline-none"
+                      disabled={isScanning}
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white focus:border-violet-500/40 focus:outline-none disabled:opacity-60"
                     />
                   </label>
                 ))}

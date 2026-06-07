@@ -296,6 +296,7 @@ export async function fetchWebsiteText(rawUrl: string): Promise<{
   url: string;
   text: string;
   title?: string;
+  html?: string;
 }> {
   const url = normalizeWebsiteUrl(rawUrl);
   if (!url) {
@@ -304,7 +305,7 @@ export async function fetchWebsiteText(rawUrl: string): Promise<{
 
   const builtIn = builtInMarketingSnapshot(url);
   if (builtIn) {
-    return { url, text: builtIn.text, title: builtIn.title };
+    return { url, text: builtIn.text, title: builtIn.title, html: undefined };
   }
 
   const controller = new AbortController();
@@ -339,7 +340,7 @@ export async function fetchWebsiteText(rawUrl: string): Promise<{
       metaContent(html, "title") ??
       metaContent(html, "site_name");
 
-    return { url, text, title };
+    return { url, text, title, html };
   } catch (e) {
     if (e instanceof Error && e.name === "AbortError") {
       throw new Error("Website took too long to respond.");
