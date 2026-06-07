@@ -162,7 +162,7 @@ export function CeoCommandCenterDashboard({ data }: CeoCommandCenterDashboardPro
             </div>
             <button
               type="button"
-              onClick={() => router.push("/dashboard/settings")}
+              onClick={() => router.push("/dashboard/settings?tab=homepage")}
               className="w-fit rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-white/[0.08]"
             >
               Choose buttons in Settings

@@ -11,7 +11,13 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const initialTab = typeof sp.tab === "string" ? sp.tab : undefined;
   const user = await requireAuth();
   const supabase = await createServerSupabaseClient();
   const businesses = createBusinessRepository(supabase);
@@ -78,6 +84,7 @@ export default async function SettingsPage() {
         businessName={business.name}
         ownerEmail={user.email ?? null}
         usageSummary={usageSummary}
+        initialTab={initialTab}
       />
     </div>
   );

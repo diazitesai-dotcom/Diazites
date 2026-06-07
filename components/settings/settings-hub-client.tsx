@@ -133,15 +133,21 @@ type Props = {
   businessName: string;
   ownerEmail: string | null;
   usageSummary: Array<{ label: string; used: number; limit: number | null }>;
+  initialTab?: string;
 };
+
+function normalizeTabId(value: string | undefined): TabId {
+  return TABS.some((tab) => tab.id === value) ? (value as TabId) : "profile";
+}
 
 export function SettingsHubClient({
   ctx,
   businessName,
   ownerEmail,
   usageSummary,
+  initialTab,
 }: Props) {
-  const [tab, setTab] = useState<TabId>("profile");
+  const [tab, setTab] = useState<TabId>(() => normalizeTabId(initialTab));
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeCtx, setUpgradeCtx] = useState<UpgradePromptContext | null>(null);
   const [homepageToolIds, setHomepageToolIds] =

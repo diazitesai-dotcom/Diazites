@@ -11,6 +11,7 @@ import {
   CreditCard,
   Crosshair,
   Globe,
+  Home,
   LayoutDashboard,
   LogOut,
   MessageSquare,
@@ -28,6 +29,7 @@ import { signOutAction } from "@/services/auth/actions";
 
 const TOP_NAV_ITEMS = [
   { href: "/dashboard", label: "Full Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/settings?tab=homepage", label: "Home Page", icon: Home },
 ] as const;
 
 const BUSINESS_TOOL_ITEMS = [
@@ -54,8 +56,12 @@ export function Sidebar() {
   const pathname = usePathname();
   const [toolsOpen, setToolsOpen] = useState(false);
 
-  const isActive = (href: string) =>
-    href === "/dashboard" ? pathname === "/dashboard" : pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => {
+    const routePath = href.split("?")[0] ?? href;
+    return routePath === "/dashboard"
+      ? pathname === "/dashboard"
+      : pathname === routePath || pathname.startsWith(`${routePath}/`);
+  };
 
   const renderNavItem = (
     item: (typeof TOP_NAV_ITEMS)[number] | (typeof BUSINESS_TOOL_ITEMS)[number] | (typeof BOTTOM_NAV_ITEMS)[number],
@@ -102,6 +108,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <div className="space-y-0.5">
           {renderNavItem(TOP_NAV_ITEMS[0])}
+          {renderNavItem(TOP_NAV_ITEMS[1])}
         </div>
 
         <div className="my-4 border-t border-white/[0.06]" />
