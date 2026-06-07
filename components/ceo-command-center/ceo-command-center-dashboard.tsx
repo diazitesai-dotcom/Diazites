@@ -1,6 +1,15 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  BarChart3,
+  Bot,
+  Building2,
+  Inbox,
+  MousePointerClick,
+  Users,
+} from "lucide-react";
 
 import { AiCoachCard } from "@/components/ceo-command-center/ai-coach-card";
 import { AiEmployees } from "@/components/ceo-command-center/ai-employees";
@@ -15,6 +24,13 @@ import { ProgressTracker } from "@/components/ceo-command-center/progress-tracke
 import { RecentActivity } from "@/components/ceo-command-center/recent-activity";
 import { RevenueGoalCard } from "@/components/ceo-command-center/revenue-goal-card";
 import { Tasks } from "@/components/ceo-command-center/tasks";
+import {
+  DEFAULT_HOMEPAGE_TOOL_IDS,
+  HOMEPAGE_TOOL_OPTIONS,
+  HOMEPAGE_TOOL_STORAGE_KEY,
+  isHomepageToolId,
+  type HomepageToolId,
+} from "@/lib/ceo-command-center/homepage-tools";
 import type {
   CeoCommandCenterData,
   OnboardingStepId,
@@ -38,13 +54,61 @@ const ONBOARDING_STEP_BY_NUMBER: Record<number, OnboardingStepId> = {
   10: "launch",
 };
 
+const HOME_TOOL_ICONS: Record<HomepageToolId, typeof Users> = {
+  leads: Users,
+  analytics: BarChart3,
+  ai_agents: Bot,
+  business_profile: Building2,
+  conversations: Inbox,
+  landing_page: MousePointerClick,
+};
+
+function readHomepageToolIds(): HomepageToolId[] {
+  if (typeof window === "undefined") return DEFAULT_HOMEPAGE_TOOL_IDS;
+
+  try {
+    const raw = window.localStorage.getItem(HOMEPAGE_TOOL_STORAGE_KEY);
+    if (!raw) return DEFAULT_HOMEPAGE_TOOL_IDS;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return DEFAULT_HOMEPAGE_TOOL_IDS;
+    const ids = parsed.filter((item): item is HomepageToolId => {
+      return typeof item === "string" && isHomepageToolId(item);
+    });
+    return ids.length > 0 ? ids : DEFAULT_HOMEPAGE_TOOL_IDS;
+  } catch {
+    return DEFAULT_HOMEPAGE_TOOL_IDS;
+  }
+}
+
 export function CeoCommandCenterDashboard({ data }: CeoCommandCenterDashboardProps) {
   const router = useRouter();
+  const [visibleToolIds, setVisibleToolIds] = useState<HomepageToolId[]>(DEFAULT_HOMEPAGE_TOOL_IDS);
   const leadTotal = data.leadSources.reduce((sum, s) => sum + s.count, 0);
   const openOnboardingStep = (step: ProgressStep) => {
     const stepId = ONBOARDING_STEP_BY_NUMBER[step.id];
     if (stepId) router.push(`/onboarding?step=${stepId}`);
   };
+  const visibleTools = useMemo(
+    () => HOMEPAGE_TOOL_OPTIONS.filter((tool) => visibleToolIds.includes(tool.id)),
+    [visibleToolIds],
+  );
+
+  useEffect(() => {
+    const syncToolIds = () => setVisibleToolIds(readHomepageToolIds());
+    const timeoutId = window.setTimeout(syncToolIds, 0);
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === HOMEPAGE_TOOL_STORAGE_KEY) {
+        syncToolIds();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   return (
     <>
@@ -82,6 +146,57 @@ export function CeoCommandCenterDashboard({ data }: CeoCommandCenterDashboardPro
           </div>
         </div>
         <ProgressTracker steps={data.progressSteps} onStepClick={openOnboardingStep} />
+
+        <section className="rounded-2xl border border-white/[0.08] bg-[#0c1222]/80 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
+                Home shortcuts
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-white">
+                What do you want to work on?
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-slate-400">
+                Pick a button below. Each one opens the exact business window you need.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/settings")}
+              className="w-fit rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-white/[0.08]"
+            >
+              Choose buttons in Settings
+            </button>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {visibleTools.map((tool) => {
+              const Icon = HOME_TOOL_ICONS[tool.id];
+
+              return (
+                <button
+                  key={tool.id}
+                  type="button"
+                  onClick={() => router.push(tool.href)}
+                  className="group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 text-left transition hover:border-violet-400/40 hover:bg-violet-500/10"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="rounded-xl bg-violet-500/15 p-2 text-violet-200 transition group-hover:bg-violet-500/25">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-base font-semibold text-white">{tool.label}</span>
+                      <span className="mt-1 block text-xs leading-5 text-slate-400">
+                        {tool.description}
+                      </span>
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         <KpiCardRow kpis={data.kpis} />
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">

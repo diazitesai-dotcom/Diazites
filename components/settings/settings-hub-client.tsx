@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bot,
   CreditCard,
+  Home,
   Megaphone,
   Phone,
   Plug,
@@ -17,6 +18,13 @@ import { UpgradeRequiredDialog } from "@/components/upgrade/upgrade-required-dia
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DEFAULT_HOMEPAGE_TOOL_IDS,
+  HOMEPAGE_TOOL_OPTIONS,
+  HOMEPAGE_TOOL_STORAGE_KEY,
+  isHomepageToolId,
+  type HomepageToolId,
+} from "@/lib/ceo-command-center/homepage-tools";
 import { ROUTES } from "@/lib/navigation/platform-nav";
 import { cn } from "@/lib/utils";
 import { showUpgradeRequired } from "@/lib/entitlements/upgrade-messages";
@@ -26,6 +34,7 @@ import type { UpgradePromptContext } from "@/types/entitlements";
 const TABS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "workspace", label: "Workspace", icon: Building2 },
+  { id: "homepage", label: "Homepage", icon: Home },
   { id: "agents", label: "AI Agents", icon: Bot },
   { id: "ads", label: "Ads", icon: Megaphone },
   { id: "voice", label: "AI Voice", icon: Phone },
@@ -35,6 +44,23 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
+
+function readHomepageToolIds(): HomepageToolId[] {
+  if (typeof window === "undefined") return DEFAULT_HOMEPAGE_TOOL_IDS;
+
+  try {
+    const raw = window.localStorage.getItem(HOMEPAGE_TOOL_STORAGE_KEY);
+    if (!raw) return DEFAULT_HOMEPAGE_TOOL_IDS;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return DEFAULT_HOMEPAGE_TOOL_IDS;
+    const ids = parsed.filter((item): item is HomepageToolId => {
+      return typeof item === "string" && isHomepageToolId(item);
+    });
+    return ids.length > 0 ? ids : DEFAULT_HOMEPAGE_TOOL_IDS;
+  } catch {
+    return DEFAULT_HOMEPAGE_TOOL_IDS;
+  }
+}
 
 type AgentRow = {
   key: string;
@@ -118,6 +144,8 @@ export function SettingsHubClient({
   const [tab, setTab] = useState<TabId>("profile");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeCtx, setUpgradeCtx] = useState<UpgradePromptContext | null>(null);
+  const [homepageToolIds, setHomepageToolIds] =
+    useState<HomepageToolId[]>(DEFAULT_HOMEPAGE_TOOL_IDS);
 
   function promptUpgrade(feature: string) {
     setUpgradeCtx(showUpgradeRequired(feature));
@@ -126,6 +154,31 @@ export function SettingsHubClient({
 
   const planLabel = ctx.planKey.charAt(0).toUpperCase() + ctx.planKey.slice(1);
   const adPlatformLimit = ctx.entitlements.ad_platforms?.int ?? 1;
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setHomepageToolIds(readHomepageToolIds());
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  function updateHomepageToolIds(nextIds: HomepageToolId[]) {
+    const safeIds = nextIds.length > 0 ? nextIds : DEFAULT_HOMEPAGE_TOOL_IDS;
+    setHomepageToolIds(safeIds);
+    try {
+      window.localStorage.setItem(HOMEPAGE_TOOL_STORAGE_KEY, JSON.stringify(safeIds));
+    } catch {
+      /* storage unavailable; selection still updates for this session */
+    }
+  }
+
+  function toggleHomepageTool(toolId: HomepageToolId) {
+    const nextIds = homepageToolIds.includes(toolId)
+      ? homepageToolIds.filter((id) => id !== toolId)
+      : [...homepageToolIds, toolId];
+    updateHomepageToolIds(nextIds);
+  }
 
   return (
     <div className="space-y-8">
@@ -188,6 +241,64 @@ export function SettingsHubClient({
                 Open business profile
               </Button>
             </Link>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {tab === "homepage" ? (
+        <Card className="border-white/[0.06]">
+          <CardHeader>
+            <CardTitle>Homepage buttons</CardTitle>
+            <CardDescription>
+              Choose the simple buttons users see on the Full Dashboard home screen.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              {HOMEPAGE_TOOL_OPTIONS.map((tool) => {
+                const checked = homepageToolIds.includes(tool.id);
+
+                return (
+                  <label
+                    key={tool.id}
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition",
+                      checked
+                        ? "border-violet-400/35 bg-violet-500/10"
+                        : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleHomepageTool(tool.id)}
+                      className="mt-1"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-foreground">{tool.label}</span>
+                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                        {tool.description}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => updateHomepageToolIds(DEFAULT_HOMEPAGE_TOOL_IDS)}
+              >
+                Show all buttons
+              </Button>
+              <Link href={ROUTES.missionControl}>
+                <Button type="button" className="rounded-xl">
+                  View homepage
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       ) : null}
