@@ -14,25 +14,27 @@ type HeaderProps = {
 
 export function Header({ userName = "Tim", userInitials = "TM", onLaunch }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-white/[0.06] bg-[#070b14]/80 px-6 py-4 backdrop-blur-xl">
-      <div>
-        <h1 className="text-xl font-semibold text-white">
+    <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-white/[0.06] bg-[#070b14]/80 px-3 py-3 backdrop-blur-xl md:px-6 md:py-4">
+      <div className="min-w-0">
+        <h1 className="truncate text-base font-semibold text-white md:text-xl">
           CEO Command Center <span aria-hidden>👋</span>
         </h1>
-        <p className="mt-0.5 text-sm text-slate-400">Good morning, {userName}!</p>
+        <p className="mt-0.5 truncate text-xs text-slate-400 md:text-sm">
+          Good morning, {userName}!
+        </p>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
         <button
           type="button"
-          className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
+          className="hidden rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 text-slate-400 transition hover:bg-white/[0.06] hover:text-white sm:block"
           aria-label="Notifications"
         >
           <Bell className="h-4 w-4" />
         </button>
         <button
           type="button"
-          className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
+          className="hidden rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 text-slate-400 transition hover:bg-white/[0.06] hover:text-white sm:block"
           aria-label="Messages"
         >
           <MessageCircle className="h-4 w-4" />
@@ -53,7 +55,7 @@ export function Header({ userName = "Tim", userInitials = "TM", onLaunch }: Head
           Upgrade
         </Link>
 
-        <div className="ml-1 flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2 py-1.5">
+        <div className="ml-1 hidden items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2 py-1.5 sm:flex">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-xs font-semibold text-white">
             {userInitials}
           </div>
@@ -75,7 +77,7 @@ export function Header({ userName = "Tim", userInitials = "TM", onLaunch }: Head
           type="button"
           onClick={onLaunch}
           className={cn(
-            "inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-900/40 transition hover:from-violet-500 hover:to-indigo-500",
+            "inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-2.5 text-xs font-semibold text-white shadow-lg shadow-violet-900/40 transition hover:from-violet-500 hover:to-indigo-500 sm:px-4 sm:text-sm",
           )}
         >
           <Rocket className="h-4 w-4" />
