@@ -240,7 +240,7 @@ function buildProgressSteps(overview: DashboardOverviewData | null): ProgressSte
     { id: 6, label: "AI Agents", status: hasActiveAgent ? "completed" : "active" },
     { id: 7, label: "Ads Agent", status: hasConnectedAccount ? "active" : "pending" },
     { id: 8, label: "Tracking", status: overview?.metrics ? "active" : "pending" },
-    { id: 9, label: "Review", status: "review" },
+    { id: 9, label: "Test Pipeline", status: "review" },
     { id: 10, label: "Launch", status: overview ? "completed" : "pending" },
   ];
 }

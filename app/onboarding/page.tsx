@@ -23,7 +23,7 @@ const ONBOARDING_STEP_IDS = new Set<OnboardingStepId>([
   "ai_agents",
   "ads_agent",
   "tracking",
-  "review",
+  "pipeline_test",
   "launch",
 ]);
 

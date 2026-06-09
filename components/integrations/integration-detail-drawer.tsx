@@ -7,6 +7,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import {
+  connectTrackingIntegrationAction,
+  disconnectTrackingIntegrationAction,
+} from "@/actions/integrations-tracking.actions";
+import {
   connectAdAccountAction,
   disconnectAdAccountAction,
   syncAdAccountAction,
@@ -23,6 +27,10 @@ import {
   resolveAdPlatform,
   type LinkedAdAccount,
 } from "@/lib/integrations/integration-connect-config";
+import {
+  getTrackingConnectSpec,
+  isTrackingIntegration,
+} from "@/lib/integrations/tracking-connect";
 import {
   disconnectGoogleAction,
   disconnectMetaAction,
@@ -71,9 +79,13 @@ export function IntegrationDetailDrawer({
 
   const isZernio = integration?.id === "zernio";
   const caps = AGENT_CAPABILITY_GROUPS.find((g) => g.agentType === integration?.agentType);
-  const credentialLabel = integration
-    ? credentialLabelFor(integration.id, integration.name)
-    : "API key or token";
+  const isTracking = integration ? isTrackingIntegration(integration.id) : false;
+  const trackingSpec = integration ? getTrackingConnectSpec(integration.id) : null;
+  const credentialLabel = trackingSpec
+    ? trackingSpec.fieldLabel
+    : integration
+      ? credentialLabelFor(integration.id, integration.name)
+      : "API key or token";
 
   const oauthPlatform = integration ? integrationOAuthPlatform(integration.id) : null;
   const supportsOAuth = integration ? OAUTH_INTEGRATION_IDS.has(integration.id) : false;
@@ -113,12 +125,33 @@ export function IntegrationDetailDrawer({
 
   function handleConnect() {
     if (!integration || !credential.trim()) {
-      setMessage("Paste an API key or access token to connect.");
+      setMessage(
+        isTracking
+          ? `Enter your ${trackingSpec?.fieldLabel ?? "tracking ID"} to connect.`
+          : "Paste an API key or access token to connect.",
+      );
       openConnectPanel();
       return;
     }
 
     startTransition(async () => {
+      if (isTracking) {
+        const result = await connectTrackingIntegrationAction({
+          integrationId: integration.id,
+          value: credential.trim(),
+          accountName: accountName.trim() || `${integration.name} account`,
+        });
+        if (!result.ok) {
+          setMessage(result.error);
+          return;
+        }
+        setCredential("");
+        setMessage("Connected — tracking ID saved and applied to your landing pages.");
+        setPanelMode("manage");
+        refreshAfterMutation();
+        return;
+      }
+
       const result = await connectAdAccountAction({
         platform: resolveAdPlatform(integration.id),
         accountName: accountName.trim() || `${integration.name} account`,
@@ -177,6 +210,15 @@ export function IntegrationDetailDrawer({
   function handleDisconnect() {
     if (!integration) return;
     startTransition(async () => {
+      if (isTracking && linkedAccount) {
+        const result = await disconnectTrackingIntegrationAction(integration.id);
+        setMessage(result.ok ? "Disconnected." : result.error);
+        if (result.ok) {
+          setPanelMode("overview");
+          refreshAfterMutation();
+        }
+        return;
+      }
       if (oauthPlatform && linkedAccount) {
         const result =
           oauthPlatform === "google"
@@ -282,9 +324,19 @@ export function IntegrationDetailDrawer({
 
               {!isZernio && panelMode === "connect" ? (
                 <div className="space-y-4">
-                  <p className="text-xs text-muted-foreground">
-                    Credentials are encrypted at rest and never shown in full after saving.
-                  </p>
+                  {isTracking && trackingSpec ? (
+                    <div className="space-y-3 rounded-lg border border-sky-500/25 bg-sky-500/10 p-3">
+                      <p className="text-xs text-sky-100/90">
+                        Paste your {integration?.name} ID from Google Analytics (or Meta / GTM).
+                        We apply it to all landing pages for this business automatically.
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">{trackingSpec.hint}</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Credentials are encrypted at rest and never shown in full after saving.
+                    </p>
+                  )}
                   {supportsOAuth ? (
                     <div className="space-y-3 rounded-lg border border-violet-500/25 bg-violet-500/10 p-3">
                       <p className="text-xs text-violet-100/90">
@@ -327,11 +379,11 @@ export function IntegrationDetailDrawer({
                     <Label htmlFor="integration-credential">{credentialLabel}</Label>
                     <Input
                       id="integration-credential"
-                      type="password"
+                      type={isTracking ? "text" : "password"}
                       autoComplete="off"
                       value={credential}
                       onChange={(e) => setCredential(e.target.value)}
-                      placeholder="Paste key or token"
+                      placeholder={trackingSpec?.placeholder ?? "Paste key or token"}
                       disabled={pending}
                     />
                   </div>
@@ -378,41 +430,45 @@ export function IntegrationDetailDrawer({
                     </div>
                   </dl>
                   <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="rounded-lg border-white/10"
-                      disabled={pending}
-                      onClick={() => {
-                        startTransition(async () => {
-                          const result = await testAdAccountAction(linkedAccount.id);
-                          setMessage(result.ok ? result.data.message : result.error);
-                        });
-                      }}
-                    >
-                      Test connection
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="rounded-lg border-white/10"
-                      disabled={pending}
-                      onClick={() => {
-                        startTransition(async () => {
-                          const result = await syncAdAccountAction(linkedAccount.id);
-                          setMessage(
-                            result.ok
-                              ? `Synced ${result.data.campaignCount} campaigns.`
-                              : result.error,
-                          );
-                          if (result.ok) refreshAfterMutation();
-                        });
-                      }}
-                    >
-                      Sync now
-                    </Button>
+                    {!isTracking ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg border-white/10"
+                          disabled={pending}
+                          onClick={() => {
+                            startTransition(async () => {
+                              const result = await testAdAccountAction(linkedAccount.id);
+                              setMessage(result.ok ? result.data.message : result.error);
+                            });
+                          }}
+                        >
+                          Test connection
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg border-white/10"
+                          disabled={pending}
+                          onClick={() => {
+                            startTransition(async () => {
+                              const result = await syncAdAccountAction(linkedAccount.id);
+                              setMessage(
+                                result.ok
+                                  ? `Synced ${result.data.campaignCount} campaigns.`
+                                  : result.error,
+                              );
+                              if (result.ok) refreshAfterMutation();
+                            });
+                          }}
+                        >
+                          Sync now
+                        </Button>
+                      </>
+                    ) : null}
                     <Button
                       type="button"
                       variant="outline"
@@ -572,6 +628,10 @@ export function IntegrationDetailDrawer({
                     handleConnect();
                     return;
                   }
+                  if (isTracking) {
+                    openConnectPanel();
+                    return;
+                  }
                   if (supportsOAuth) {
                     handleOAuthConnect();
                     return;
@@ -584,22 +644,28 @@ export function IntegrationDetailDrawer({
                   ? reallyConnected
                     ? "Reconnect with Google"
                     : "Sign in with Google"
-                  : linkedAccount
-                    ? "Update connection"
-                    : "Connect"}
+                  : isTracking
+                    ? reallyConnected
+                      ? "Update tracking ID"
+                      : "Connect tracking"
+                    : linkedAccount
+                      ? "Update connection"
+                      : "Connect"}
               </Button>
               )}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-lg border-white/10"
-                disabled={pending}
-                onClick={openConnectPanel}
-              >
-                <KeyRound className="mr-1 size-3.5" />
-                API key
-              </Button>
+              {!isTracking ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg border-white/10"
+                  disabled={pending}
+                  onClick={openConnectPanel}
+                >
+                  <KeyRound className="mr-1 size-3.5" />
+                  API key
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="outline"

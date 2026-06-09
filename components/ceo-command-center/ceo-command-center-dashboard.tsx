@@ -50,7 +50,7 @@ const ONBOARDING_STEP_BY_NUMBER: Record<number, OnboardingStepId> = {
   6: "ai_agents",
   7: "ads_agent",
   8: "tracking",
-  9: "review",
+  9: "pipeline_test",
   10: "launch",
 };
 

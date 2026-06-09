@@ -1,5 +1,6 @@
 import type { AdAccountConnectionRow } from "@/lib/integrations/ad-account-connection";
 import { GROWTH_INTEGRATION_IDS } from "@/lib/integrations/growth-integrations-catalog";
+import { TRACKING_INTEGRATION_IDS } from "@/lib/integrations/tracking-connect";
 import type { AdPlatform } from "@/types/marketing-os";
 
 export type LinkedAdAccount = {
@@ -62,6 +63,8 @@ export function resolveLinkedIntegrationId(account: AdAccountConnectionRow): str
   if (ext && GROWTH_INTEGRATION_IDS.has(ext)) return ext;
 
   const platform = String(account.platform).toLowerCase();
+  if (TRACKING_INTEGRATION_IDS.has(platform)) return platform;
+
   return LEGACY_PLATFORM_TO_INTEGRATION[platform] ?? null;
 }
 

@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type AdPlatform = "meta" | "google" | "tiktok" | "microsoft" | "zernio";
+export type AdsEnginePlatform = "meta" | "google" | "tiktok" | "microsoft" | "zernio";
+export type TrackingPlatform = "ga4" | "meta_pixel" | "gtm";
+export type AdPlatform = AdsEnginePlatform | TrackingPlatform;
 export type AdAccountStatus = "disconnected" | "pending" | "connected" | "error";
 
 export type AdAccountRow = {

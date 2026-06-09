@@ -14,8 +14,12 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { OnboardingPipelineAiPanel } from "@/components/ceo-command-center/onboarding/onboarding-pipeline-ai-panel";
+import { OnboardingPipelineTestPanel } from "@/components/ceo-command-center/onboarding/onboarding-pipeline-test-panel";
+import { OnboardingZernioConnectCard } from "@/components/ceo-command-center/onboarding/onboarding-zernio-connect-card";
 import { ProgressTracker } from "@/components/ceo-command-center/progress-tracker";
 import { useBusinessWebsiteAutofill } from "@/components/ceo-command-center/onboarding/use-business-website-autofill";
+import type { CommandCenterLaunchPayload } from "@/lib/onboarding/command-center-payload";
 import { FIELD_LABELS } from "@/lib/ceo-command-center/business-profile-autofill";
 import {
   BUSINESS_PROFILE_FIELD_KEYS,
@@ -91,7 +95,7 @@ const STEP_ORDER: OnboardingStepId[] = [
   "ai_agents",
   "ads_agent",
   "tracking",
-  "review",
+  "pipeline_test",
   "launch",
 ];
 
@@ -346,7 +350,7 @@ function stepToProgressStatus(
 ): "completed" | "active" | "review" | "pending" {
   if (stepIndex < currentIndex) return "completed";
   if (stepIndex === currentIndex) {
-    return stepId === "review" ? "review" : "active";
+    return stepId === "pipeline_test" ? "review" : "active";
   }
   return "pending";
 }
@@ -394,6 +398,9 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
   );
   const [isLaunching, setIsLaunching] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [zernioApiKey, setZernioApiKey] = useState("");
+  const [pipelineTestPassed, setPipelineTestPassed] = useState(false);
 
   const [integrations, setIntegrations] = useState(initialData.integrations);
 
@@ -408,6 +415,11 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
 
   const goNext = () => {
     const next = STEP_ORDER[currentIndex + 1];
+    if (next === "launch" && !pipelineTestPassed) {
+      setLaunchError("Run the pipeline test before launching your system.");
+      setCurrentStepId("pipeline_test");
+      return;
+    }
     if (next) setCurrentStepId(next);
   };
 
@@ -422,11 +434,31 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
   };
 
   const handleLaunch = async () => {
+    if (!pipelineTestPassed) {
+      setLaunchError("Run the pipeline test on step 9 before launching.");
+      setCurrentStepId("pipeline_test");
+      return;
+    }
+
     setIsLaunching(true);
     setLaunchError(null);
 
+    const launchPayload: CommandCenterLaunchPayload = {
+      landingTemplateId: selectedLandingId ?? FALLBACK_LANDING_PAGE.id,
+      landingDraft: landingPageDraft,
+      landingSettings: landingPageSettings,
+      logoUrl,
+      pipelineWorkflow,
+      zernioApiKey: zernioApiKey.trim() || null,
+      pipelineTestPassed,
+    };
+
     try {
-      const result = await completeCommandCenterOnboardingAction(profile, offerGoals);
+      const result = await completeCommandCenterOnboardingAction(
+        profile,
+        offerGoals,
+        launchPayload,
+      );
       if (!result.success) {
         setLaunchError(result.error);
         return;
@@ -946,6 +978,44 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
 
               {landingBuilderTab === "settings" && (
                 <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block md:col-span-2">
+                    <span className="mb-1 block text-xs text-slate-400">Business logo</span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 512_000) {
+                            setLaunchError("Logo must be under 512 KB.");
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            if (typeof reader.result === "string") setLogoUrl(reader.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                        className="text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600/30 file:px-3 file:py-2 file:text-xs file:text-violet-100"
+                      />
+                      <input
+                        type="url"
+                        placeholder="Or paste logo URL (https://…)"
+                        value={logoUrl?.startsWith("data:") ? "" : logoUrl ?? ""}
+                        onChange={(e) => setLogoUrl(e.target.value.trim() || null)}
+                        className="min-w-[200px] flex-1 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
+                      />
+                      {logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={logoUrl}
+                          alt="Logo preview"
+                          className="h-10 w-10 rounded-lg border border-white/10 object-contain"
+                        />
+                      ) : null}
+                    </div>
+                  </label>
                   <label className="block">
                     <span className="mb-1 block text-xs text-slate-400">CTA Type</span>
                     <select
@@ -1006,6 +1076,16 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                   Design how new leads move from first contact to booked, followed up, and closed.
                 </p>
               </div>
+
+              <OnboardingPipelineAiPanel
+                profile={profile}
+                offerGoals={offerGoals}
+                pipelineWorkflow={pipelineWorkflow}
+                onApply={(next) => {
+                  setPipelineWorkflow(next);
+                  setPipelineTestPassed(false);
+                }}
+              />
 
               <div className="flex flex-wrap gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-2">
                 {PIPELINE_BUILDER_TABS.map((tab) => (
@@ -1317,9 +1397,28 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
           {currentStepId === "connect_accounts" && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-white">Connect Accounts</h2>
-              <p className="text-sm text-slate-400">Link your marketing, CRM, and payment tools.</p>
+              <p className="text-sm text-slate-400">
+                Link your marketing, CRM, and payment tools. Zernio is optional but unlocks ads at
+                launch.
+              </p>
               <div className="grid gap-3 sm:grid-cols-2">
-                {integrations.map((item) => (
+                <OnboardingZernioConnectCard
+                  apiKey={zernioApiKey}
+                  onApiKeyChange={(key) => {
+                    setZernioApiKey(key);
+                    if (key.trim()) {
+                      setIntegrations((prev) =>
+                        prev.map((item) =>
+                          item.id === "zernio" ? { ...item, connected: true } : item,
+                        ),
+                      );
+                    }
+                  }}
+                  verified={Boolean(zernioApiKey.trim())}
+                />
+                {integrations
+                  .filter((item) => item.id !== "zernio")
+                  .map((item) => (
                   <div
                     key={item.id}
                     className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4"
@@ -1396,33 +1495,17 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
             </div>
           )}
 
-          {currentStepId === "review" && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-white">Review</h2>
-              <p className="text-sm text-slate-400">Confirm everything is ready before launch.</p>
-              <ul className="space-y-2">
-                {initialData.reviewChecklist.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3"
-                  >
-                    <span
-                      className={cn(
-                        "flex h-6 w-6 items-center justify-center rounded-full",
-                        item.complete
-                          ? "bg-emerald-500/20 text-emerald-400"
-                          : "bg-white/5 text-slate-500",
-                      )}
-                    >
-                      {item.complete ? <Check className="h-3.5 w-3.5" /> : "—"}
-                    </span>
-                    <span className={item.complete ? "text-slate-200" : "text-slate-500"}>
-                      {item.label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {currentStepId === "pipeline_test" && (
+            <OnboardingPipelineTestPanel
+              businessName={profile.businessName}
+              landingTitle={selectedLandingPage.title}
+              primaryGoal={formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal)}
+              pipelineWorkflow={pipelineWorkflow}
+              logoUrl={logoUrl}
+              zernioConfigured={Boolean(zernioApiKey.trim())}
+              testPassed={pipelineTestPassed}
+              onTestComplete={() => setPipelineTestPassed(true)}
+            />
           )}
 
           {currentStepId === "launch" && (
@@ -1430,13 +1513,18 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
               <Rocket className="mx-auto h-12 w-12 text-violet-400" />
               <h2 className="text-2xl font-semibold text-white">Ready to Launch</h2>
               <p className="mx-auto max-w-md text-sm text-slate-400">
-                Your AI business system is configured. Launch to activate agents, campaigns, and
-                automations.
+                Your pipeline test passed. Launch to create your landing page, CRM pipeline,
+                automations{zernioApiKey.trim() ? ", and connect Zernio for ads" : ""}.
               </p>
+              {!pipelineTestPassed ? (
+                <p className="text-sm text-amber-300">
+                  Go back to <strong>Test Pipeline</strong> and run the simulation first.
+                </p>
+              ) : null}
               <button
                 type="button"
                 onClick={handleLaunch}
-                disabled={isLaunching}
+                disabled={isLaunching || !pipelineTestPassed}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-violet-900/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isLaunching ? (

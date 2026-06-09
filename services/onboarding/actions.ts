@@ -18,10 +18,12 @@ import { createBusinessRepository } from "@/repositories/business.repository";
 import { createOnboardingRepository } from "@/repositories/onboarding.repository";
 import type { BillingPlanName } from "@/types/backend";
 import type { CampaignGoalId, OnboardingWizardPayload } from "@/types/platform-growth";
+import type { CommandCenterLaunchPayload } from "@/lib/onboarding/command-center-payload";
 import type {
   BusinessProfileFields,
   OfferGoalsFields,
 } from "@/types/ceo-command-center";
+import { materializeCommandCenterLaunch } from "@/services/onboarding/command-center-launch.service";
 
 function goalToCampaignGoal(goal: OfferGoalsFields["primaryGoal"]): CampaignGoalId {
   if (goal === "bookings") return "book_appointments";
@@ -159,6 +161,7 @@ export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) 
 export async function completeCommandCenterOnboardingAction(
   profile: BusinessProfileFields,
   offerGoals: OfferGoalsFields,
+  launchPayload?: CommandCenterLaunchPayload,
 ) {
   const supabase = await createServerSupabaseClient();
   const {
@@ -195,6 +198,7 @@ export async function completeCommandCenterOnboardingAction(
 
   const businesses = createBusinessRepository(supabase);
   const { data: existingBusiness } = await businesses.getByOwnerUserId(user.id);
+  let businessId: string | undefined = existingBusiness?.id;
 
   if (existingBusiness) {
     await businesses.update(existingBusiness.id, {
@@ -283,6 +287,21 @@ export async function completeCommandCenterOnboardingAction(
 
     if (!result.success) {
       return { success: false as const, error: result.error };
+    }
+    businessId = result.data.businessId;
+  }
+
+  if (businessId && launchPayload) {
+    const materialized = await materializeCommandCenterLaunch(
+      supabase,
+      user.id,
+      businessId,
+      profile,
+      offerGoals,
+      launchPayload,
+    );
+    if (!materialized.success) {
+      return { success: false as const, error: materialized.error };
     }
   }
 

@@ -9,6 +9,7 @@ import {
   type EngineRunRow,
 } from "@/repositories/engine.repository";
 import { createLandingPageRepository } from "@/repositories/landing-page.repository";
+import { loadBusinessTrackingPixels } from "@/services/integrations/tracking-connect.service";
 
 export type QaCheck = {
   id: string;
@@ -96,9 +97,10 @@ export async function launchWinningLandingPage(
     campaign: toSlug(slugBase).slice(0, 48) || "growth-engine",
   };
 
+  const tracking = await loadBusinessTrackingPixels(client, run.business_id);
   const pixels = {
-    metaPixelId: "__SET_META_PIXEL_ID__",
-    googleConversionId: "__SET_GOOGLE_CONVERSION_ID__",
+    metaPixelId: tracking.metaPixelId ?? "__SET_META_PIXEL_ID__",
+    googleConversionId: tracking.googleConversionId ?? "__SET_GOOGLE_CONVERSION_ID__",
     googleConversionLabel: "__SET_GOOGLE_CONVERSION_LABEL__",
   };
 

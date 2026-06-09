@@ -162,7 +162,7 @@ export function getOnboardingCommandCenterMockData(): OnboardingCommandCenterDat
       { id: "ai_agents", number: 6, label: "AI Agents" },
       { id: "ads_agent", number: 7, label: "Ads Agent" },
       { id: "tracking", number: 8, label: "Tracking" },
-      { id: "review", number: 9, label: "Review" },
+      { id: "pipeline_test", number: 9, label: "Test Pipeline" },
       { id: "launch", number: 10, label: "Launch" },
     ],
     currentStepId: "business_profile",

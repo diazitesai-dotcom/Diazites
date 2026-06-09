@@ -132,7 +132,7 @@ export type OnboardingStepId =
   | "ai_agents"
   | "ads_agent"
   | "tracking"
-  | "review"
+  | "pipeline_test"
   | "launch";
 
 export type OnboardingStep = {

@@ -90,6 +90,10 @@ export function GrowthIntegrationsHub({
       setBanner("Meta Ads connected successfully.");
       const match = integrations.find((i) => i.id === "meta");
       if (match) setSelected(match);
+    } else if (connected === "ga4" || connected === "meta_pixel" || connected === "gtm") {
+      setBanner(`${connected.replace(/_/g, " ")} connected successfully.`);
+      const match = integrations.find((i) => i.id === connected);
+      if (match) setSelected(match);
     } else if (focus === "zernio") {
       const match = integrations.find((i) => i.id === "zernio");
       if (match) setSelected(match);
