@@ -31,9 +31,9 @@ import { cn } from "@/lib/utils";
 import { signOutAction } from "@/services/auth/actions";
 
 const TOP_NAV_ITEMS = [
-  { href: "/dashboard", label: "Full Dashboard", icon: LayoutDashboard },
   { href: "/dashboard?section=home", label: "Home", icon: Home },
   { href: "/dashboard/launch-review", label: "Launch Review", icon: Rocket },
+  { href: "/dashboard", label: "Full Dashboard", icon: LayoutDashboard },
 ] as const;
 
 const BUSINESS_TOOL_ITEMS = [
