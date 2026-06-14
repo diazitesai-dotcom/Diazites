@@ -3,12 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { missionControlLandingPath } from "@/lib/auth/mission-control-routing";
 import {
   draftToWizardPayload,
   type OnboardingDraft,
 } from "@/lib/onboarding/draft";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { saveOnboardingDraft } from "@/services/onboarding/draft.service";
 import { completeOnboardingProfile } from "@/services/onboarding/onboarding-completion.service";
 import { autofillOnboardingFromWebsite } from "@/services/onboarding/website-autofill.service";
@@ -24,6 +23,23 @@ import type {
   OfferGoalsFields,
 } from "@/types/ceo-command-center";
 import { materializeCommandCenterLaunch } from "@/services/onboarding/command-center-launch.service";
+
+type PauseSnapshot = {
+  pausedAt: string;
+  platformAccountSettings?: {
+    status?: string | null;
+    featureFlags?: Record<string, unknown> | null;
+  };
+  agents: { agent_type: string; status: string }[];
+  campaigns: { id: string; status: string }[];
+  adCampaigns: { id: string; status: string }[];
+  automationRules: { id: string; enabled: boolean }[];
+  workflows: { id: string; status: string }[];
+  emailCampaigns: { id: string; status: string }[];
+  emailAutomations: { id: string; status: string }[];
+  aiTextAgents: { id: string; status: string }[];
+  aiCallingAgents: { id: string; status: string }[];
+};
 
 function goalToCampaignGoal(goal: OfferGoalsFields["primaryGoal"]): CampaignGoalId {
   if (goal === "bookings") return "book_appointments";
@@ -44,6 +60,34 @@ function fallbackBusinessName(profile: BusinessProfileFields, email?: string | n
   if (fromProfile) return fromProfile;
   const fromEmail = email?.split("@")[0]?.replace(/[._-]+/g, " ").trim();
   return fromEmail || "Diazites Business";
+}
+
+async function requireCurrentBusiness() {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false as const, error: "Not signed in." };
+
+  const businesses = createBusinessRepository(supabase);
+  const { data: business, error } = await businesses.getByOwnerUserId(user.id);
+  if (error) return { success: false as const, error: error.message };
+  if (!business) return { success: false as const, error: "No business found for this account." };
+
+  return { success: true as const, supabase, user, business };
+}
+
+function recordList<Row extends Record<string, unknown>>(
+  rows: Row[] | null,
+  statusKey = "status",
+) {
+  return (rows ?? [])
+    .filter((row) => typeof row.id === "string" && typeof row[statusKey] === "string")
+    .map((row) => ({
+      id: String(row.id),
+      status: String(row[statusKey]),
+    }));
 }
 
 function parseOnboardingForm(formData: FormData): OnboardingWizardPayload {
@@ -155,7 +199,7 @@ export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) 
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  return { success: true as const, redirectTo: missionControlLandingPath({ postLogin: true, extra: { onboarding: "complete" } }) };
+  return { success: true as const, redirectTo: "/dashboard/launch-review?onboarding=complete" };
 }
 
 export async function completeCommandCenterOnboardingAction(
@@ -311,11 +355,262 @@ export async function completeCommandCenterOnboardingAction(
 
   return {
     success: true as const,
-    redirectTo: missionControlLandingPath({
-      postLogin: true,
-      extra: { onboarding: "complete" },
-    }),
+    redirectTo: "/dashboard/launch-review?onboarding=complete",
   };
+}
+
+export async function pauseFullOnboardingSetupAction() {
+  const context = await requireCurrentBusiness();
+  if (!context.success) return context;
+
+  const { supabase, user, business } = context;
+  const businessId = business.id;
+  const now = new Date().toISOString();
+
+  const [
+    onboardingResult,
+    agentResult,
+    campaignResult,
+    adCampaignResult,
+    automationRuleResult,
+    workflowResult,
+    emailCampaignResult,
+    emailAutomationResult,
+    aiTextAgentResult,
+    aiCallingAgentResult,
+  ] = await Promise.all([
+    supabase.from("onboarding").select("profile_data").eq("user_id", user.id).maybeSingle(),
+    supabase.from("agents").select("agent_type, status").eq("business_id", businessId).eq("status", "active"),
+    supabase.from("campaigns").select("id, status").eq("business_id", businessId).eq("status", "active"),
+    supabase.from("ad_campaigns").select("id, status").eq("business_id", businessId).eq("status", "active"),
+    supabase.from("automation_rules").select("id, enabled").eq("business_id", businessId).eq("enabled", true),
+    supabase.from("diazites_workflows").select("id, status").eq("business_id", businessId).eq("status", "active"),
+    supabase
+      .from("email_campaigns")
+      .select("id, status")
+      .eq("business_id", businessId)
+      .in("status", ["active", "scheduled"]),
+    supabase.from("email_automations").select("id, status").eq("business_id", businessId).eq("status", "active"),
+    supabase.from("ai_text_agents").select("id, status").eq("business_id", businessId).eq("status", "active"),
+    supabase.from("ai_calling_agents").select("id, status").eq("business_id", businessId).eq("status", "active"),
+  ]);
+
+  const service = createServiceRoleClient();
+  const { data: platformSettings } = await service
+    .from("platform_account_settings")
+    .select("status, feature_flags")
+    .eq("business_id", businessId)
+    .maybeSingle();
+
+  const profileData =
+    onboardingResult.data?.profile_data && typeof onboardingResult.data.profile_data === "object"
+      ? (onboardingResult.data.profile_data as Record<string, unknown>)
+      : {};
+
+  const snapshot: PauseSnapshot = {
+    pausedAt: now,
+    platformAccountSettings: {
+      status:
+        typeof platformSettings?.status === "string" ? platformSettings.status : null,
+      featureFlags:
+        platformSettings?.feature_flags && typeof platformSettings.feature_flags === "object"
+          ? (platformSettings.feature_flags as Record<string, unknown>)
+          : null,
+    },
+    agents: (agentResult.data ?? []).map((agent) => ({
+      agent_type: String(agent.agent_type),
+      status: String(agent.status),
+    })),
+    campaigns: recordList(campaignResult.data),
+    adCampaigns: recordList(adCampaignResult.data),
+    automationRules: (automationRuleResult.data ?? []).map((rule) => ({
+      id: String(rule.id),
+      enabled: Boolean(rule.enabled),
+    })),
+    workflows: recordList(workflowResult.data),
+    emailCampaigns: recordList(emailCampaignResult.data),
+    emailAutomations: recordList(emailAutomationResult.data),
+    aiTextAgents: recordList(aiTextAgentResult.data),
+    aiCallingAgents: recordList(aiCallingAgentResult.data),
+  };
+
+  const { error: onboardingError } = await supabase
+    .from("onboarding")
+    .update({
+      status: "paused",
+      checklist: {
+        profile_complete: true,
+        integrations_connected: false,
+        agents_assigned: snapshot.agents.length > 0,
+        campaign_built: snapshot.campaigns.length + snapshot.adCampaigns.length > 0,
+        landing_page_ready: true,
+        ai_active: false,
+        team_invited: false,
+      },
+      profile_data: {
+        ...profileData,
+        launchPauseSnapshot: snapshot,
+      },
+    })
+    .eq("user_id", user.id);
+
+  if (onboardingError) return { success: false as const, error: onboardingError.message };
+
+  await Promise.all([
+    supabase.from("agents").update({ status: "inactive", activated_at: null }).eq("business_id", businessId).eq("status", "active"),
+    supabase.from("campaigns").update({ status: "paused" }).eq("business_id", businessId).eq("status", "active"),
+    supabase.from("ad_campaigns").update({ status: "paused" }).eq("business_id", businessId).eq("status", "active"),
+    supabase.from("automation_rules").update({ enabled: false }).eq("business_id", businessId).eq("enabled", true),
+    supabase.from("diazites_workflows").update({ status: "paused", updated_at: now }).eq("business_id", businessId).eq("status", "active"),
+    supabase
+      .from("email_campaigns")
+      .update({ status: "paused", updated_at: now })
+      .eq("business_id", businessId)
+      .in("status", ["active", "scheduled"]),
+    supabase.from("email_automations").update({ status: "paused" }).eq("business_id", businessId).eq("status", "active"),
+    supabase.from("ai_text_agents").update({ status: "paused", updated_at: now }).eq("business_id", businessId).eq("status", "active"),
+    supabase.from("ai_calling_agents").update({ status: "paused" }).eq("business_id", businessId).eq("status", "active"),
+    service
+      .from("platform_account_settings")
+      .upsert(
+        {
+          business_id: businessId,
+          account_type: "direct",
+          status: "suspended",
+          feature_flags: {
+            merchant_services: false,
+            ai_calls: false,
+            sms: false,
+            email_campaigns: false,
+            workflows: false,
+            ai_agents: false,
+            ad_accounts: false,
+            white_label: false,
+            funnel_studio: false,
+            integrations: false,
+          },
+          updated_at: now,
+          updated_by: user.id,
+        },
+        { onConflict: "business_id" },
+      ),
+  ]);
+
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/dashboard/launch-review");
+  return { success: true as const };
+}
+
+export async function activateFullOnboardingSetupAction() {
+  const context = await requireCurrentBusiness();
+  if (!context.success) return context;
+
+  const { supabase, user, business } = context;
+  const businessId = business.id;
+  const now = new Date().toISOString();
+
+  const { data: onboarding, error } = await supabase
+    .from("onboarding")
+    .select("profile_data")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error) return { success: false as const, error: error.message };
+
+  const profileData =
+    onboarding?.profile_data && typeof onboarding.profile_data === "object"
+      ? (onboarding.profile_data as Record<string, unknown>)
+      : {};
+  const snapshot = profileData.launchPauseSnapshot as PauseSnapshot | undefined;
+
+  const restoredProfileData = { ...profileData };
+  delete restoredProfileData.launchPauseSnapshot;
+
+  await Promise.all([
+    ...(snapshot?.agents ?? []).map((agent) =>
+      supabase
+        .from("agents")
+        .update({ status: "active", activated_at: now })
+        .eq("business_id", businessId)
+        .eq("agent_type", agent.agent_type),
+    ),
+    ...(snapshot?.campaigns ?? []).map((campaign) =>
+      supabase.from("campaigns").update({ status: campaign.status }).eq("business_id", businessId).eq("id", campaign.id),
+    ),
+    ...(snapshot?.adCampaigns ?? []).map((campaign) =>
+      supabase.from("ad_campaigns").update({ status: campaign.status }).eq("business_id", businessId).eq("id", campaign.id),
+    ),
+    ...(snapshot?.automationRules ?? []).map((rule) =>
+      supabase.from("automation_rules").update({ enabled: rule.enabled }).eq("business_id", businessId).eq("id", rule.id),
+    ),
+    ...(snapshot?.workflows ?? []).map((workflow) =>
+      supabase
+        .from("diazites_workflows")
+        .update({ status: workflow.status, updated_at: now })
+        .eq("business_id", businessId)
+        .eq("id", workflow.id),
+    ),
+    ...(snapshot?.emailCampaigns ?? []).map((campaign) =>
+      supabase
+        .from("email_campaigns")
+        .update({ status: campaign.status, updated_at: now })
+        .eq("business_id", businessId)
+        .eq("id", campaign.id),
+    ),
+    ...(snapshot?.emailAutomations ?? []).map((automation) =>
+      supabase.from("email_automations").update({ status: automation.status }).eq("business_id", businessId).eq("id", automation.id),
+    ),
+    ...(snapshot?.aiTextAgents ?? []).map((agent) =>
+      supabase
+        .from("ai_text_agents")
+        .update({ status: agent.status, updated_at: now })
+        .eq("business_id", businessId)
+        .eq("id", agent.id),
+    ),
+    ...(snapshot?.aiCallingAgents ?? []).map((agent) =>
+      supabase.from("ai_calling_agents").update({ status: agent.status }).eq("business_id", businessId).eq("id", agent.id),
+    ),
+  ]);
+
+  const service = createServiceRoleClient();
+  const platformSettingsRow: Record<string, unknown> = {
+    business_id: businessId,
+    account_type: "direct",
+    status: snapshot?.platformAccountSettings?.status || "active",
+    updated_at: now,
+    updated_by: user.id,
+  };
+  if (snapshot?.platformAccountSettings?.featureFlags) {
+    platformSettingsRow.feature_flags = snapshot.platformAccountSettings.featureFlags;
+  }
+
+  await service
+    .from("platform_account_settings")
+    .upsert(platformSettingsRow, { onConflict: "business_id" });
+
+  const { error: updateError } = await supabase
+    .from("onboarding")
+    .update({
+      stage: "live",
+      status: "completed",
+      profile_data: restoredProfileData,
+      checklist: {
+        profile_complete: true,
+        integrations_connected: true,
+        agents_assigned: (snapshot?.agents.length ?? 0) > 0,
+        campaign_built: (snapshot?.campaigns.length ?? 0) + (snapshot?.adCampaigns.length ?? 0) > 0,
+        landing_page_ready: true,
+        ai_active: (snapshot?.agents.length ?? 0) > 0,
+        team_invited: false,
+      },
+    })
+    .eq("user_id", user.id);
+
+  if (updateError) return { success: false as const, error: updateError.message };
+
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/dashboard/launch-review");
+  return { success: true as const };
 }
 
 /** @deprecated Prefer completeOnboardingFromDraftAction — kept for legacy form posts */
@@ -351,5 +646,5 @@ export async function saveOnboardingAction(formData: FormData) {
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  redirect(missionControlLandingPath({ postLogin: true, extra: { onboarding: "complete" } }));
+  redirect("/dashboard/launch-review?onboarding=complete");
 }

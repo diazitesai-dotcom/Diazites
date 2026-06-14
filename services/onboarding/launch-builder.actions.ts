@@ -15,7 +15,6 @@ import {
 } from "@/lib/onboarding/draft";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { materializeLaunchPlan } from "@/services/launch-builder/materialize-launch-plan.service";
-import { missionControlLandingPath } from "@/lib/auth/mission-control-routing";
 import { completeOnboardingProfile } from "@/services/onboarding/onboarding-completion.service";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
 import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
@@ -119,10 +118,7 @@ export async function approveAndLaunchAction(
 
   return {
     success: true as const,
-    redirectTo: missionControlLandingPath({
-      postLogin: true,
-      extra: { onboarding: "complete", launch: "ready" },
-    }),
+    redirectTo: "/dashboard/launch-review?onboarding=complete&launch=ready",
     materialized: materialized.data,
   };
 }

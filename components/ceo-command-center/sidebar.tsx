@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  Rocket,
   Settings,
   Sparkles,
   Star,
@@ -32,6 +33,7 @@ import { signOutAction } from "@/services/auth/actions";
 const TOP_NAV_ITEMS = [
   { href: "/dashboard", label: "Full Dashboard", icon: LayoutDashboard },
   { href: "/dashboard?section=home", label: "Home", icon: Home },
+  { href: "/dashboard/launch-review", label: "Launch Review", icon: Rocket },
 ] as const;
 
 const BUSINESS_TOOL_ITEMS = [
@@ -199,7 +201,7 @@ export function Sidebar() {
         {[
           TOP_NAV_ITEMS[0],
           TOP_NAV_ITEMS[1],
-          BUSINESS_TOOL_ITEMS[0],
+          TOP_NAV_ITEMS[2],
           BOTTOM_NAV_ITEMS[0],
         ].map((item) => {
           const Icon = item.icon;
@@ -233,8 +235,7 @@ export function Sidebar() {
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <div className="space-y-0.5">
-            {renderNavItem(TOP_NAV_ITEMS[0])}
-            {renderNavItem(TOP_NAV_ITEMS[1])}
+            {TOP_NAV_ITEMS.map((item) => renderNavItem(item))}
           </div>
 
           <div className="my-4 border-t border-white/[0.06]" />
