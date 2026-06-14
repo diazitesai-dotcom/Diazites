@@ -12,6 +12,7 @@ import {
   FileText,
   Flag,
   Globe,
+  Home,
   PencilLine,
   PlugZap,
   ShieldCheck,
@@ -350,6 +351,25 @@ export default async function LaunchReviewPage() {
               you can activate the same setup again later.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-white/[0.08] bg-[#0c1222]/60 p-5 shadow-[0_12px_44px_rgba(0,0,0,0.22)] sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Finished reviewing?</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Complete your review to head to your home dashboard. You can come back to Launch
+              Review anytime.
+            </p>
+          </div>
+          <Link
+            href="/dashboard?section=home"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:from-violet-500 hover:to-indigo-500 sm:w-auto"
+          >
+            <Home className="h-4 w-4" />
+            Complete Review
+          </Link>
         </div>
       </section>
     </div>
