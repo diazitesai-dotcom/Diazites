@@ -2,12 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
-import { AUTH_BRAND, signupEmailRedirectUrl } from "@/lib/auth/auth-branding";
+import { AUTH_BRAND } from "@/lib/auth/auth-branding";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
 import { isStripeBillingConfigured } from "@/lib/stripe/plan-prices";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { completePostAuthSignup } from "@/services/auth/post-auth.service";
-import { sendDiazitesWelcomeEmail } from "@/services/auth/welcome-email.service";
 import { createSignupSetupIntent } from "@/services/stripe/signup-setup-intent.service";
 import { attachTrialSubscriptionFromSetupIntent } from "@/services/stripe/signup-subscription.service";
 import type { BillingPlanName } from "@/types/backend";
@@ -73,27 +72,44 @@ export async function completeTrialSignupWithPaymentAction(input: {
     };
   }
 
-  const { data, error } = await supabase.auth.signUp({
+  // Create the account already email-confirmed via the admin API. The card has
+  // been validated by this point, so we don't depend on confirmation-email
+  // delivery (which can fail or be rate-limited) to let the user in.
+  let service;
+  try {
+    service = createServiceRoleClient();
+  } catch (e) {
+    return {
+      success: false as const,
+      error: e instanceof Error ? e.message : "Sign-up is unavailable.",
+    };
+  }
+
+  const { data: created, error: createError } = await service.auth.admin.createUser({
     email,
     password,
-    options: {
-      emailRedirectTo: signupEmailRedirectUrl(),
-      data: {
-        full_name: input.fullName.trim() || null,
-        company_name: input.companyName.trim() || null,
-        phone: input.phone.trim() || null,
-        selected_plan: selectedPlan,
-        promo_code: promoCode || null,
-        app_name: AUTH_BRAND.platformName,
-      },
+    email_confirm: true,
+    user_metadata: {
+      full_name: input.fullName.trim() || null,
+      company_name: input.companyName.trim() || null,
+      phone: input.phone.trim() || null,
+      selected_plan: selectedPlan,
+      promo_code: promoCode || null,
+      app_name: AUTH_BRAND.platformName,
     },
   });
 
-  if (error) {
-    return { success: false as const, error: error.message };
+  if (createError) {
+    const alreadyExists = /registered|already exists|already been/i.test(createError.message);
+    return {
+      success: false as const,
+      error: alreadyExists
+        ? "An account with this email already exists. Please sign in instead."
+        : createError.message,
+    };
   }
 
-  const userId = data.user?.id;
+  const userId = created.user?.id;
   if (!userId) {
     return { success: false as const, error: "Could not create your account." };
   }
@@ -108,28 +124,29 @@ export async function completeTrialSignupWithPaymentAction(input: {
     return { success: false as const, error: subResult.error };
   }
 
-  if (data.session?.user) {
-    const postAuth = await completePostAuthSignup(supabase, data.session.user, {
-      promoCode,
-      defaultNext: "/onboarding?welcome=trial",
-    });
-    revalidatePath("/", "layout");
-    const next = postAuth.redirectPath;
-    const sep = next.includes("?") ? "&" : "?";
+  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (signInError || !signInData.session?.user) {
+    // Account and subscription were created, but the session couldn't be set.
+    // Send them to sign in manually rather than blocking the completed signup.
     return {
       success: true,
-      redirectTo: `${next}${sep}checkout=success`,
+      redirectTo: `/login?checkout=success&email=${encodeURIComponent(email)}`,
     };
   }
 
-  await sendDiazitesWelcomeEmail({
-    to: email,
-    fullName: input.fullName.trim() || null,
-    confirmationPending: true,
+  const postAuth = await completePostAuthSignup(supabase, signInData.session.user, {
+    promoCode,
+    defaultNext: "/onboarding?welcome=trial",
   });
-
+  revalidatePath("/", "layout");
+  const next = postAuth.redirectPath;
+  const sep = next.includes("?") ? "&" : "?";
   return {
     success: true,
-    redirectTo: `/signup?success=check-email&email=${encodeURIComponent(email)}`,
+    redirectTo: `${next}${sep}checkout=success`,
   };
 }
