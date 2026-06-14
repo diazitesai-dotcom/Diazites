@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { OnboardingCommandCenter } from "@/components/ceo-command-center/onboarding/onboarding-command-center";
 import { Button } from "@/components/ui/button";
 import { getOnboardingCommandCenterMockData } from "@/lib/ceo-command-center/mock-data";
+import { loadOnboardingCommandCenterData } from "@/lib/ceo-command-center/onboarding-real-data";
 import { missionControlLandingPath } from "@/lib/auth/mission-control-routing";
 import { getOnboardingRoutingState } from "@/lib/auth/onboarding-routing";
 import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
@@ -75,8 +76,11 @@ export default async function OnboardingPage({
         })()
       : null;
 
-  const mockData = getOnboardingCommandCenterMockData();
-  const initialData = requestedStep ? { ...mockData, currentStepId: requestedStep } : mockData;
+  const savedData = await loadOnboardingCommandCenterData(supabase, user.id);
+  const baseData = savedData ?? getOnboardingCommandCenterMockData();
+  const initialData = requestedStep
+    ? { ...baseData, currentStepId: requestedStep }
+    : baseData;
 
   return (
     <div className="relative min-h-screen">
