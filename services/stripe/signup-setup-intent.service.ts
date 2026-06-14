@@ -43,9 +43,14 @@ export async function createSignupSetupIntent(params: {
     },
   });
 
+  // Card-only: this trial bills a card on file once it ends, so the SetupIntent
+  // must save a reusable card. Enabling all dashboard methods (Pix, Naver Pay,
+  // bank debits, etc.) surfaces options that can't be set up for off-session
+  // card-style subscription billing and triggers Stripe "processing" errors.
   const setupIntent = await stripe.setupIntents.create({
     customer: customer.id,
-    automatic_payment_methods: { enabled: true },
+    payment_method_types: ["card"],
+    usage: "off_session",
     metadata: {
       signup_plan: params.planName,
       signup_price_id: priceId,
