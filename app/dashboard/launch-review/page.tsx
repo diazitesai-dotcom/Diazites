@@ -49,76 +49,64 @@ const statusLabels: Record<LaunchReviewStatus, string> = {
 const accentStyles: Record<
   LaunchReviewAccent,
   {
-    card: string;
+    bar: string;
     icon: string;
-    glow: string;
     button: string;
   }
 > = {
   blue: {
-    card: "border-blue-400/20 bg-blue-400/[0.06]",
+    bar: "border-l-blue-400",
     icon: "bg-blue-400/15 text-blue-200",
-    glow: "bg-blue-400/20",
     button: "border-blue-300/20 text-blue-100 hover:bg-blue-400/10",
   },
   green: {
-    card: "border-green-400/20 bg-green-400/[0.06]",
+    bar: "border-l-green-400",
     icon: "bg-green-400/15 text-green-200",
-    glow: "bg-green-400/20",
     button: "border-green-300/20 text-green-100 hover:bg-green-400/10",
   },
   purple: {
-    card: "border-purple-400/20 bg-purple-400/[0.06]",
+    bar: "border-l-purple-400",
     icon: "bg-purple-400/15 text-purple-200",
-    glow: "bg-purple-400/20",
     button: "border-purple-300/20 text-purple-100 hover:bg-purple-400/10",
   },
   amber: {
-    card: "border-amber-400/20 bg-amber-400/[0.06]",
+    bar: "border-l-amber-400",
     icon: "bg-amber-400/15 text-amber-200",
-    glow: "bg-amber-400/20",
     button: "border-amber-300/20 text-amber-100 hover:bg-amber-400/10",
   },
   cyan: {
-    card: "border-cyan-400/20 bg-cyan-400/[0.06]",
+    bar: "border-l-cyan-400",
     icon: "bg-cyan-400/15 text-cyan-200",
-    glow: "bg-cyan-400/20",
     button: "border-cyan-300/20 text-cyan-100 hover:bg-cyan-400/10",
   },
   violet: {
-    card: "border-violet-400/20 bg-violet-400/[0.06]",
+    bar: "border-l-violet-400",
     icon: "bg-violet-400/15 text-violet-200",
-    glow: "bg-violet-400/20",
     button: "border-violet-300/20 text-violet-100 hover:bg-violet-400/10",
   },
   pink: {
-    card: "border-pink-400/20 bg-pink-400/[0.06]",
+    bar: "border-l-pink-400",
     icon: "bg-pink-400/15 text-pink-200",
-    glow: "bg-pink-400/20",
     button: "border-pink-300/20 text-pink-100 hover:bg-pink-400/10",
   },
   orange: {
-    card: "border-orange-400/20 bg-orange-400/[0.06]",
+    bar: "border-l-orange-400",
     icon: "bg-orange-400/15 text-orange-200",
-    glow: "bg-orange-400/20",
     button: "border-orange-300/20 text-orange-100 hover:bg-orange-400/10",
   },
   slate: {
-    card: "border-slate-400/20 bg-slate-400/[0.06]",
+    bar: "border-l-slate-400",
     icon: "bg-slate-400/15 text-slate-200",
-    glow: "bg-slate-400/20",
     button: "border-slate-300/20 text-slate-100 hover:bg-slate-400/10",
   },
   emerald: {
-    card: "border-emerald-400/20 bg-emerald-400/[0.06]",
+    bar: "border-l-emerald-400",
     icon: "bg-emerald-400/15 text-emerald-200",
-    glow: "bg-emerald-400/20",
     button: "border-emerald-300/20 text-emerald-100 hover:bg-emerald-400/10",
   },
   red: {
-    card: "border-red-400/20 bg-red-400/[0.06]",
+    bar: "border-l-red-400",
     icon: "bg-red-400/15 text-red-200",
-    glow: "bg-red-400/20",
     button: "border-red-300/20 text-red-100 hover:bg-red-400/10",
   },
 };
@@ -162,42 +150,45 @@ function StatusBadge({ status }: { status: LaunchReviewStatus }) {
 function ReviewSectionListItem({ section }: { section: LaunchReviewSection }) {
   const Icon = sectionIcons[section.id] ?? FileText;
   const accent = accentStyles[section.accent];
+  const isFullSetup = section.control.state === "full_setup_only";
+  const needsEdit = section.control.state === "edit_required";
   const canControl =
     section.control.state === "can_pause" || section.control.state === "can_activate";
 
   return (
     <article
       className={cn(
-        "relative overflow-hidden rounded-2xl border p-4 shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:border-white/15 sm:p-5",
-        accent.card,
+        "rounded-2xl border border-l-4 border-white/[0.07] bg-[#0c1222]/85 p-4 transition hover:border-white/15 sm:p-5",
+        accent.bar,
       )}
     >
-      <div className={cn("absolute right-0 top-0 h-20 w-20 rounded-full blur-3xl", accent.glow)} />
-      <div className="relative grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-        <div className="flex min-w-0 gap-4">
+      <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="flex min-w-0 gap-3 sm:gap-4">
           <div className="flex shrink-0 flex-col items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-black/20 text-xs font-bold text-slate-200">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-black/30 text-xs font-bold text-slate-200">
               {section.stepNumber}
             </span>
-            <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", accent.icon)}>
-            <Icon className="h-6 w-6" />
+            <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", accent.icon)}>
+              <Icon className="h-5 w-5" />
             </div>
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:justify-start">
-              <h2 className="text-lg font-semibold text-white">{section.title}</h2>
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+              <h2 className="text-base font-semibold text-white sm:text-lg">{section.title}</h2>
               <StatusBadge status={section.status} />
             </div>
-            <p className="mt-1 text-sm font-medium text-slate-200">{section.created}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-400">{section.description}</p>
-            <p className="mt-3 rounded-xl border border-white/[0.06] bg-black/15 px-3 py-2 text-xs leading-5 text-slate-400">
-              {section.control.description}
+            <p className="mt-1 line-clamp-1 text-sm font-medium text-slate-200">{section.created}</p>
+            <p className="mt-1.5 line-clamp-2 text-sm leading-6 text-slate-300">
+              {section.description}
             </p>
+            {needsEdit || canControl ? (
+              <p className="mt-2 text-xs leading-5 text-amber-200/80">{section.control.description}</p>
+            ) : null}
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row lg:w-52 lg:flex-col">
+        <div className="flex flex-wrap items-center gap-2 lg:w-48 lg:flex-col lg:items-stretch">
           <Link
             href={section.editHref}
             className={cn(
@@ -208,18 +199,12 @@ function ReviewSectionListItem({ section }: { section: LaunchReviewSection }) {
             <PencilLine className="h-3.5 w-3.5" />
             Edit Step
           </Link>
-          <button
-            type="button"
-            disabled={!canControl}
-            className={cn(
-              "inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-xs font-semibold transition",
-              canControl
-                ? "bg-white/[0.08] text-white hover:bg-white/[0.12]"
-                : "cursor-not-allowed bg-white/[0.03] text-slate-500",
-            )}
-          >
-            {section.control.label}
-          </button>
+          {isFullSetup ? (
+            <span className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[11px] font-medium text-slate-400">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Managed by full setup
+            </span>
+          ) : null}
         </div>
       </div>
     </article>
@@ -231,6 +216,23 @@ export default async function LaunchReviewPage() {
   if (!data) redirect("/onboarding");
 
   const paused = data.launchStatus === "paused";
+
+  const statusCounts = data.sections.reduce(
+    (acc, section) => {
+      acc[section.status] = (acc[section.status] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<LaunchReviewStatus, number>,
+  );
+  const totalSteps = data.sections.length;
+  const readyCount = statusCounts.active ?? 0;
+  const summaryStatuses: LaunchReviewStatus[] = [
+    "active",
+    "paused",
+    "draft",
+    "needs_review",
+    "not_connected",
+  ];
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6">
@@ -255,10 +257,10 @@ export default async function LaunchReviewPage() {
 
       <section
         className={cn(
-          "rounded-3xl border p-5 shadow-[0_12px_44px_rgba(0,0,0,0.25)] sm:p-6",
+          "rounded-3xl border p-5 shadow-[0_12px_44px_rgba(0,0,0,0.25)] sm:p-6 lg:sticky lg:top-4 lg:z-10",
           paused
-            ? "border-amber-400/20 bg-amber-400/10"
-            : "border-emerald-400/20 bg-emerald-400/10",
+            ? "border-amber-400/20 bg-[#1a1206]/95"
+            : "border-emerald-400/20 bg-[#06140f]/95",
         )}
       >
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -302,17 +304,38 @@ export default async function LaunchReviewPage() {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-white/[0.08] bg-[#0c1222]/60 p-3 shadow-[0_12px_44px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:p-4">
-        <div className="mb-3 flex flex-col gap-1 px-1 sm:px-2">
-          <h2 className="text-lg font-semibold text-white">Onboarding Launch Checklist</h2>
-          <p className="text-sm leading-6 text-slate-400">
-            Follow this list from top to bottom to review what was built for the account.
-          </p>
+      <section className="rounded-3xl border border-white/[0.08] bg-[#0c1222]/60 p-3 shadow-[0_12px_44px_rgba(0,0,0,0.22)] sm:p-4">
+        <div className="mb-4 flex flex-col gap-3 px-1 sm:px-2">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-semibold text-white">Onboarding Launch Checklist</h2>
+            <p className="text-sm leading-6 text-slate-400">
+              Follow this list from top to bottom to review what was built for the account.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {readyCount}/{totalSteps} ready
+            </span>
+            {summaryStatuses
+              .filter((status) => status !== "active" && (statusCounts[status] ?? 0) > 0)
+              .map((status) => (
+                <span
+                  key={status}
+                  className={cn(
+                    "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold",
+                    statusStyles[status],
+                  )}
+                >
+                  {statusCounts[status]} {statusLabels[status]}
+                </span>
+              ))}
+          </div>
         </div>
         <div className="space-y-3">
-        {data.sections.map((section) => (
-          <ReviewSectionListItem key={section.id} section={section} />
-        ))}
+          {data.sections.map((section) => (
+            <ReviewSectionListItem key={section.id} section={section} />
+          ))}
         </div>
       </section>
 
