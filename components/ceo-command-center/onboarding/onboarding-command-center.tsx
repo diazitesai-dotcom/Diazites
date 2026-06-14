@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -16,6 +16,7 @@ import {
 
 import { OnboardingPipelineAiPanel } from "@/components/ceo-command-center/onboarding/onboarding-pipeline-ai-panel";
 import { OnboardingPipelineTestPanel } from "@/components/ceo-command-center/onboarding/onboarding-pipeline-test-panel";
+import { OnboardingStepAiAssistant } from "@/components/ceo-command-center/onboarding/onboarding-step-ai-assistant";
 import { OnboardingZernioConnectCard } from "@/components/ceo-command-center/onboarding/onboarding-zernio-connect-card";
 import { ProgressTracker } from "@/components/ceo-command-center/progress-tracker";
 import { useBusinessWebsiteAutofill } from "@/components/ceo-command-center/onboarding/use-business-website-autofill";
@@ -25,8 +26,18 @@ import {
   BUSINESS_PROFILE_FIELD_KEYS,
   sanitizeBusinessProfile,
 } from "@/lib/ceo-command-center/business-profile-utils";
+import type {
+  LandingPageCtaType,
+  LandingPageDraft,
+  LandingPageSettings,
+} from "@/lib/ceo-command-center/landing-builder-types";
 import { cn } from "@/lib/utils";
 import { completeCommandCenterOnboardingAction } from "@/services/onboarding/actions";
+import {
+  fillBusinessProfileWithAiAction,
+  fillLandingPageWithAiAction,
+  fillOfferGoalsWithAiAction,
+} from "@/actions/ceo-onboarding.actions";
 import type {
   BusinessProfileFields,
   LandingPageOption,
@@ -40,29 +51,6 @@ type OnboardingCommandCenterProps = {
 };
 
 type LandingBuilderTab = "templates" | "preview" | "edit" | "settings";
-
-type LandingPageCtaType = "call" | "form" | "booking" | "checkout";
-
-type LandingPageDraft = {
-  heroHeadline: string;
-  subheadline: string;
-  ctaText: string;
-  offerDetails: string;
-  benefits: string;
-  formFields: string;
-  socialProof: string;
-  faq: string;
-  thankYouMessage: string;
-};
-
-type LandingPageSettings = {
-  ctaType: LandingPageCtaType;
-  buttonText: string;
-  pageSlug: string;
-  trackingEvent: string;
-  thankYouRedirect: string;
-  brandTone: string;
-};
 
 type PipelineBuilderTab = "stages" | "automation" | "follow_up" | "preview";
 
@@ -404,6 +392,67 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
 
   const [integrations, setIntegrations] = useState(initialData.integrations);
 
+  const [profileAiPending, startProfileAi] = useTransition();
+  const [profileAiError, setProfileAiError] = useState<string | null>(null);
+  const [profileAiMessage, setProfileAiMessage] = useState<string | null>(null);
+
+  const [offerAiPending, startOfferAi] = useTransition();
+  const [offerAiError, setOfferAiError] = useState<string | null>(null);
+  const [offerAiMessage, setOfferAiMessage] = useState<string | null>(null);
+
+  const [landingAiPending, startLandingAi] = useTransition();
+  const [landingAiError, setLandingAiError] = useState<string | null>(null);
+  const [landingAiMessage, setLandingAiMessage] = useState<string | null>(null);
+
+  const runProfileAi = (instruction: string) => {
+    startProfileAi(async () => {
+      setProfileAiError(null);
+      setProfileAiMessage(null);
+      const result = await fillBusinessProfileWithAiAction({ instruction, profile });
+      if (!result.success) {
+        setProfileAiError(result.error);
+        return;
+      }
+      setProfile((prev) => sanitizeBusinessProfile({ ...prev, ...result.data.patch }));
+      setProfileAiMessage(result.data.summary);
+    });
+  };
+
+  const runOfferGoalsAi = (instruction: string) => {
+    startOfferAi(async () => {
+      setOfferAiError(null);
+      setOfferAiMessage(null);
+      const result = await fillOfferGoalsWithAiAction({ instruction, profile, offerGoals });
+      if (!result.success) {
+        setOfferAiError(result.error);
+        return;
+      }
+      setOfferGoals((prev) => ({ ...prev, ...result.data.patch }));
+      setOfferAiMessage(result.data.summary);
+    });
+  };
+
+  const runLandingAi = (instruction: string) => {
+    startLandingAi(async () => {
+      setLandingAiError(null);
+      setLandingAiMessage(null);
+      const result = await fillLandingPageWithAiAction({
+        instruction,
+        profile,
+        offerGoals,
+        draft: landingPageDraft,
+        settings: landingPageSettings,
+      });
+      if (!result.success) {
+        setLandingAiError(result.error);
+        return;
+      }
+      setLandingPageDraft((prev) => ({ ...prev, ...result.data.draftPatch }));
+      setLandingPageSettings((prev) => ({ ...prev, ...result.data.settingsPatch }));
+      setLandingAiMessage(result.data.summary);
+    });
+  };
+
   const currentIndex = STEP_ORDER.indexOf(currentStepId);
   const selectedLandingPage =
     initialData.landingPages.find((page) => page.id === selectedLandingId) ?? initialLandingPage;
@@ -645,6 +694,20 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                   {scanMessage}
                 </p>
               ) : null}
+              <OnboardingStepAiAssistant
+                title="Optional: let AI help fill this out"
+                description="Describe your business in plain language and AI will fill in the fields below — you can still edit anything."
+                placeholder='e.g. "We are a youth mentoring nonprofit in Houston offering after-school programs and reentry support."'
+                suggestions={[
+                  "Fill this in for a youth mentoring nonprofit in Houston",
+                  "Write an SEO meta title and description",
+                  "Describe my ideal customer",
+                ]}
+                pending={profileAiPending}
+                error={profileAiError}
+                message={profileAiMessage}
+                onRun={runProfileAi}
+              />
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {BUSINESS_PROFILE_FIELD_KEYS.map((key) => (
                   <label key={key} className="block">
@@ -672,6 +735,20 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                 Define the offer, business outcome, and conversion action the AI system should
                 build around.
               </p>
+              <OnboardingStepAiAssistant
+                title="Optional: let AI help fill this out"
+                description="Describe your goal in plain language and AI will set the offer type, primary goal, conversion action, and targets."
+                placeholder='e.g. "I want about 100 leads a month through a form, average job is around $500."'
+                suggestions={[
+                  "My goal is 100 leads/month through a form",
+                  "Set a revenue target of $50k/month",
+                  "We want booked appointments for consultations",
+                ]}
+                pending={offerAiPending}
+                error={offerAiError}
+                message={offerAiMessage}
+                onRun={runOfferGoalsAi}
+              />
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block md:col-span-2">
                   <span className="mb-1 block text-xs text-slate-400">Main Offer</span>
@@ -946,7 +1023,22 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
               )}
 
               {landingBuilderTab === "edit" && (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-4">
+                  <OnboardingStepAiAssistant
+                    title="Optional: let AI write these sections"
+                    description="Describe the page or tone you want and AI will draft the hero, benefits, FAQ, and more."
+                    placeholder='e.g. "Write a warm, community-focused page for our after-school program with 3 benefits and an FAQ."'
+                    suggestions={[
+                      "Write a hero headline and 3 benefits for my offer",
+                      "Make the tone warm and community-focused",
+                      "Draft an FAQ and thank-you message",
+                    ]}
+                    pending={landingAiPending}
+                    error={landingAiError}
+                    message={landingAiMessage}
+                    onRun={runLandingAi}
+                  />
+                  <div className="grid gap-4 md:grid-cols-2">
                   {[
                     ["heroHeadline", "Hero headline"],
                     ["subheadline", "Subheadline"],
@@ -973,6 +1065,7 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                       />
                     </label>
                   ))}
+                  </div>
                 </div>
               )}
 
