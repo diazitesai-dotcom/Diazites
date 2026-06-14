@@ -159,7 +159,7 @@ function StatusBadge({ status }: { status: LaunchReviewStatus }) {
   );
 }
 
-function ReviewSectionCard({ section }: { section: LaunchReviewSection }) {
+function ReviewSectionListItem({ section }: { section: LaunchReviewSection }) {
   const Icon = sectionIcons[section.id] ?? FileText;
   const accent = accentStyles[section.accent];
   const canControl =
@@ -168,44 +168,51 @@ function ReviewSectionCard({ section }: { section: LaunchReviewSection }) {
   return (
     <article
       className={cn(
-        "relative overflow-hidden rounded-3xl border p-4 shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-5",
+        "relative overflow-hidden rounded-2xl border p-4 shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:border-white/15 sm:p-5",
         accent.card,
       )}
     >
-      <div className={cn("absolute right-0 top-0 h-24 w-24 rounded-full blur-3xl", accent.glow)} />
-      <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 gap-3">
-          <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", accent.icon)}>
+      <div className={cn("absolute right-0 top-0 h-20 w-20 rounded-full blur-3xl", accent.glow)} />
+      <div className="relative grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="flex min-w-0 gap-4">
+          <div className="flex shrink-0 flex-col items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-black/20 text-xs font-bold text-slate-200">
+              {section.stepNumber}
+            </span>
+            <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", accent.icon)}>
             <Icon className="h-6 w-6" />
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Step {section.stepNumber}
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:justify-start">
+              <h2 className="text-lg font-semibold text-white">{section.title}</h2>
+              <StatusBadge status={section.status} />
+            </div>
+            <p className="mt-1 text-sm font-medium text-slate-200">{section.created}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">{section.description}</p>
+            <p className="mt-3 rounded-xl border border-white/[0.06] bg-black/15 px-3 py-2 text-xs leading-5 text-slate-400">
+              {section.control.description}
             </p>
-            <h2 className="mt-1 text-lg font-semibold text-white">{section.title}</h2>
-            <p className="mt-2 text-sm font-medium text-slate-200">{section.created}</p>
           </div>
         </div>
-        <StatusBadge status={section.status} />
-      </div>
-      <p className="relative mt-4 text-sm leading-6 text-slate-300">{section.description}</p>
-      <div className="relative mt-5 grid gap-2 sm:grid-cols-[auto_1fr] sm:items-start">
-        <Link
-          href={section.editHref}
-          className={cn(
-            "inline-flex items-center justify-center gap-2 rounded-xl border bg-white/[0.04] px-3 py-2 text-xs font-semibold transition",
-            accent.button,
-          )}
-        >
-          <PencilLine className="h-3.5 w-3.5" />
-          Edit Step
-        </Link>
-        <div className="rounded-2xl border border-white/[0.07] bg-black/15 p-3">
+
+        <div className="flex flex-col gap-2 sm:flex-row lg:w-52 lg:flex-col">
+          <Link
+            href={section.editHref}
+            className={cn(
+              "inline-flex items-center justify-center gap-2 rounded-xl border bg-white/[0.04] px-3 py-2.5 text-xs font-semibold transition",
+              accent.button,
+            )}
+          >
+            <PencilLine className="h-3.5 w-3.5" />
+            Edit Step
+          </Link>
           <button
             type="button"
             disabled={!canControl}
             className={cn(
-              "inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition sm:w-auto",
+              "inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-xs font-semibold transition",
               canControl
                 ? "bg-white/[0.08] text-white hover:bg-white/[0.12]"
                 : "cursor-not-allowed bg-white/[0.03] text-slate-500",
@@ -213,7 +220,6 @@ function ReviewSectionCard({ section }: { section: LaunchReviewSection }) {
           >
             {section.control.label}
           </button>
-          <p className="mt-2 text-xs leading-5 text-slate-400">{section.control.description}</p>
         </div>
       </div>
     </article>
@@ -296,10 +302,18 @@ export default async function LaunchReviewPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="rounded-3xl border border-white/[0.08] bg-[#0c1222]/60 p-3 shadow-[0_12px_44px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:p-4">
+        <div className="mb-3 flex flex-col gap-1 px-1 sm:px-2">
+          <h2 className="text-lg font-semibold text-white">Onboarding Launch Checklist</h2>
+          <p className="text-sm leading-6 text-slate-400">
+            Follow this list from top to bottom to review what was built for the account.
+          </p>
+        </div>
+        <div className="space-y-3">
         {data.sections.map((section) => (
-          <ReviewSectionCard key={section.id} section={section} />
+          <ReviewSectionListItem key={section.id} section={section} />
         ))}
+        </div>
       </section>
 
       <section className="rounded-2xl border border-violet-400/20 bg-violet-400/10 p-5">
