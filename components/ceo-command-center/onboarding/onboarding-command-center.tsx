@@ -34,9 +34,13 @@ import type {
 import { cn } from "@/lib/utils";
 import { completeCommandCenterOnboardingAction } from "@/services/onboarding/actions";
 import {
+  draftAdsPlanWithAiAction,
   fillBusinessProfileWithAiAction,
   fillLandingPageWithAiAction,
   fillOfferGoalsWithAiAction,
+  recommendAgentsWithAiAction,
+  recommendConnectionsWithAiAction,
+  recommendTrackingWithAiAction,
 } from "@/actions/ceo-onboarding.actions";
 import type {
   BusinessProfileFields,
@@ -450,6 +454,98 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
       setLandingPageDraft((prev) => ({ ...prev, ...result.data.draftPatch }));
       setLandingPageSettings((prev) => ({ ...prev, ...result.data.settingsPatch }));
       setLandingAiMessage(result.data.summary);
+      setLandingBuilderTab("edit");
+    });
+  };
+
+  const [connectAiPending, startConnectAi] = useTransition();
+  const [connectAiError, setConnectAiError] = useState<string | null>(null);
+  const [connectAiMessage, setConnectAiMessage] = useState<string | null>(null);
+
+  const [agentsAiPending, startAgentsAi] = useTransition();
+  const [agentsAiError, setAgentsAiError] = useState<string | null>(null);
+  const [agentsAiMessage, setAgentsAiMessage] = useState<string | null>(null);
+
+  const [adsAiPending, startAdsAi] = useTransition();
+  const [adsAiError, setAdsAiError] = useState<string | null>(null);
+  const [adsAiMessage, setAdsAiMessage] = useState<string | null>(null);
+
+  const [trackingAiPending, startTrackingAi] = useTransition();
+  const [trackingAiError, setTrackingAiError] = useState<string | null>(null);
+  const [trackingAiMessage, setTrackingAiMessage] = useState<string | null>(null);
+
+  const runConnectAi = (instruction: string) => {
+    startConnectAi(async () => {
+      setConnectAiError(null);
+      setConnectAiMessage(null);
+      const result = await recommendConnectionsWithAiAction({
+        instruction,
+        profile,
+        offerGoals,
+        integrations: integrations.map((item) => ({ id: item.id, name: item.name })),
+      });
+      if (!result.success) {
+        setConnectAiError(result.error);
+        return;
+      }
+      const recommended = new Set(result.data.recommendedIntegrationIds);
+      if (recommended.size > 0) {
+        setIntegrations((prev) =>
+          prev.map((item) =>
+            recommended.has(item.id) ? { ...item, connected: true } : item,
+          ),
+        );
+      }
+      setConnectAiMessage(result.data.summary);
+    });
+  };
+
+  const runAgentsAi = (instruction: string) => {
+    startAgentsAi(async () => {
+      setAgentsAiError(null);
+      setAgentsAiMessage(null);
+      const result = await recommendAgentsWithAiAction({ instruction, profile, offerGoals });
+      if (!result.success) {
+        setAgentsAiError(result.error);
+        return;
+      }
+      const agents = result.data.recommendedAgents;
+      setAgentsAiMessage(
+        agents.length > 0
+          ? `${result.data.summary} Recommended: ${agents.join(", ")}.`
+          : result.data.summary,
+      );
+    });
+  };
+
+  const runAdsAi = (instruction: string) => {
+    startAdsAi(async () => {
+      setAdsAiError(null);
+      setAdsAiMessage(null);
+      const result = await draftAdsPlanWithAiAction({ instruction, profile, offerGoals });
+      if (!result.success) {
+        setAdsAiError(result.error);
+        return;
+      }
+      setAdsAiMessage(result.data.summary);
+    });
+  };
+
+  const runTrackingAi = (instruction: string) => {
+    startTrackingAi(async () => {
+      setTrackingAiError(null);
+      setTrackingAiMessage(null);
+      const result = await recommendTrackingWithAiAction({ instruction, profile });
+      if (!result.success) {
+        setTrackingAiError(result.error);
+        return;
+      }
+      const platforms = result.data.recommendedTrackingPlatforms;
+      setTrackingAiMessage(
+        platforms.length > 0
+          ? `${result.data.summary} Recommended: ${platforms.join(", ")}.`
+          : result.data.summary,
+      );
     });
   };
 
@@ -863,6 +959,21 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                 </p>
               </div>
 
+              <OnboardingStepAiAssistant
+                title="Optional: let AI build this landing page"
+                description="Describe the page or tone you want and AI will write the hero, benefits, FAQ, settings, and more — then open the Edit Sections tab."
+                placeholder='e.g. "Write a warm, community-focused page for our after-school program with 3 benefits and an FAQ."'
+                suggestions={[
+                  "Write a hero headline and 3 benefits for my offer",
+                  "Make the tone warm and community-focused",
+                  "Draft an FAQ and thank-you message",
+                ]}
+                pending={landingAiPending}
+                error={landingAiError}
+                message={landingAiMessage}
+                onRun={runLandingAi}
+              />
+
               <div className="flex flex-wrap gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-2">
                 {LANDING_BUILDER_TABS.map((tab) => (
                   <button
@@ -1023,22 +1134,7 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
               )}
 
               {landingBuilderTab === "edit" && (
-                <div className="space-y-4">
-                  <OnboardingStepAiAssistant
-                    title="Optional: let AI write these sections"
-                    description="Describe the page or tone you want and AI will draft the hero, benefits, FAQ, and more."
-                    placeholder='e.g. "Write a warm, community-focused page for our after-school program with 3 benefits and an FAQ."'
-                    suggestions={[
-                      "Write a hero headline and 3 benefits for my offer",
-                      "Make the tone warm and community-focused",
-                      "Draft an FAQ and thank-you message",
-                    ]}
-                    pending={landingAiPending}
-                    error={landingAiError}
-                    message={landingAiMessage}
-                    onRun={runLandingAi}
-                  />
-                  <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                   {[
                     ["heroHeadline", "Hero headline"],
                     ["subheadline", "Subheadline"],
@@ -1065,7 +1161,6 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                       />
                     </label>
                   ))}
-                  </div>
                 </div>
               )}
 
@@ -1468,22 +1563,74 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
             </div>
           )}
 
-          {(currentStepId === "ai_agents" || currentStepId === "tracking") && (
-            <div className="space-y-4 py-8 text-center">
-              <Sparkles className="mx-auto h-10 w-10 text-violet-400" />
-              <h2 className="text-lg font-semibold capitalize text-white">
-                {currentStepId.replace(/_/g, " ")}
-              </h2>
-              <p className="mx-auto max-w-md text-sm text-slate-400">
-                AI is configuring your {currentStepId.replace(/_/g, " ")} around a{" "}
-                {formatOptionLabel(OFFER_TYPE_OPTIONS, offerGoals.offerType).toLowerCase()} that drives{" "}
-                {formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal).toLowerCase()} via{" "}
-                {formatOptionLabel(
-                  CONVERSION_ACTION_OPTIONS,
-                  offerGoals.preferredConversionAction,
-                ).toLowerCase()}
-                .
-              </p>
+          {currentStepId === "ai_agents" && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white">AI Agents</h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  AI is configuring agents around a{" "}
+                  {formatOptionLabel(OFFER_TYPE_OPTIONS, offerGoals.offerType).toLowerCase()} that
+                  drives{" "}
+                  {formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal).toLowerCase()}.
+                </p>
+              </div>
+              <OnboardingStepAiAssistant
+                title="Optional: ask AI which agents you need"
+                description="Describe how you handle leads and AI will recommend the agents to activate."
+                placeholder='e.g. "I miss a lot of calls and never follow up with old leads."'
+                suggestions={[
+                  "Which AI agents do I need?",
+                  "I want missed-call text-back and review requests",
+                  "Help me follow up with leads automatically",
+                ]}
+                pending={agentsAiPending}
+                error={agentsAiError}
+                message={agentsAiMessage}
+                onRun={runAgentsAi}
+              />
+              <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4 text-center">
+                <Sparkles className="mx-auto h-8 w-8 text-violet-400" />
+                <p className="mx-auto mt-2 max-w-md text-sm text-slate-300">
+                  Your AI agents will be activated automatically when you launch.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {currentStepId === "tracking" && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Tracking</h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  AI is configuring tracking so your dashboard can measure{" "}
+                  {formatOptionLabel(PRIMARY_GOAL_OPTIONS, offerGoals.primaryGoal).toLowerCase()} via{" "}
+                  {formatOptionLabel(
+                    CONVERSION_ACTION_OPTIONS,
+                    offerGoals.preferredConversionAction,
+                  ).toLowerCase()}
+                  .
+                </p>
+              </div>
+              <OnboardingStepAiAssistant
+                title="Optional: ask AI what tracking to set up"
+                description="Describe your goal and AI will recommend the tracking and analytics platforms to connect."
+                placeholder='e.g. "I want to know which ads bring in form submissions."'
+                suggestions={[
+                  "What tracking do I need for a form goal?",
+                  "Track phone calls from my ads",
+                  "Set up conversion tracking",
+                ]}
+                pending={trackingAiPending}
+                error={trackingAiError}
+                message={trackingAiMessage}
+                onRun={runTrackingAi}
+              />
+              <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4 text-center">
+                <Sparkles className="mx-auto h-8 w-8 text-violet-400" />
+                <p className="mx-auto mt-2 max-w-md text-sm text-slate-300">
+                  Tracking is configured automatically when your tools are connected at launch.
+                </p>
+              </div>
             </div>
           )}
 
@@ -1494,6 +1641,20 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                 Link your marketing, CRM, and payment tools. Zernio is optional but unlocks ads at
                 launch.
               </p>
+              <OnboardingStepAiAssistant
+                title="Optional: let AI recommend what to connect"
+                description="Tell AI how you market and it will highlight the accounts worth connecting for your goal."
+                placeholder='e.g. "I run Google and Facebook ads and take payments through Stripe."'
+                suggestions={[
+                  "Which accounts should I connect for lead gen?",
+                  "I run Google and Facebook ads",
+                  "I take bookings and payments online",
+                ]}
+                pending={connectAiPending}
+                error={connectAiError}
+                message={connectAiMessage}
+                onRun={runConnectAi}
+              />
               <div className="grid gap-3 sm:grid-cols-2">
                 <OnboardingZernioConnectCard
                   apiKey={zernioApiKey}
@@ -1549,6 +1710,20 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                 Generate campaigns using your business profile, landing page, keywords, niche,
                 location, offer, budget, and target customer.
               </p>
+              <OnboardingStepAiAssistant
+                title="Optional: let AI draft a starter ad plan"
+                description="Describe your budget or goal and AI will suggest channels, budget split, and an ad angle."
+                placeholder='e.g. "Draft a starter ad plan for $1,000/month focused on booked appointments."'
+                suggestions={[
+                  "Draft a starter ad plan for $1,000/month",
+                  "Best channel for booked appointments?",
+                  "What ad angle should I use?",
+                ]}
+                pending={adsAiPending}
+                error={adsAiError}
+                message={adsAiMessage}
+                onRun={runAdsAi}
+              />
               <div className="grid gap-3 md:grid-cols-2">
                 {[
                   ["Niche", profile.industry],

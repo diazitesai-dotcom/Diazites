@@ -417,3 +417,183 @@ Return JSON with "summary" (string) plus any landing page section or settings fi
     data: { draftPatch, settingsPatch, summary: patch.summary },
   };
 }
+
+const ConnectionsAiSchema = z.object({
+  summary: z.string(),
+  recommendedIntegrationIds: z.array(z.string()).optional(),
+});
+
+export async function recommendConnectionsWithAiAction(input: {
+  instruction: string;
+  profile: BusinessProfileFields;
+  offerGoals: OfferGoalsFields;
+  integrations: Array<{ id: string; name: string }>;
+}) {
+  const auth = await requireSignedInUser();
+  if (!auth.success) return auth;
+  if (!isOpenAiConfigured()) return { success: false as const, error: AI_NOT_CONFIGURED };
+
+  const instruction = input.instruction.trim();
+  if (!instruction) return { success: false as const, error: "Tell us how you market first." };
+
+  const aiResult = await callJsonResponses<z.infer<typeof ConnectionsAiSchema>>({
+    supabase: auth.supabase,
+    businessId: null,
+    purpose: "onboarding.connections_ai_recommend",
+    schema: ConnectionsAiSchema,
+    system:
+      "You recommend which marketing/CRM/payment tools a local/service business should connect during onboarding. Choose only from the provided integration ids. Return the ids that best fit their goal plus a one-sentence summary explaining why.",
+    prompt: `Business: ${input.profile.businessName}
+Industry: ${input.profile.industry}
+Primary goal: ${input.offerGoals.primaryGoal}
+Conversion action: ${input.offerGoals.preferredConversionAction}
+
+Available integrations (id - name):
+${input.integrations.map((item) => `${item.id} - ${item.name}`).join("\n")}
+
+User instruction: ${instruction}
+
+Return JSON with "summary" (string) and "recommendedIntegrationIds" (array of ids from the list above).`,
+  });
+
+  if (!aiResult.success) return { success: false as const, error: aiResult.error };
+
+  const validIds = new Set(input.integrations.map((item) => item.id));
+  const recommendedIntegrationIds = (aiResult.data.recommendedIntegrationIds ?? []).filter((id) =>
+    validIds.has(id),
+  );
+
+  return {
+    success: true as const,
+    data: { recommendedIntegrationIds, summary: aiResult.data.summary },
+  };
+}
+
+const AgentsAiSchema = z.object({
+  summary: z.string(),
+  recommendedAgents: z.array(z.string()).optional(),
+});
+
+export async function recommendAgentsWithAiAction(input: {
+  instruction: string;
+  profile: BusinessProfileFields;
+  offerGoals: OfferGoalsFields;
+}) {
+  const auth = await requireSignedInUser();
+  if (!auth.success) return auth;
+  if (!isOpenAiConfigured()) return { success: false as const, error: AI_NOT_CONFIGURED };
+
+  const instruction = input.instruction.trim();
+  if (!instruction) return { success: false as const, error: "Describe what you need help with." };
+
+  const aiResult = await callJsonResponses<z.infer<typeof AgentsAiSchema>>({
+    supabase: auth.supabase,
+    businessId: null,
+    purpose: "onboarding.agents_ai_recommend",
+    schema: AgentsAiSchema,
+    system:
+      "You recommend which AI agents a local/service business should activate (e.g. Appointment Setter, Follow-Up Specialist, Missed Call Text-Back, Review Agent, Reactivation Agent). Suggest the most relevant ones for their goal. Return human-readable agent names plus a one-sentence summary.",
+    prompt: `Business: ${input.profile.businessName}
+Industry: ${input.profile.industry}
+Main offer: ${input.profile.mainOffer}
+Primary goal: ${input.offerGoals.primaryGoal}
+Conversion action: ${input.offerGoals.preferredConversionAction}
+
+User instruction: ${instruction}
+
+Return JSON with "summary" (string) and "recommendedAgents" (array of agent names).`,
+  });
+
+  if (!aiResult.success) return { success: false as const, error: aiResult.error };
+
+  return {
+    success: true as const,
+    data: {
+      recommendedAgents: aiResult.data.recommendedAgents ?? [],
+      summary: aiResult.data.summary,
+    },
+  };
+}
+
+const AdsPlanAiSchema = z.object({
+  summary: z.string(),
+});
+
+export async function draftAdsPlanWithAiAction(input: {
+  instruction: string;
+  profile: BusinessProfileFields;
+  offerGoals: OfferGoalsFields;
+}) {
+  const auth = await requireSignedInUser();
+  if (!auth.success) return auth;
+  if (!isOpenAiConfigured()) return { success: false as const, error: AI_NOT_CONFIGURED };
+
+  const instruction = input.instruction.trim();
+  if (!instruction) return { success: false as const, error: "Describe your ad goal or budget." };
+
+  const aiResult = await callJsonResponses<z.infer<typeof AdsPlanAiSchema>>({
+    supabase: auth.supabase,
+    businessId: null,
+    purpose: "onboarding.ads_plan_ai_draft",
+    schema: AdsPlanAiSchema,
+    system:
+      "You draft a concise starter advertising plan for a local/service business: recommended channel(s), budget split, and a core ad angle. Keep it to a short, practical paragraph in the summary field.",
+    prompt: `Business: ${input.profile.businessName}
+Industry: ${input.profile.industry}
+Main offer: ${input.profile.mainOffer}
+Target customer: ${input.profile.targetCustomer}
+Primary goal: ${input.offerGoals.primaryGoal}
+Conversion action: ${input.offerGoals.preferredConversionAction}
+Monthly target: ${input.offerGoals.monthlyTarget}
+
+User instruction: ${instruction}
+
+Return JSON with "summary" (string) containing the ad plan recommendation.`,
+  });
+
+  if (!aiResult.success) return { success: false as const, error: aiResult.error };
+
+  return { success: true as const, data: { summary: aiResult.data.summary } };
+}
+
+const TrackingAiSchema = z.object({
+  summary: z.string(),
+  recommendedTrackingPlatforms: z.array(z.string()).optional(),
+});
+
+export async function recommendTrackingWithAiAction(input: {
+  instruction: string;
+  profile: BusinessProfileFields;
+}) {
+  const auth = await requireSignedInUser();
+  if (!auth.success) return auth;
+  if (!isOpenAiConfigured()) return { success: false as const, error: AI_NOT_CONFIGURED };
+
+  const instruction = input.instruction.trim();
+  if (!instruction) return { success: false as const, error: "Describe your tracking goal." };
+
+  const aiResult = await callJsonResponses<z.infer<typeof TrackingAiSchema>>({
+    supabase: auth.supabase,
+    businessId: null,
+    purpose: "onboarding.tracking_ai_recommend",
+    schema: TrackingAiSchema,
+    system:
+      "You recommend which tracking/analytics platforms a local/service business should set up (e.g. GA4, Meta Pixel, Google Tag Manager, call tracking). Suggest the most relevant ones for their goal. Return platform names plus a one-sentence summary.",
+    prompt: `Business: ${input.profile.businessName}
+Industry: ${input.profile.industry}
+
+User instruction: ${instruction}
+
+Return JSON with "summary" (string) and "recommendedTrackingPlatforms" (array of platform names).`,
+  });
+
+  if (!aiResult.success) return { success: false as const, error: aiResult.error };
+
+  return {
+    success: true as const,
+    data: {
+      recommendedTrackingPlatforms: aiResult.data.recommendedTrackingPlatforms ?? [],
+      summary: aiResult.data.summary,
+    },
+  };
+}
