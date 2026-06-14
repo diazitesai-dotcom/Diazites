@@ -917,18 +917,22 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                   <input
                     value={offerGoals.monthlyTarget}
                     onChange={(e) => updateOfferGoals("monthlyTarget", e.target.value)}
-                    placeholder="100 leads, 40 calls, $50,000 revenue..."
+                    placeholder="100 leads, 40 calls, 50 donors, 30 enrollments..."
                     className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs text-slate-400">Average Deal Value</span>
+                  <span className="mb-1 block text-xs text-slate-400">Average Value per Conversion</span>
                   <input
                     value={offerGoals.averageDealValue}
                     onChange={(e) => updateOfferGoals("averageDealValue", e.target.value)}
-                    placeholder="$500"
+                    placeholder="$500, $25 donation, 1 enrolled student, free program..."
                     className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white"
                   />
+                  <span className="mt-1 block text-[11px] leading-4 text-slate-500">
+                    Money, a donation size, or any value a conversion is worth — leave blank if it
+                    doesn&apos;t apply.
+                  </span>
                 </label>
               </div>
               <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4 text-sm text-violet-100">
@@ -1739,7 +1743,7 @@ export function OnboardingCommandCenter({ initialData }: OnboardingCommandCenter
                     ),
                   ],
                   ["Monthly Target", offerGoals.monthlyTarget],
-                  ["Average Deal Value", offerGoals.averageDealValue],
+                  ["Average Value per Conversion", offerGoals.averageDealValue],
                   ["Budget", "$70/day"],
                   ["Target Customer", profile.targetCustomer],
                   ["Keywords", profile.keywords],

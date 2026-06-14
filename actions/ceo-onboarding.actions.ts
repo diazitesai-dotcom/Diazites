@@ -217,57 +217,68 @@ Return JSON with "summary" (string) plus any business profile fields you filled 
   return { success: true as const, data: { patch, summary } };
 }
 
+const OFFER_TYPE_VALUES = [
+  "consultation",
+  "estimate",
+  "paid_service",
+  "product_purchase",
+  "appointment",
+  "program_enrollment",
+  "donation",
+  "trial_demo",
+  "limited_offer",
+  "lead_magnet",
+] as const;
+
+const PRIMARY_GOAL_VALUES = [
+  "leads",
+  "phone_calls",
+  "forms",
+  "bookings",
+  "quote_requests",
+  "sales",
+  "revenue",
+  "email_sms_list",
+  "donations_sponsors",
+  "program_enrollments",
+  "local_visits",
+  "customer_reactivation",
+] as const;
+
+const CONVERSION_ACTION_VALUES = [
+  "call",
+  "form",
+  "booking",
+  "checkout",
+  "quote_request",
+  "application",
+  "email_signup",
+  "sms_signup",
+  "whatsapp",
+  "live_chat",
+  "donation",
+  "download",
+] as const;
+
+// Accept loose strings from the model so an unexpected value never fails the
+// whole response; we validate each enum field against the allowed values below.
 const OfferGoalsAiSchema = z.object({
   summary: z.string(),
-  offerType: z
-    .enum([
-      "consultation",
-      "estimate",
-      "paid_service",
-      "product_purchase",
-      "appointment",
-      "program_enrollment",
-      "donation",
-      "trial_demo",
-      "limited_offer",
-      "lead_magnet",
-    ])
-    .optional(),
-  primaryGoal: z
-    .enum([
-      "leads",
-      "phone_calls",
-      "forms",
-      "bookings",
-      "quote_requests",
-      "sales",
-      "revenue",
-      "email_sms_list",
-      "donations_sponsors",
-      "program_enrollments",
-      "local_visits",
-      "customer_reactivation",
-    ])
-    .optional(),
-  preferredConversionAction: z
-    .enum([
-      "call",
-      "form",
-      "booking",
-      "checkout",
-      "quote_request",
-      "application",
-      "email_signup",
-      "sms_signup",
-      "whatsapp",
-      "live_chat",
-      "donation",
-      "download",
-    ])
-    .optional(),
+  offerType: z.string().optional(),
+  primaryGoal: z.string().optional(),
+  preferredConversionAction: z.string().optional(),
   monthlyTarget: z.string().optional(),
   averageDealValue: z.string().optional(),
 });
+
+function matchEnum<T extends string>(
+  value: string | undefined,
+  allowed: readonly T[],
+): T | undefined {
+  if (!value) return undefined;
+  const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return allowed.find((option) => option === normalized);
+}
 
 export async function fillOfferGoalsWithAiAction(input: {
   instruction: string;
@@ -303,12 +314,20 @@ Return JSON with "summary" (string) plus any offer & goals fields you set.`,
   if (!aiResult.success) return { success: false as const, error: aiResult.error };
 
   const patch = aiResult.data;
+  const offerType = matchEnum<OfferGoalsFields["offerType"]>(patch.offerType, OFFER_TYPE_VALUES);
+  const primaryGoal = matchEnum<OfferGoalsFields["primaryGoal"]>(
+    patch.primaryGoal,
+    PRIMARY_GOAL_VALUES,
+  );
+  const preferredConversionAction = matchEnum<OfferGoalsFields["preferredConversionAction"]>(
+    patch.preferredConversionAction,
+    CONVERSION_ACTION_VALUES,
+  );
+
   const next: Partial<OfferGoalsFields> = {
-    ...(patch.offerType !== undefined ? { offerType: patch.offerType } : {}),
-    ...(patch.primaryGoal !== undefined ? { primaryGoal: patch.primaryGoal } : {}),
-    ...(patch.preferredConversionAction !== undefined
-      ? { preferredConversionAction: patch.preferredConversionAction }
-      : {}),
+    ...(offerType ? { offerType } : {}),
+    ...(primaryGoal ? { primaryGoal } : {}),
+    ...(preferredConversionAction ? { preferredConversionAction } : {}),
     ...(patch.monthlyTarget && patch.monthlyTarget.trim()
       ? { monthlyTarget: patch.monthlyTarget.trim() }
       : {}),
