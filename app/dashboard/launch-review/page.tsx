@@ -1,9 +1,26 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2, CirclePause, CirclePlay, PencilLine, ShieldCheck } from "lucide-react";
+import {
+  BarChart3,
+  Bot,
+  BriefcaseBusiness,
+  CheckCircle2,
+  CirclePause,
+  CirclePlay,
+  ClipboardCheck,
+  Crosshair,
+  FileText,
+  Flag,
+  Globe,
+  PencilLine,
+  PlugZap,
+  ShieldCheck,
+  Target,
+} from "lucide-react";
 
 import {
   loadLaunchReviewData,
+  type LaunchReviewAccent,
   type LaunchReviewSection,
   type LaunchReviewStatus,
 } from "@/lib/ceo-command-center/launch-review-data";
@@ -27,6 +44,96 @@ const statusLabels: Record<LaunchReviewStatus, string> = {
   draft: "Draft",
   needs_review: "Needs Review",
   not_connected: "Not Connected",
+};
+
+const accentStyles: Record<
+  LaunchReviewAccent,
+  {
+    card: string;
+    icon: string;
+    glow: string;
+    button: string;
+  }
+> = {
+  blue: {
+    card: "border-blue-400/20 bg-blue-400/[0.06]",
+    icon: "bg-blue-400/15 text-blue-200",
+    glow: "bg-blue-400/20",
+    button: "border-blue-300/20 text-blue-100 hover:bg-blue-400/10",
+  },
+  green: {
+    card: "border-green-400/20 bg-green-400/[0.06]",
+    icon: "bg-green-400/15 text-green-200",
+    glow: "bg-green-400/20",
+    button: "border-green-300/20 text-green-100 hover:bg-green-400/10",
+  },
+  purple: {
+    card: "border-purple-400/20 bg-purple-400/[0.06]",
+    icon: "bg-purple-400/15 text-purple-200",
+    glow: "bg-purple-400/20",
+    button: "border-purple-300/20 text-purple-100 hover:bg-purple-400/10",
+  },
+  amber: {
+    card: "border-amber-400/20 bg-amber-400/[0.06]",
+    icon: "bg-amber-400/15 text-amber-200",
+    glow: "bg-amber-400/20",
+    button: "border-amber-300/20 text-amber-100 hover:bg-amber-400/10",
+  },
+  cyan: {
+    card: "border-cyan-400/20 bg-cyan-400/[0.06]",
+    icon: "bg-cyan-400/15 text-cyan-200",
+    glow: "bg-cyan-400/20",
+    button: "border-cyan-300/20 text-cyan-100 hover:bg-cyan-400/10",
+  },
+  violet: {
+    card: "border-violet-400/20 bg-violet-400/[0.06]",
+    icon: "bg-violet-400/15 text-violet-200",
+    glow: "bg-violet-400/20",
+    button: "border-violet-300/20 text-violet-100 hover:bg-violet-400/10",
+  },
+  pink: {
+    card: "border-pink-400/20 bg-pink-400/[0.06]",
+    icon: "bg-pink-400/15 text-pink-200",
+    glow: "bg-pink-400/20",
+    button: "border-pink-300/20 text-pink-100 hover:bg-pink-400/10",
+  },
+  orange: {
+    card: "border-orange-400/20 bg-orange-400/[0.06]",
+    icon: "bg-orange-400/15 text-orange-200",
+    glow: "bg-orange-400/20",
+    button: "border-orange-300/20 text-orange-100 hover:bg-orange-400/10",
+  },
+  slate: {
+    card: "border-slate-400/20 bg-slate-400/[0.06]",
+    icon: "bg-slate-400/15 text-slate-200",
+    glow: "bg-slate-400/20",
+    button: "border-slate-300/20 text-slate-100 hover:bg-slate-400/10",
+  },
+  emerald: {
+    card: "border-emerald-400/20 bg-emerald-400/[0.06]",
+    icon: "bg-emerald-400/15 text-emerald-200",
+    glow: "bg-emerald-400/20",
+    button: "border-emerald-300/20 text-emerald-100 hover:bg-emerald-400/10",
+  },
+  red: {
+    card: "border-red-400/20 bg-red-400/[0.06]",
+    icon: "bg-red-400/15 text-red-200",
+    glow: "bg-red-400/20",
+    button: "border-red-300/20 text-red-100 hover:bg-red-400/10",
+  },
+};
+
+const sectionIcons: Record<string, typeof BriefcaseBusiness> = {
+  "business-profile": BriefcaseBusiness,
+  "offer-goal": Target,
+  "landing-page": Globe,
+  "pipeline-workflow": Flag,
+  "connected-accounts": PlugZap,
+  "ai-agents": Bot,
+  "ads-campaign": Crosshair,
+  tracking: BarChart3,
+  review: ClipboardCheck,
+  "launch-status": ShieldCheck,
 };
 
 async function pauseFullSetupFormAction() {
@@ -53,23 +160,62 @@ function StatusBadge({ status }: { status: LaunchReviewStatus }) {
 }
 
 function ReviewSectionCard({ section }: { section: LaunchReviewSection }) {
+  const Icon = sectionIcons[section.id] ?? FileText;
+  const accent = accentStyles[section.accent];
+  const canControl =
+    section.control.state === "can_pause" || section.control.state === "can_activate";
+
   return (
-    <article className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-base font-semibold text-white">{section.title}</h2>
-          <p className="mt-2 text-sm font-medium text-slate-200">{section.created}</p>
+    <article
+      className={cn(
+        "relative overflow-hidden rounded-3xl border p-4 shadow-[0_8px_32px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-5",
+        accent.card,
+      )}
+    >
+      <div className={cn("absolute right-0 top-0 h-24 w-24 rounded-full blur-3xl", accent.glow)} />
+      <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 gap-3">
+          <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", accent.icon)}>
+            <Icon className="h-6 w-6" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Step {section.stepNumber}
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-white">{section.title}</h2>
+            <p className="mt-2 text-sm font-medium text-slate-200">{section.created}</p>
+          </div>
         </div>
         <StatusBadge status={section.status} />
       </div>
-      <p className="mt-3 text-sm leading-6 text-slate-400">{section.description}</p>
-      <Link
-        href={section.editHref}
-        className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/[0.08] hover:text-white"
-      >
-        <PencilLine className="h-3.5 w-3.5" />
-        Edit setup step
-      </Link>
+      <p className="relative mt-4 text-sm leading-6 text-slate-300">{section.description}</p>
+      <div className="relative mt-5 grid gap-2 sm:grid-cols-[auto_1fr] sm:items-start">
+        <Link
+          href={section.editHref}
+          className={cn(
+            "inline-flex items-center justify-center gap-2 rounded-xl border bg-white/[0.04] px-3 py-2 text-xs font-semibold transition",
+            accent.button,
+          )}
+        >
+          <PencilLine className="h-3.5 w-3.5" />
+          Edit Step
+        </Link>
+        <div className="rounded-2xl border border-white/[0.07] bg-black/15 p-3">
+          <button
+            type="button"
+            disabled={!canControl}
+            className={cn(
+              "inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold transition sm:w-auto",
+              canControl
+                ? "bg-white/[0.08] text-white hover:bg-white/[0.12]"
+                : "cursor-not-allowed bg-white/[0.03] text-slate-500",
+            )}
+          >
+            {section.control.label}
+          </button>
+          <p className="mt-2 text-xs leading-5 text-slate-400">{section.control.description}</p>
+        </div>
+      </div>
     </article>
   );
 }
@@ -89,8 +235,8 @@ export default async function LaunchReviewPage() {
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">Launch Review</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            Review everything your AI business system created, then pause or activate the full
-            setup when you&apos;re ready.
+            Review every onboarding step your AI business system created, then edit, pause, or
+            activate the setup when you&apos;re ready.
           </p>
         </div>
         <Link
