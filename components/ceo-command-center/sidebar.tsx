@@ -44,7 +44,7 @@ const BUSINESS_TOOL_ITEMS = [
   { href: "/dashboard/automations/pipelines", label: "Pipelines", icon: Target },
   { href: "/dashboard/agents", label: "AI Employees", icon: Bot },
   { href: "/dashboard/campaign-ops", label: "Marketing", icon: Zap },
-  { href: "/dashboard/funnel", label: "Websites & Funnels", icon: Globe },
+  { href: "/dashboard/websites", label: "Websites & Funnels", icon: Globe },
   { href: "/dashboard/reports", label: "Reputation", icon: Star },
   { href: "/dashboard/reports", label: "Reporting", icon: BarChart3 },
   { href: "/dashboard/analytics", label: "Competitors", icon: Crosshair },
