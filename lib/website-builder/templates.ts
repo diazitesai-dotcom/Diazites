@@ -1,5 +1,7 @@
 import type {
   AiLandingPageOutput,
+  AiWebsitePagePlan,
+  AiWebsiteSection,
   GrapesJsProjectData,
   WebsiteFormField,
   WebsiteTemplateDefinition,
@@ -262,6 +264,117 @@ export function buildHtmlFromAiOutput(output: AiLandingPageOutput): string {
       </section>
     </main>
   `;
+}
+
+export function buildHtmlFromAiPagePlan(plan: AiWebsitePagePlan): string {
+  const sections = plan.sections.map(renderAiSection).join("\n");
+  return `<main class="dz-page" data-dz-page-type="${escapeHtml(plan.pageType)}">${sections}</main>`;
+}
+
+function renderAiSection(section: AiWebsiteSection): string {
+  switch (section.type) {
+    case "hero":
+      return `
+        <section class="dz-hero" data-dz-section="hero">
+          <div class="dz-pill">Diazites AI Website</div>
+          <h1>${escapeHtml(section.headline)}</h1>
+          <p>${escapeHtml(section.subheadline)}</p>
+          <a href="${escapeHtml(section.buttonLink || "#contact")}" class="dz-button">${escapeHtml(section.buttonText || "Get Started")}</a>
+        </section>
+      `;
+    case "services":
+      return `
+        <section class="dz-section" data-dz-section="services">
+          <h2>${escapeHtml(section.title)}</h2>
+          ${section.intro ? `<p>${escapeHtml(section.intro)}</p>` : ""}
+          <div class="dz-grid">
+            ${section.items
+              .map(
+                (item) =>
+                  `<article><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.description)}</p></article>`,
+              )
+              .join("")}
+          </div>
+        </section>
+      `;
+    case "benefits":
+      return `
+        <section class="dz-section" data-dz-section="benefits">
+          <h2>${escapeHtml(section.title)}</h2>
+          <div class="dz-grid">
+            ${section.items
+              .map((item) => `<article><h3>${escapeHtml(item)}</h3><p>Built into your Diazites funnel, CRM, and follow-up system.</p></article>`)
+              .join("")}
+          </div>
+        </section>
+      `;
+    case "testimonials":
+      return `
+        <section class="dz-section" data-dz-section="testimonials">
+          <h2>${escapeHtml(section.title)}</h2>
+          <div class="dz-grid">
+            ${section.items
+              .map(
+                (item) =>
+                  `<blockquote><p>“${escapeHtml(item.quote)}”</p><cite>${escapeHtml(item.name)}</cite></blockquote>`,
+              )
+              .join("")}
+          </div>
+        </section>
+      `;
+    case "faq":
+      return `
+        <section class="dz-section dz-faq" data-dz-section="faq">
+          <h2>${escapeHtml(section.title)}</h2>
+          ${section.items
+            .map(
+              (item, index) =>
+                `<details ${index === 0 ? "open" : ""}><summary>${escapeHtml(item.question)}</summary><p>${escapeHtml(item.answer)}</p></details>`,
+            )
+            .join("")}
+        </section>
+      `;
+    case "pricing":
+      return `
+        <section class="dz-section" data-dz-section="pricing">
+          <h2>${escapeHtml(section.title)}</h2>
+          <div class="dz-grid">
+            ${section.plans
+              .map(
+                (plan) => `
+                  <article>
+                    <h3>${escapeHtml(plan.name)}</h3>
+                    <p class="dz-price">${escapeHtml(plan.price)}</p>
+                    <ul>${plan.features.map((feature) => `<li>${escapeHtml(feature)}</li>`).join("")}</ul>
+                    <a href="#contact" class="dz-button">${escapeHtml(plan.cta)}</a>
+                  </article>
+                `,
+              )
+              .join("")}
+          </div>
+        </section>
+      `;
+    case "contact":
+      return `
+        <section class="dz-section dz-contact" data-dz-section="contact">
+          <h2>${escapeHtml(section.title)}</h2>
+          <p>${escapeHtml(section.body)}</p>
+        </section>
+      `;
+    case "contactForm":
+      return `
+        <section id="contact" class="dz-section dz-contact" data-dz-section="contactForm">
+          <h2>${escapeHtml(section.title || "Start here")}</h2>
+          <form data-dz-form="lead-capture">
+            <input placeholder="Name" name="name" />
+            <input placeholder="Email" name="email" type="email" />
+            <input placeholder="Phone" name="phone" type="tel" />
+            <textarea placeholder="Tell us what you need" name="message"></textarea>
+            <button type="submit">${escapeHtml(section.buttonText || "Submit")}</button>
+          </form>
+        </section>
+      `;
+  }
 }
 
 function escapeHtml(value: string): string {

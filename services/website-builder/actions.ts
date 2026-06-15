@@ -8,53 +8,108 @@ import { requireAuth } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   buildDefaultGrapesProjectData,
-  buildHtmlFromAiOutput,
+  buildHtmlFromAiPagePlan,
   buildTemplateCss,
   buildTemplateHtml,
   getTemplateDefinition,
   slugifyPageTitle,
 } from "@/lib/website-builder/templates";
-import type { AiLandingPageOutput, GrapesJsProjectData } from "@/lib/website-builder/types";
+import type { AiWebsitePagePlan, GrapesJsProjectData } from "@/lib/website-builder/types";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { callJsonResponses, isOpenAiConfigured } from "@/services/engine/ai/openai-client";
 
-const AiLandingPageSchema = z.object({
-  title: z.string(),
-  slug: z.string(),
-  headline: z.string(),
-  subheadline: z.string(),
-  ctaText: z.string(),
-  benefits: z.array(z.string()).min(3).max(6),
-  services: z
-    .array(
-      z.object({
-        title: z.string(),
-        description: z.string(),
-      }),
-    )
-    .min(2)
-    .max(6),
-  testimonials: z
-    .array(
-      z.object({
-        quote: z.string(),
-        name: z.string(),
-      }),
-    )
-    .min(1)
-    .max(4),
-  faqs: z
-    .array(
-      z.object({
-        question: z.string(),
-        answer: z.string(),
-      }),
-    )
-    .min(2)
-    .max(6),
+const AiWebsiteSectionSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("hero"),
+    headline: z.string().min(8),
+    subheadline: z.string().min(12),
+    buttonText: z.string().min(2),
+    buttonLink: z.string().default("#contact"),
+  }),
+  z.object({
+    type: z.literal("services"),
+    title: z.string().min(3),
+    intro: z.string().optional(),
+    items: z.array(z.object({ title: z.string(), description: z.string() })).min(2).max(6),
+  }),
+  z.object({
+    type: z.literal("benefits"),
+    title: z.string().min(3),
+    items: z.array(z.string()).min(3).max(6),
+  }),
+  z.object({
+    type: z.literal("testimonials"),
+    title: z.string().min(3),
+    items: z.array(z.object({ quote: z.string(), name: z.string() })).min(1).max(4),
+  }),
+  z.object({
+    type: z.literal("faq"),
+    title: z.string().min(3),
+    items: z.array(z.object({ question: z.string(), answer: z.string() })).min(2).max(6),
+  }),
+  z.object({
+    type: z.literal("pricing"),
+    title: z.string().min(3),
+    plans: z
+      .array(
+        z.object({
+          name: z.string(),
+          price: z.string(),
+          features: z.array(z.string()).min(2).max(8),
+          cta: z.string(),
+        }),
+      )
+      .min(1)
+      .max(4),
+  }),
+  z.object({
+    type: z.literal("contact"),
+    title: z.string().min(3),
+    body: z.string().min(8),
+  }),
+  z.object({
+    type: z.literal("contactForm"),
+    title: z.string().optional(),
+    buttonText: z.string().optional(),
+  }),
+]);
+
+const AiWebsitePagePlanSchema = z.object({
+  pageName: z.string().min(2),
+  industry: z.string().min(2),
+  pageType: z.enum(["home", "about", "services", "contact", "blog", "landing"]),
+  slug: z.string().min(2),
   seoTitle: z.string(),
   seoDescription: z.string(),
+  sections: z.array(AiWebsiteSectionSchema).min(3).max(12),
 });
+
+const REQUIRED_AI_SCHEMA = `{
+  "pageName": "Home",
+  "industry": "Roofing",
+  "pageType": "home",
+  "slug": "home",
+  "seoTitle": "SEO title under 60 characters",
+  "seoDescription": "SEO description under 155 characters",
+  "sections": [
+    {
+      "type": "hero",
+      "headline": "Get Your Roof Repaired Fast",
+      "subheadline": "Trusted local roofing company serving homeowners.",
+      "buttonText": "Get Free Estimate",
+      "buttonLink": "#contact"
+    },
+    {
+      "type": "services",
+      "title": "Our Services",
+      "intro": "Optional intro",
+      "items": [
+        { "title": "Roof Repair", "description": "Fast repair for leaks and storm damage." }
+      ]
+    },
+    { "type": "contactForm", "title": "Request a free estimate", "buttonText": "Submit" }
+  ]
+}`;
 
 type UserBusiness = {
   userId: string;
@@ -91,6 +146,98 @@ function businessProfileText(business: Record<string, unknown>, key: string): st
   if (!profile || typeof profile !== "object") return "";
   const value = (profile as Record<string, unknown>)[key];
   return typeof value === "string" ? value.trim() : "";
+}
+
+function schemaHelp(error?: string): string {
+  return [
+    "AI output failed validation.",
+    error ? `Last error: ${error}` : "",
+    "Expected strict JSON shape:",
+    REQUIRED_AI_SCHEMA,
+    "Allowed section types: hero, services, benefits, testimonials, faq, pricing, contact, contactForm.",
+    "Do not return raw text, markdown, arrays at the root, or missing section fields.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function generateWebsitePagePlan(input: {
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>;
+  businessId: string;
+  profile: Record<string, string>;
+  currentPage: Record<string, unknown>;
+  instruction: string;
+}): Promise<
+  | { success: true; data: AiWebsitePagePlan; attempts: number }
+  | { success: false; error: string; details: string; attempts: number }
+> {
+  let lastError = "";
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const aiResult = await callJsonResponses<AiWebsitePagePlan>({
+      supabase: input.supabase,
+      businessId: input.businessId,
+      purpose: attempt === 1 ? "website_builder.ai_page_plan" : "website_builder.ai_page_plan_repair",
+      schema: AiWebsitePagePlanSchema,
+      system:
+        "You are Diazites' native AI website architect. You MUST return one strict JSON object matching the provided schema. Never return raw text. Never use markdown. Build a GoHighLevel/Webflow/ClickFunnels-quality page plan that can be converted into GrapesJS components. Each section must include every required field for its type.",
+      prompt: `Business profile:
+${JSON.stringify(input.profile, null, 2)}
+
+Current builder page:
+${JSON.stringify(input.currentPage, null, 2)}
+
+User instruction:
+${input.instruction || "Build a high-converting website page."}
+
+${attempt > 1 ? `Previous attempt failed. Repair the JSON now.\n${schemaHelp(lastError)}` : ""}
+
+Return JSON matching this exact schema example:
+${REQUIRED_AI_SCHEMA}`,
+    });
+
+    if (aiResult.success) {
+      return { success: true, data: aiResult.data, attempts: attempt };
+    }
+
+    lastError = `${aiResult.code ?? "AI_ERROR"}: ${aiResult.error}`;
+  }
+
+  return {
+    success: false,
+    error: "AI response did not match the website page schema after 3 attempts.",
+    details: schemaHelp(lastError),
+    attempts: 3,
+  };
+}
+
+async function recordWebsiteAiGeneration(input: {
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>;
+  businessId: string;
+  websiteId?: string | null;
+  pageId?: string | null;
+  userId: string;
+  prompt: string;
+  status: "success" | "failed" | "repaired";
+  attempts: number;
+  generatedJson?: AiWebsitePagePlan;
+  validationErrors?: string;
+}) {
+  try {
+    await input.supabase.from("website_ai_generations").insert({
+      business_id: input.businessId,
+      website_id: input.websiteId ?? null,
+      page_id: input.pageId ?? null,
+      prompt: input.prompt,
+      status: input.status,
+      attempts: input.attempts,
+      generated_json: input.generatedJson ?? null,
+      validation_errors: input.validationErrors ? [{ message: input.validationErrors }] : [],
+      created_by: input.userId,
+    });
+  } catch {
+    // Newer migration may not be applied yet; AI generation should still work.
+  }
 }
 
 async function getOrCreateDefaultWebsite(input: {
@@ -472,37 +619,45 @@ export async function generateAiLandingPageAction(input: {
     targetAudience: businessProfileText(business, "targetCustomer"),
   };
 
-  const aiResult = await callJsonResponses<AiLandingPageOutput>({
+  const aiResult = await generateWebsitePagePlan({
     supabase,
     businessId,
-    purpose: "website_builder.ai_landing_page",
-    schema: AiLandingPageSchema,
-    system:
-      "You are Diazites' native AI landing page agent. Generate conversion-focused page copy for a GrapesJS website builder. Keep copy specific to the business profile, niche, location, services, keywords, and target audience. Return JSON only.",
-    prompt: `Business profile:
-${JSON.stringify(profile, null, 2)}
-
-Current page:
-${JSON.stringify({ title: page.title, slug: page.slug }, null, 2)}
-
-User instruction:
-${input.instruction?.trim() || "Build a high-converting landing page for this business."}
-
-Return title, slug, headline, subheadline, ctaText, benefits, services, testimonials placeholders, faqs, seoTitle, and seoDescription.`,
+    profile,
+    currentPage: { title: page.title, slug: page.slug, pageType: page.page_type },
+    instruction: input.instruction?.trim() || "Build a high-converting landing page for this business.",
   });
 
-  if (!aiResult.success) return { success: false as const, error: aiResult.error };
+  if (!aiResult.success) {
+    await recordWebsiteAiGeneration({
+      supabase,
+      businessId,
+      websiteId: String(page.website_id),
+      pageId: input.pageId,
+      userId,
+      prompt: input.instruction?.trim() || "Build a high-converting landing page for this business.",
+      status: "failed",
+      attempts: aiResult.attempts,
+      validationErrors: aiResult.details,
+    });
+    return {
+      success: false as const,
+      error: aiResult.error,
+      details: aiResult.details,
+      attempts: aiResult.attempts,
+    };
+  }
 
-  const html = buildHtmlFromAiOutput(aiResult.data);
+  const html = buildHtmlFromAiPagePlan(aiResult.data);
   const css = buildTemplateCss();
   const grapesjsData = buildDefaultGrapesProjectData(html, css);
-  const slug = slugifyPageTitle(aiResult.data.slug || aiResult.data.title);
+  const slug = slugifyPageTitle(aiResult.data.slug || aiResult.data.pageName);
 
   const { error } = await supabase
     .from("website_pages")
     .update({
-      title: aiResult.data.title,
+      title: aiResult.data.pageName,
       slug,
+      page_type: aiResult.data.pageType,
       html,
       css,
       grapesjs_data: grapesjsData,
@@ -543,8 +698,24 @@ Return title, slug, headline, subheadline, ctaText, benefits, services, testimon
     css,
   });
 
+  await recordWebsiteAiGeneration({
+    supabase,
+    businessId,
+    websiteId: String(page.website_id),
+    pageId: input.pageId,
+    userId,
+    prompt: input.instruction?.trim() || "Build a high-converting landing page for this business.",
+    status: aiResult.attempts > 1 ? "repaired" : "success",
+    attempts: aiResult.attempts,
+    generatedJson: aiResult.data,
+  });
+
   revalidatePath("/dashboard/websites");
-  return { success: true as const, data: { ...aiResult.data, html, css, grapesjsData } };
+  return {
+    success: true as const,
+    data: { ...aiResult.data, html, css, grapesjsData },
+    attempts: aiResult.attempts,
+  };
 }
 
 export async function registerWebsiteAssetAction(input: {

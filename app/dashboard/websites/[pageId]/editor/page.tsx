@@ -13,5 +13,14 @@ export default async function WebsiteEditorPage({ params }: WebsiteEditorPagePro
 
   if (!data.page) notFound();
 
-  return <GrapesJsWebsiteEditor page={data.page} versions={data.versions} />;
+  return (
+    <GrapesJsWebsiteEditor
+      page={data.page}
+      pages={data.pages}
+      templates={data.templates}
+      assets={data.assets}
+      analytics={data.analytics}
+      versions={data.versions}
+    />
+  );
 }

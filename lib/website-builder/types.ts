@@ -145,3 +145,58 @@ export type AiLandingPageOutput = {
   seoTitle: string;
   seoDescription: string;
 };
+
+export type AiWebsiteSection =
+  | {
+      type: "hero";
+      headline: string;
+      subheadline: string;
+      buttonText: string;
+      buttonLink: string;
+    }
+  | {
+      type: "services";
+      title: string;
+      intro?: string;
+      items: Array<{ title: string; description: string }>;
+    }
+  | {
+      type: "benefits";
+      title: string;
+      items: string[];
+    }
+  | {
+      type: "testimonials";
+      title: string;
+      items: Array<{ quote: string; name: string }>;
+    }
+  | {
+      type: "faq";
+      title: string;
+      items: Array<{ question: string; answer: string }>;
+    }
+  | {
+      type: "pricing";
+      title: string;
+      plans: Array<{ name: string; price: string; features: string[]; cta: string }>;
+    }
+  | {
+      type: "contact";
+      title: string;
+      body: string;
+    }
+  | {
+      type: "contactForm";
+      title?: string;
+      buttonText?: string;
+    };
+
+export type AiWebsitePagePlan = {
+  pageName: string;
+  industry: string;
+  pageType: "home" | "about" | "services" | "contact" | "blog" | "landing";
+  slug: string;
+  seoTitle: string;
+  seoDescription: string;
+  sections: AiWebsiteSection[];
+};

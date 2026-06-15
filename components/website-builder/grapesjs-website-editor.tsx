@@ -3,10 +3,32 @@
 import "grapesjs/dist/css/grapes.min.css";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ArrowLeft, Bot, Eye, Monitor, Save, Smartphone, Tablet } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  Bot,
+  Eye,
+  FileImage,
+  Layers3,
+  Monitor,
+  PanelLeft,
+  Save,
+  Search,
+  Settings2,
+  Smartphone,
+  Tablet,
+  Users,
+} from "lucide-react";
 
-import type { GrapesJsProjectData, WebsiteBuilderPageRecord } from "@/lib/website-builder/types";
+import type {
+  GrapesJsProjectData,
+  WebsiteBuilderAnalyticsSummary,
+  WebsiteBuilderAssetRecord,
+  WebsiteBuilderPageRecord,
+  WebsiteBuilderTemplateRecord,
+} from "@/lib/website-builder/types";
 import {
   generateAiLandingPageAction,
   saveWebsitePageAction,
@@ -36,13 +58,47 @@ type GrapesModule = {
 
 type GrapesJsWebsiteEditorProps = {
   page: WebsiteBuilderPageRecord;
+  pages: WebsiteBuilderPageRecord[];
+  templates: WebsiteBuilderTemplateRecord[];
+  assets: WebsiteBuilderAssetRecord[];
+  analytics: WebsiteBuilderAnalyticsSummary;
   versions: Array<Record<string, unknown>>;
 };
 
-export function GrapesJsWebsiteEditor({ page, versions }: GrapesJsWebsiteEditorProps) {
+const LEFT_TABS = [
+  { id: "pages", label: "Pages", icon: PanelLeft },
+  { id: "templates", label: "Templates", icon: Layers3 },
+  { id: "blocks", label: "Blocks", icon: Layers3 },
+  { id: "media", label: "Media", icon: FileImage },
+  { id: "ai", label: "AI Generator", icon: Bot },
+] as const;
+
+const RIGHT_TABS = [
+  { id: "styles", label: "Styles", icon: Settings2 },
+  { id: "settings", label: "Settings", icon: Settings2 },
+  { id: "seo", label: "SEO", icon: Search },
+  { id: "crm", label: "CRM Settings", icon: Users },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "versions", label: "Versions", icon: Layers3 },
+] as const;
+
+type LeftTab = (typeof LEFT_TABS)[number]["id"];
+type RightTab = (typeof RIGHT_TABS)[number]["id"];
+
+export function GrapesJsWebsiteEditor({
+  page,
+  pages,
+  templates,
+  assets,
+  analytics,
+  versions,
+}: GrapesJsWebsiteEditorProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<GrapesEditor | null>(null);
+  const [leftTab, setLeftTab] = useState<LeftTab>("pages");
+  const [rightTab, setRightTab] = useState<RightTab>("styles");
   const [message, setMessage] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [aiInstruction, setAiInstruction] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -100,6 +156,7 @@ export function GrapesJsWebsiteEditor({ page, versions }: GrapesJsWebsiteEditorP
     const editor = editorRef.current;
     if (!editor) return;
     setMessage(null);
+    setErrorDetails(null);
     startTransition(async () => {
       const result = await saveWebsitePageAction({
         pageId: page.id,
@@ -113,6 +170,7 @@ export function GrapesJsWebsiteEditor({ page, versions }: GrapesJsWebsiteEditorP
 
   const generateWithAi = () => {
     setMessage(null);
+    setErrorDetails(null);
     startTransition(async () => {
       const result = await generateAiLandingPageAction({
         pageId: page.id,
@@ -120,10 +178,11 @@ export function GrapesJsWebsiteEditor({ page, versions }: GrapesJsWebsiteEditorP
       });
       if (!result.success) {
         setMessage(result.error);
+        setErrorDetails(result.details ?? null);
         return;
       }
       editorRef.current?.loadProjectData?.(result.data.grapesjsData);
-      setMessage("AI generated the page. Review it, then save or publish.");
+      setMessage(`AI generated the page in ${result.attempts} attempt${result.attempts === 1 ? "" : "s"}. Review it, then save or publish.`);
     });
   };
 
@@ -180,35 +239,125 @@ export function GrapesJsWebsiteEditor({ page, versions }: GrapesJsWebsiteEditorP
           </div>
         </div>
         {message ? <p className="mt-3 text-sm text-violet-200">{message}</p> : null}
+        {errorDetails ? (
+          <pre className="mt-3 max-h-40 overflow-auto rounded-xl border border-rose-500/30 bg-rose-950/30 p-3 text-xs leading-5 text-rose-100">
+            {errorDetails}
+          </pre>
+        ) : null}
       </header>
 
       <section className="grid min-h-[calc(100vh-96px)] grid-cols-1 xl:grid-cols-[280px_1fr_300px]">
         <aside className="border-r border-white/[0.08] bg-[#090e1a] p-4">
-          <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4">
-            <div className="flex items-center gap-2">
-              <Bot className="h-4 w-4 text-violet-200" />
-              <h2 className="text-sm font-semibold">AI page agent</h2>
-            </div>
-            <textarea
-              value={aiInstruction}
-              onChange={(event) => setAiInstruction(event.target.value)}
-              placeholder="Tell Diazites what to build..."
-              className="mt-3 min-h-24 w-full rounded-xl border border-white/[0.08] bg-black/20 px-3 py-2 text-sm text-white"
-            />
-            <button
-              type="button"
-              onClick={generateWithAi}
-              disabled={isPending}
-              className="mt-3 w-full rounded-xl bg-violet-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              Generate into builder
-            </button>
+          <div className="grid grid-cols-2 gap-1 rounded-2xl border border-white/[0.08] bg-black/20 p-1">
+            {LEFT_TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setLeftTab(tab.id)}
+                  className={`flex items-center gap-2 rounded-xl px-2 py-2 text-xs ${
+                    leftTab === tab.id ? "bg-violet-600 text-white" : "text-slate-400"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
-          <h2 className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Blocks
-          </h2>
-          <div id="dz-builder-blocks" className="mt-3 space-y-2" />
+          {leftTab === "pages" ? (
+            <EditorPanel title="Pages">
+              <div className="space-y-2">
+                {pages.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/dashboard/websites/${item.id}/editor`}
+                    className={`block rounded-xl border px-3 py-2 text-sm ${
+                      item.id === page.id
+                        ? "border-violet-500/40 bg-violet-500/15 text-white"
+                        : "border-white/[0.08] text-slate-300"
+                    }`}
+                  >
+                    <span className="block truncate font-medium">{item.title}</span>
+                    <span className="text-xs text-slate-500">/{item.slug}</span>
+                  </Link>
+                ))}
+              </div>
+            </EditorPanel>
+          ) : null}
+
+          {leftTab === "templates" ? (
+            <EditorPanel title="Templates">
+              <div className="space-y-2">
+                {templates.slice(0, 12).map((template) => (
+                  <div key={template.id} className="rounded-xl border border-white/[0.08] p-3">
+                    <p className="text-sm font-medium text-white">{template.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">{template.description}</p>
+                  </div>
+                ))}
+              </div>
+            </EditorPanel>
+          ) : null}
+
+          {leftTab === "blocks" ? (
+            <EditorPanel title="Blocks">
+              <div id="dz-builder-blocks" className="space-y-2" />
+            </EditorPanel>
+          ) : null}
+
+          {leftTab === "media" ? (
+            <EditorPanel title="Media Library">
+              <div className="space-y-2">
+                {assets.length ? (
+                  assets.map((asset) => (
+                    <a
+                      key={asset.id}
+                      href={asset.public_url ?? "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-xl border border-white/[0.08] p-3 text-sm text-slate-300"
+                    >
+                      <span className="block truncate text-white">{asset.file_name}</span>
+                      <span className="text-xs uppercase text-slate-500">{asset.asset_type}</span>
+                    </a>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-500">Upload media from the Websites dashboard.</p>
+                )}
+              </div>
+            </EditorPanel>
+          ) : null}
+
+          {leftTab === "ai" ? (
+            <EditorPanel title="AI Website Generator">
+              <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 p-4">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-4 w-4 text-violet-200" />
+                  <h2 className="text-sm font-semibold">Schema-driven AI agent</h2>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-violet-100/80">
+                  AI returns typed JSON sections, Diazites validates it, then converts sections into
+                  GrapesJS components.
+                </p>
+                <textarea
+                  value={aiInstruction}
+                  onChange={(event) => setAiInstruction(event.target.value)}
+                  placeholder="Tell Diazites what to build..."
+                  className="mt-3 min-h-28 w-full rounded-xl border border-white/[0.08] bg-black/20 px-3 py-2 text-sm text-white"
+                />
+                <button
+                  type="button"
+                  onClick={generateWithAi}
+                  disabled={isPending}
+                  className="mt-3 w-full rounded-xl bg-violet-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  Generate into builder
+                </button>
+              </div>
+            </EditorPanel>
+          ) : null}
         </aside>
 
         <main className="min-w-0 bg-white">
@@ -216,27 +365,83 @@ export function GrapesJsWebsiteEditor({ page, versions }: GrapesJsWebsiteEditorP
         </main>
 
         <aside className="border-l border-white/[0.08] bg-[#090e1a] p-4">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Layers
-          </h2>
-          <div id="dz-builder-layers" className="mt-3" />
-          <h2 className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Styles
-          </h2>
-          <div id="dz-builder-styles" className="mt-3" />
-          <h2 className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Versions
-          </h2>
-          <div className="mt-3 space-y-2">
-            {versions.slice(0, 8).map((version) => (
-              <div key={String(version.id)} className="rounded-xl border border-white/[0.08] p-3 text-xs">
-                <p className="font-medium text-slate-200">
-                  v{String(version.version_number ?? "?")} · {String(version.label ?? "Draft")}
-                </p>
-                <p className="mt-1 text-slate-500">{String(version.change_summary ?? "Saved")}</p>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 gap-1 rounded-2xl border border-white/[0.08] bg-black/20 p-1">
+            {RIGHT_TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setRightTab(tab.id)}
+                  className={`flex items-center gap-2 rounded-xl px-2 py-2 text-xs ${
+                    rightTab === tab.id ? "bg-violet-600 text-white" : "text-slate-400"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
+
+          {rightTab === "styles" ? (
+            <EditorPanel title="Styles">
+              <div id="dz-builder-styles" />
+              <h2 className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Layers
+              </h2>
+              <div id="dz-builder-layers" className="mt-3" />
+            </EditorPanel>
+          ) : null}
+
+          {rightTab === "settings" ? (
+            <EditorPanel title="Page Settings">
+              <SettingRow label="Page name" value={page.title} />
+              <SettingRow label="URL slug" value={`/${page.slug}`} />
+              <SettingRow label="Status" value={page.status} />
+              <SettingRow label="Page type" value={page.page_type} />
+            </EditorPanel>
+          ) : null}
+
+          {rightTab === "seo" ? (
+            <EditorPanel title="SEO">
+              <SettingRow label="Meta title" value="Managed from AI generation / SEO table" />
+              <SettingRow label="Meta description" value="Generated per page and editable in the next panel pass" />
+              <SettingRow label="Schema" value="LocalBusiness JSON-LD supported" />
+            </EditorPanel>
+          ) : null}
+
+          {rightTab === "crm" ? (
+            <EditorPanel title="CRM Settings">
+              <SettingRow label="Lead action" value="Create contact + lead + opportunity" />
+              <SettingRow label="Pipeline" value="Website form pipeline settings" />
+              <SettingRow label="Workflow" value="Trigger from website_forms.workflow_id" />
+              <SettingRow label="AI Agent" value="Ready for assigned-agent mapping" />
+            </EditorPanel>
+          ) : null}
+
+          {rightTab === "analytics" ? (
+            <EditorPanel title="Analytics">
+              <SettingRow label="Visitors" value={String(analytics.visitors)} />
+              <SettingRow label="Leads" value={String(analytics.leads)} />
+              <SettingRow label="Conversions" value={`${(analytics.conversionRate * 100).toFixed(1)}%`} />
+            </EditorPanel>
+          ) : null}
+
+          {rightTab === "versions" ? (
+            <EditorPanel title="Version History">
+              <div className="space-y-2">
+                {versions.slice(0, 8).map((version) => (
+                  <div key={String(version.id)} className="rounded-xl border border-white/[0.08] p-3 text-xs">
+                    <p className="font-medium text-slate-200">
+                      v{String(version.version_number ?? "?")} · {String(version.label ?? "Draft")}
+                    </p>
+                    <p className="mt-1 text-slate-500">{String(version.change_summary ?? "Saved")}</p>
+                  </div>
+                ))}
+              </div>
+            </EditorPanel>
+          ) : null}
         </aside>
       </section>
     </div>
@@ -280,4 +485,22 @@ function addDiazitesBlocks(editor: GrapesEditor) {
 
 function hasProjectData(data: GrapesJsProjectData): boolean {
   return Object.keys(data ?? {}).length > 0;
+}
+
+function EditorPanel({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="mt-5">
+      <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{title}</h2>
+      <div className="mt-3">{children}</div>
+    </div>
+  );
+}
+
+function SettingRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-b border-white/[0.06] py-3 text-sm">
+      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">{label}</p>
+      <p className="mt-1 text-slate-200">{value || "Not set"}</p>
+    </div>
+  );
 }
