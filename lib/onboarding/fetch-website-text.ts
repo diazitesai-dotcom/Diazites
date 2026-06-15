@@ -5,7 +5,9 @@ import {
   TRUST_BADGES,
 } from "@/lib/marketing/platform-data";
 
-const READ_BYTES = 350_000;
+// Large enough to reach footers on heavy site builders (Wix/Squarespace), where
+// contact details usually live at the very bottom of the page.
+const READ_BYTES = 1_500_000;
 const MAX_TEXT_CHARS = 18_000;
 const FETCH_TIMEOUT_MS = 15_000;
 
@@ -256,6 +258,87 @@ function metaContent(html: string, key: string): string | undefined {
   return undefined;
 }
 
+/** Strip the ENTIRE raw HTML to plain text (no focus truncation) for contact scanning. */
+function htmlToScanText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const PHONE_RE =
+  /(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}/g;
+const EMAIL_RE = /[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/i;
+// City, ST ZIP — anchor for a US postal address.
+const CITY_STATE_ZIP_RE =
+  /[A-Za-z][A-Za-z.'\s]{1,40}?,\s*[A-Z]{2},?\s*\d{5}(?:-\d{4})?/;
+const HOURS_RE =
+  /(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\.?\s*(?:[-–—]|to|through)\s*(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\.?[^\d]{0,12}\d{1,2}(?::\d{2})?\s*[AaPp]\.?\s*[Mm]\.?\s*(?:[-–—]|to)\s*\d{1,2}(?::\d{2})?\s*[AaPp]\.?\s*[Mm]\.?/;
+
+const BLOCKED_EMAIL_HINTS = ["example.com", "sentry", "wixpress", "@2x", ".png", ".jpg"];
+
+function findPhone(text: string): string | undefined {
+  const matches = text.match(PHONE_RE);
+  if (!matches) return undefined;
+  for (const raw of matches) {
+    const digits = raw.replace(/\D/g, "");
+    // Reject obvious non-phones (e.g. timestamps, IDs) by length.
+    if (digits.length === 10 || digits.length === 11) return raw.trim();
+  }
+  return undefined;
+}
+
+function findEmail(text: string): string | undefined {
+  const match = text.match(EMAIL_RE);
+  if (!match?.[0]) return undefined;
+  const email = match[0].trim();
+  const lower = email.toLowerCase();
+  if (BLOCKED_EMAIL_HINTS.some((hint) => lower.includes(hint))) return undefined;
+  return email;
+}
+
+function findAddress(text: string): string | undefined {
+  const anchor = CITY_STATE_ZIP_RE.exec(text);
+  if (!anchor || anchor.index === undefined) return undefined;
+
+  const before = text.slice(Math.max(0, anchor.index - 90), anchor.index);
+  const streetMatch = before.match(/(\d{1,6}\s+[\s\S]+)$/);
+  const street = streetMatch ? streetMatch[1] : "";
+
+  const address = `${street}${anchor[0]}`
+    .replace(/\s+/g, " ")
+    .replace(/\s+,/g, ",")
+    .trim();
+
+  return address.length >= 8 ? address.slice(0, 240) : undefined;
+}
+
+function findBusinessHours(text: string): string | undefined {
+  const match = text.match(HOURS_RE);
+  if (!match?.[0]) return undefined;
+  return match[0].replace(/\s+/g, " ").trim().slice(0, 120);
+}
+
+/** Extract contact details (phone, email, address, hours) from page text. */
+export function extractContactFromText(text: string): {
+  phone?: string;
+  email?: string;
+  address?: string;
+  businessHours?: string;
+} {
+  return {
+    phone: findPhone(text),
+    email: findEmail(text),
+    address: findAddress(text),
+    businessHours: findBusinessHours(text),
+  };
+}
+
 function stripHtmlToText(html: string): string {
   const focused = extractAutofillHtml(html);
 
@@ -339,9 +422,26 @@ export async function fetchWebsiteText(rawUrl: string): Promise<WebsiteFetchResu
 
     const buffer = await readResponsePrefix(res, READ_BYTES);
     const html = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
-    const text = stripHtmlToText(html);
+    const focusedText = stripHtmlToText(html);
 
-    if (text.length < 40) {
+    // Scan the FULL page (incl. footer) for contact details and surface them up
+    // front so they reach the AI excerpt and survive truncation.
+    const contact = extractContactFromText(htmlToScanText(html));
+    const contactBlock = [
+      contact.phone ? `CONTACT PHONE: ${contact.phone}` : "",
+      contact.email ? `CONTACT EMAIL: ${contact.email}` : "",
+      contact.address ? `CONTACT ADDRESS: ${contact.address}` : "",
+      contact.businessHours ? `CONTACT HOURS: ${contact.businessHours}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const text = (contactBlock ? `${contactBlock} ${focusedText}` : focusedText).slice(
+      0,
+      MAX_TEXT_CHARS,
+    );
+
+    if (focusedText.length < 40) {
       throw new Error(
         "Not enough readable content on that page — try the full URL including https://.",
       );

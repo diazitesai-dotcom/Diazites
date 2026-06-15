@@ -195,7 +195,7 @@ export async function fillBusinessProfileWithAiAction(input: {
     purpose: "onboarding.business_profile_ai_fill",
     schema: BusinessProfileAiSchema,
     system:
-      "You help a local/service business owner fill out their business profile during onboarding. Use the user's plain-language description to fill or improve the fields. Only return fields you are confident about. Keep keywords comma-separated, the SEO meta title under 60 characters, and the SEO meta description under 155 characters. Always include a one-sentence summary of what you filled in.",
+      "You help a local/service business owner fill out their business profile during onboarding. Use the user's plain-language description to fill or improve the fields. Only return fields you are confident about. NEVER invent contact details — only set address, phone, email, or businessHours if the user explicitly provided them in their description; otherwise leave those fields out. Keep keywords comma-separated, the SEO meta title under 60 characters, and the SEO meta description under 155 characters. Always include a one-sentence summary of what you filled in.",
     prompt: `Current business profile JSON:
 ${JSON.stringify(input.profile, null, 2)}
 

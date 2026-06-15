@@ -5,7 +5,10 @@ import {
   extractContactDetailsFromHtml,
   fetchWebsiteForAutofill,
 } from "@/lib/onboarding/fetch-website-contact";
-import { normalizeWebsiteUrl } from "@/lib/onboarding/fetch-website-text";
+import {
+  extractContactFromText,
+  normalizeWebsiteUrl,
+} from "@/lib/onboarding/fetch-website-text";
 import { sanitizeBusinessProfile } from "@/lib/ceo-command-center/business-profile-utils";
 import { fail, ok, type ServiceResult } from "@/lib/result";
 import { callJsonResponses, isOpenAiConfigured } from "@/services/engine/ai/openai-client";
@@ -102,19 +105,70 @@ function extractPatterns(text: string): Partial<BusinessProfileFields> {
 }
 
 function extractContactFields(
+  pageText: string,
   homepageHtml?: string,
   contactHtml?: string,
   contactText?: string,
 ): Partial<BusinessProfileFields> {
   const mergedHtml = [contactHtml ?? "", homepageHtml ?? ""].join("\n");
   const fromHtml = extractContactDetailsFromHtml(mergedHtml);
-  const fromText = contactText ? extractPatterns(contactText) : {};
+  const corpus = [pageText, contactText ?? "", mergedHtml].join("\n");
+  const fromText = extractContactFromText(corpus);
 
-  return {
-    phone: fromHtml.phone ?? fromText.phone,
-    email: fromHtml.email ?? fromText.email,
-    address: fromHtml.address ?? fromText.address,
-  };
+  const out: Partial<BusinessProfileFields> = {};
+  const phone = fromHtml.phone ?? fromText.phone;
+  const email = fromHtml.email ?? fromText.email;
+  const address = fromHtml.address ?? fromText.address;
+  if (phone) out.phone = phone;
+  if (email) out.email = email;
+  if (address) out.address = address;
+  if (fromText.businessHours) out.businessHours = fromText.businessHours;
+  return out;
+}
+
+function digitsOf(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+/**
+ * Drop AI-provided contact fields that do not actually appear in the fetched
+ * page content. Prevents the model from inventing plausible-but-wrong phone
+ * numbers, addresses, or hours when it cannot find the real ones.
+ */
+function groundContactFields(
+  ai: Partial<BusinessProfileFields>,
+  corpus: string,
+): Partial<BusinessProfileFields> {
+  const out: Partial<BusinessProfileFields> = { ...ai };
+  const corpusLower = corpus.toLowerCase();
+  const corpusDigits = digitsOf(corpus);
+
+  if (out.phone) {
+    const digits = digitsOf(out.phone).slice(-10);
+    if (digits.length < 10 || !corpusDigits.includes(digits)) delete out.phone;
+  }
+
+  if (out.email && !corpusLower.includes(out.email.toLowerCase())) {
+    delete out.email;
+  }
+
+  if (out.address) {
+    const zip = out.address.match(/\b\d{5}\b/)?.[0];
+    if (zip) {
+      if (!corpusDigits.includes(zip)) delete out.address;
+    } else {
+      const tokens = out.address.toLowerCase().match(/[a-z]{4,}/g) ?? [];
+      if (!tokens.some((token) => corpusLower.includes(token))) delete out.address;
+    }
+  }
+
+  if (out.businessHours) {
+    const mentionsHours =
+      /\d{1,2}\s*[ap]\.?\s*m\.?/i.test(corpus) || /\bhours?\b/i.test(corpusLower);
+    if (!mentionsHours) delete out.businessHours;
+  }
+
+  return out;
 }
 
 function heuristicProfile(
@@ -141,7 +195,7 @@ function heuristicProfile(
     keywords: domain.replace(/^www\./i, "").replace(/\./g, " ").trim(),
     ...(html ? extractFromJsonLd(html) : {}),
     ...extractPatterns(text),
-    ...extractContactFields(html, contactHtml, contactText),
+    ...extractContactFields(text, html, contactHtml, contactText),
   };
 }
 
@@ -207,7 +261,10 @@ export async function autofillCeoBusinessProfileFromWebsite(
     return fail(e instanceof Error ? e.message : "Could not read website.", "FETCH_FAILED");
   }
 
-  const contactHint = extractContactFields(pageHtml, contactHtml, contactText);
+  const contactHint = extractContactFields(pageText, pageHtml, contactHtml, contactText);
+  const groundingCorpus = [pageText, contactText ?? "", pageHtml ?? "", contactHtml ?? ""].join(
+    "\n",
+  );
 
   if (!isOpenAiConfigured()) {
     const partial = heuristicProfile(
@@ -230,7 +287,7 @@ export async function autofillCeoBusinessProfileFromWebsite(
     purpose: "onboarding.ceo_business_profile_autofill",
     schema: CeoBusinessProfileSchema,
     system:
-      "You extract structured business profile data from website content for a local/service business onboarding form. Prioritize the CONTACT PAGE section for phone, email, and address. Return only fields you can infer confidently; omit unknown fields.",
+      "You extract structured business profile data from website content for a local/service business onboarding form. Prioritize the CONTACT PHONE/EMAIL/ADDRESS/HOURS lines and the CONTACT PAGE section for contact details. NEVER guess or invent a phone number, email, address, or hours — only return contact values that appear verbatim in the provided content. If a contact field is not present, omit it. Return only fields you can infer confidently.",
     prompt: `Analyze this business website and extract onboarding profile fields.
 
 Website URL: ${normalized}
@@ -245,7 +302,7 @@ ${pageText.slice(0, 14000)}
 Return JSON with any of these optional string fields:
 businessName, industry, services, address, phone, email, website, businessHours, targetCustomer, keywords (comma-separated), seoMetaTitle (≤60 chars), seoMetaDescription (≤160 chars), mainOffer, businessDescription.
 
-For phone, email, and address: use the Contact Us / contact page content first. Be specific to this business. Use concise, operator-ready values.`,
+For phone, email, address, and businessHours: copy them ONLY from the CONTACT PHONE/EMAIL/ADDRESS/HOURS lines or the Contact Us content above. Do not fabricate or approximate them — omit any contact field you cannot find verbatim in the content.`,
   });
 
   if (!aiResult.success) {
@@ -266,7 +323,11 @@ For phone, email, and address: use the Contact Us / contact page content first. 
   return ok({
     profile: mergeProfile(
       currentProfile,
-      { ...aiResult.data, ...contactHint, website: normalized },
+      {
+        ...groundContactFields(aiResult.data, groundingCorpus),
+        ...contactHint,
+        website: normalized,
+      },
       normalized,
     ),
     usedAi: true,
