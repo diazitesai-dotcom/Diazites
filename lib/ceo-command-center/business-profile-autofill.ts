@@ -6,8 +6,8 @@ import {
   fetchWebsiteForAutofill,
 } from "@/lib/onboarding/fetch-website-contact";
 import {
-  extractContactFromText,
   normalizeWebsiteUrl,
+  type ContactDetails,
 } from "@/lib/onboarding/fetch-website-text";
 import { sanitizeBusinessProfile } from "@/lib/ceo-command-center/business-profile-utils";
 import { fail, ok, type ServiceResult } from "@/lib/result";
@@ -104,26 +104,69 @@ function extractPatterns(text: string): Partial<BusinessProfileFields> {
   return out;
 }
 
-function extractContactFields(
-  pageText: string,
+/**
+ * Build grounded contact fields. Prefers explicit markup (tel:/mailto:/<address>),
+ * then the clean structured `contact` object the fetch layer extracted from the
+ * raw page (BEFORE any synthetic "CONTACT …:" labels were added). We never
+ * re-parse the labeled page text here, which previously polluted the address
+ * (e.g. "9020 CONTACT ADDRESS: 2916 …").
+ */
+function buildContactHint(
+  websiteContact: ContactDetails | undefined,
   homepageHtml?: string,
   contactHtml?: string,
-  contactText?: string,
 ): Partial<BusinessProfileFields> {
   const mergedHtml = [contactHtml ?? "", homepageHtml ?? ""].join("\n");
   const fromHtml = extractContactDetailsFromHtml(mergedHtml);
-  const corpus = [pageText, contactText ?? "", mergedHtml].join("\n");
-  const fromText = extractContactFromText(corpus);
 
   const out: Partial<BusinessProfileFields> = {};
-  const phone = fromHtml.phone ?? fromText.phone;
-  const email = fromHtml.email ?? fromText.email;
-  const address = fromHtml.address ?? fromText.address;
+  const phone = fromHtml.phone ?? websiteContact?.phone;
+  const email = fromHtml.email ?? websiteContact?.email;
+  const address = fromHtml.address ?? websiteContact?.address;
   if (phone) out.phone = phone;
   if (email) out.email = email;
   if (address) out.address = address;
-  if (fromText.businessHours) out.businessHours = fromText.businessHours;
+  if (websiteContact?.businessHours) out.businessHours = websiteContact.businessHours;
   return out;
+}
+
+function firstSentence(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+  const match = trimmed.match(/^[\s\S]*?[.!?](?:\s|$)/);
+  return (match ? match[0] : trimmed).trim();
+}
+
+/** Synthesize a concise main offer from already-extracted profile fields. */
+function deriveMainOffer(input: {
+  businessName?: string;
+  services?: string;
+  businessDescription?: string;
+  seoMetaDescription?: string;
+}): string {
+  const firstService = (input.services ?? "").split(/[,;\n]|·|•/)[0]?.trim() ?? "";
+  if (firstService) {
+    const name = input.businessName?.trim();
+    const offer = name ? `${name} — ${firstService}` : firstService;
+    return offer.slice(0, 140);
+  }
+  const fromDescription = firstSentence(input.businessDescription ?? "");
+  if (fromDescription) return fromDescription.slice(0, 140);
+  const fromSeo = firstSentence(input.seoMetaDescription ?? "");
+  if (fromSeo) return fromSeo.slice(0, 140);
+  return "";
+}
+
+/** Backfill an empty mainOffer from services → description → SEO description. */
+function withMainOfferFallback(profile: BusinessProfileFields): BusinessProfileFields {
+  if (profile.mainOffer.trim()) return profile;
+  const fromServices = profile.services.split(/[,;\n]|·|•/)[0]?.trim() ?? "";
+  const fallback =
+    fromServices ||
+    firstSentence(profile.businessDescription) ||
+    profile.seoMetaDescription.trim();
+  if (!fallback) return profile;
+  return { ...profile, mainOffer: fallback.slice(0, 140) };
 }
 
 function digitsOf(value: string): string {
@@ -176,26 +219,30 @@ function heuristicProfile(
   text: string,
   title?: string,
   html?: string,
-  contactHtml?: string,
-  contactText?: string,
 ): Partial<BusinessProfileFields> {
-  const businessName = title?.split(/[|\-–—]/)[0]?.trim() ?? "";
+  const businessName = (title?.split(/[|\-–—]/)[0]?.trim() ?? "").slice(0, 120);
   const descMatch = text.match(/DESCRIPTION:\s([^]+?)(?:\sOG:|$)/i);
   const description = descMatch?.[1]?.trim().slice(0, 500) ?? "";
   const domain = url.replace(/^https?:\/\//, "").split("/")[0] ?? url;
+  const services = description.slice(0, 300);
 
   return {
     website: url,
-    businessName: businessName.slice(0, 120),
+    businessName,
     seoMetaTitle: title?.slice(0, 160) ?? "",
     seoMetaDescription: description.slice(0, 320),
     businessDescription: description,
-    services: description.slice(0, 300),
+    services,
     targetCustomer: description.slice(0, 200),
     keywords: domain.replace(/^www\./i, "").replace(/\./g, " ").trim(),
+    mainOffer: deriveMainOffer({
+      businessName,
+      services,
+      businessDescription: description,
+      seoMetaDescription: description,
+    }),
     ...(html ? extractFromJsonLd(html) : {}),
     ...extractPatterns(text),
-    ...extractContactFields(text, html, contactHtml, contactText),
   };
 }
 
@@ -248,6 +295,7 @@ export async function autofillCeoBusinessProfileFromWebsite(
   let contactHtml: string | undefined;
   let contactText: string | undefined;
   let contactUrl: string | undefined;
+  let websiteContact: ContactDetails | undefined;
 
   try {
     const fetched = await fetchWebsiteForAutofill(normalized);
@@ -257,26 +305,22 @@ export async function autofillCeoBusinessProfileFromWebsite(
     contactHtml = fetched.contactHtml;
     contactText = fetched.contactText;
     contactUrl = fetched.contactUrl;
+    websiteContact = fetched.contact;
   } catch (e) {
     return fail(e instanceof Error ? e.message : "Could not read website.", "FETCH_FAILED");
   }
 
-  const contactHint = extractContactFields(pageText, pageHtml, contactHtml, contactText);
+  const contactHint = buildContactHint(websiteContact, pageHtml, contactHtml);
   const groundingCorpus = [pageText, contactText ?? "", pageHtml ?? "", contactHtml ?? ""].join(
     "\n",
   );
 
   if (!isOpenAiConfigured()) {
-    const partial = heuristicProfile(
-      normalized,
-      pageText,
-      pageTitle,
-      pageHtml,
-      contactHtml,
-      contactText,
-    );
+    const partial = heuristicProfile(normalized, pageText, pageTitle, pageHtml);
     return ok({
-      profile: mergeProfile(currentProfile, { ...partial, ...contactHint }, normalized),
+      profile: withMainOfferFallback(
+        mergeProfile(currentProfile, { ...partial, ...contactHint }, normalized),
+      ),
       usedAi: false,
     });
   }
@@ -287,7 +331,7 @@ export async function autofillCeoBusinessProfileFromWebsite(
     purpose: "onboarding.ceo_business_profile_autofill",
     schema: CeoBusinessProfileSchema,
     system:
-      "You extract structured business profile data from website content for a local/service business onboarding form. Prioritize the CONTACT PHONE/EMAIL/ADDRESS/HOURS lines and the CONTACT PAGE section for contact details. NEVER guess or invent a phone number, email, address, or hours — only return contact values that appear verbatim in the provided content. If a contact field is not present, omit it. Return only fields you can infer confidently.",
+      "You extract structured business profile data from website content for a local/service business onboarding form. Prioritize the CONTACT PHONE/EMAIL/ADDRESS/HOURS lines and the CONTACT PAGE section for contact details. NEVER guess or invent a phone number, email, address, or hours — only return contact values that appear verbatim in the provided content. If a contact field is not present, omit it. For the address, output the address value ONLY — do not include the 'CONTACT ADDRESS:' label, any 'CONTACT/PHONE/EMAIL/HOURS' words, or stray phone digits. ALWAYS synthesize a concise one-sentence mainOffer (the primary product, service, or value proposition) from the page content even if it is not stated verbatim — mainOffer is a summary, so synthesis is expected. Return only fields you can infer confidently.",
     prompt: `Analyze this business website and extract onboarding profile fields.
 
 Website URL: ${normalized}
@@ -302,33 +346,30 @@ ${pageText.slice(0, 14000)}
 Return JSON with any of these optional string fields:
 businessName, industry, services, address, phone, email, website, businessHours, targetCustomer, keywords (comma-separated), seoMetaTitle (≤60 chars), seoMetaDescription (≤160 chars), mainOffer, businessDescription.
 
-For phone, email, address, and businessHours: copy them ONLY from the CONTACT PHONE/EMAIL/ADDRESS/HOURS lines or the Contact Us content above. Do not fabricate or approximate them — omit any contact field you cannot find verbatim in the content.`,
+For phone, email, address, and businessHours: copy them ONLY from the CONTACT PHONE/EMAIL/ADDRESS/HOURS lines or the Contact Us content above. Do not fabricate or approximate them — omit any contact field you cannot find verbatim in the content. The address must be the postal address only (street, city, state, ZIP) with NO 'CONTACT ADDRESS:' label or phone digits. Always include a concise one-sentence mainOffer summarizing what this business primarily offers.`,
   });
 
   if (!aiResult.success) {
-    const partial = heuristicProfile(
-      normalized,
-      pageText,
-      pageTitle,
-      pageHtml,
-      contactHtml,
-      contactText,
-    );
+    const partial = heuristicProfile(normalized, pageText, pageTitle, pageHtml);
     return ok({
-      profile: mergeProfile(currentProfile, { ...partial, ...contactHint }, normalized),
+      profile: withMainOfferFallback(
+        mergeProfile(currentProfile, { ...partial, ...contactHint }, normalized),
+      ),
       usedAi: false,
     });
   }
 
   return ok({
-    profile: mergeProfile(
-      currentProfile,
-      {
-        ...groundContactFields(aiResult.data, groundingCorpus),
-        ...contactHint,
-        website: normalized,
-      },
-      normalized,
+    profile: withMainOfferFallback(
+      mergeProfile(
+        currentProfile,
+        {
+          ...groundContactFields(aiResult.data, groundingCorpus),
+          ...contactHint,
+          website: normalized,
+        },
+        normalized,
+      ),
     ),
     usedAi: true,
   });

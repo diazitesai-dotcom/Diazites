@@ -1,6 +1,8 @@
 import {
+  extractContactFromText,
   fetchWebsiteText,
   normalizeWebsiteUrl,
+  type ContactDetails,
   type WebsiteFetchResult,
 } from "@/lib/onboarding/fetch-website-text";
 
@@ -53,6 +55,18 @@ export type WebsiteAutofillBundle = WebsiteFetchResult & {
   contactUrl?: string;
 };
 
+function mergeContact(
+  primary: ContactDetails | undefined,
+  fallback: ContactDetails | undefined,
+): ContactDetails {
+  return {
+    phone: primary?.phone ?? fallback?.phone,
+    email: primary?.email ?? fallback?.email,
+    address: primary?.address ?? fallback?.address,
+    businessHours: primary?.businessHours ?? fallback?.businessHours,
+  };
+}
+
 /** Fetch homepage plus Contact Us page(s) for phone, email, and address. */
 export async function fetchWebsiteForAutofill(rawUrl: string): Promise<WebsiteAutofillBundle> {
   const homepage = await fetchWebsiteText(rawUrl);
@@ -89,12 +103,16 @@ export async function fetchWebsiteForAutofill(rawUrl: string): Promise<WebsiteAu
     contactBundle.text,
   ].join("\n");
 
+  // Prefer homepage-derived contact (footer), fill gaps from the contact page.
+  const contactFromContactPage = extractContactFromText(contactBundle.text);
+
   return {
     ...homepage,
     text: combinedText.slice(0, 24_000),
     contactText: contactBundle.text,
     contactHtml: contactBundle.html,
     contactUrl: contactBundle.url,
+    contact: mergeContact(homepage.contact, contactFromContactPage),
   };
 }
 

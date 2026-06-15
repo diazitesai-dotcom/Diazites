@@ -302,18 +302,31 @@ function findEmail(text: string): string | undefined {
   return email;
 }
 
+const CONTACT_LABEL_RE = /\b(?:CONTACT|PHONE|EMAIL|HOURS|ADDRESS|TEL|FAX)\b/i;
+
 function findAddress(text: string): string | undefined {
   const anchor = CITY_STATE_ZIP_RE.exec(text);
   if (!anchor || anchor.index === undefined) return undefined;
 
+  const cityStateZip = anchor[0].replace(/\s+/g, " ").replace(/\s+,/g, ",").trim();
   const before = text.slice(Math.max(0, anchor.index - 90), anchor.index);
-  const streetMatch = before.match(/(\d{1,6}\s+[\s\S]+)$/);
+
+  // Only look back within the immediate segment: stop at a colon, newline, or a
+  // contact label so we never absorb a "CONTACT ADDRESS:" label or a phone
+  // number that happens to sit just before the address.
+  const segment = before.split(/[:\n]|\b(?:CONTACT|PHONE|EMAIL|HOURS|ADDRESS|TEL|FAX)\b/i).pop() ?? "";
+  const streetMatch = segment.match(/(\d{1,6}\s+[\s\S]+)$/);
   const street = streetMatch ? streetMatch[1] : "";
 
-  const address = `${street}${anchor[0]}`
+  let address = `${street}${anchor[0]}`
     .replace(/\s+/g, " ")
     .replace(/\s+,/g, ",")
     .trim();
+
+  // Defensive: never return a label/phone/email-polluted address.
+  if (/[:@]/.test(address) || CONTACT_LABEL_RE.test(address)) {
+    address = cityStateZip;
+  }
 
   return address.length >= 8 ? address.slice(0, 240) : undefined;
 }
@@ -324,13 +337,15 @@ function findBusinessHours(text: string): string | undefined {
   return match[0].replace(/\s+/g, " ").trim().slice(0, 120);
 }
 
-/** Extract contact details (phone, email, address, hours) from page text. */
-export function extractContactFromText(text: string): {
+export type ContactDetails = {
   phone?: string;
   email?: string;
   address?: string;
   businessHours?: string;
-} {
+};
+
+/** Extract contact details (phone, email, address, hours) from page text. */
+export function extractContactFromText(text: string): ContactDetails {
   return {
     phone: findPhone(text),
     email: findEmail(text),
@@ -391,6 +406,8 @@ export type WebsiteFetchResult = {
   text: string;
   title?: string;
   html?: string;
+  /** Clean structured contact details, extracted BEFORE any synthetic labels are added. */
+  contact?: ContactDetails;
 };
 
 export async function fetchWebsiteText(rawUrl: string): Promise<WebsiteFetchResult> {
@@ -401,7 +418,13 @@ export async function fetchWebsiteText(rawUrl: string): Promise<WebsiteFetchResu
 
   const builtIn = builtInMarketingSnapshot(url);
   if (builtIn) {
-    return { url, text: builtIn.text, title: builtIn.title, html: builtIn.html };
+    return {
+      url,
+      text: builtIn.text,
+      title: builtIn.title,
+      html: builtIn.html,
+      contact: extractContactFromText(htmlToScanText(builtIn.html)),
+    };
   }
 
   const controller = new AbortController();
@@ -453,7 +476,7 @@ export async function fetchWebsiteText(rawUrl: string): Promise<WebsiteFetchResu
       metaContent(html, "title") ??
       metaContent(html, "site_name");
 
-    return { url, text, title, html };
+    return { url, text, title, html, contact };
   } catch (e) {
     if (e instanceof Error && e.name === "AbortError") {
       throw new Error("Website took too long to respond.");
