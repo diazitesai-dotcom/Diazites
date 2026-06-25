@@ -5,7 +5,6 @@ import { OnboardingCommandCenter } from "@/components/ceo-command-center/onboard
 import { Button } from "@/components/ui/button";
 import { getOnboardingCommandCenterMockData } from "@/lib/ceo-command-center/mock-data";
 import { loadOnboardingCommandCenterData } from "@/lib/ceo-command-center/onboarding-real-data";
-import { missionControlLandingPath } from "@/lib/auth/mission-control-routing";
 import { getOnboardingRoutingState } from "@/lib/auth/onboarding-routing";
 import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
 import { createUserProfile } from "@/lib/auth/user-profile";
@@ -70,7 +69,7 @@ export default async function OnboardingPage({
   );
 
   if (hasBusiness && onboardingComplete && !forceOnboarding) {
-    redirect(missionControlLandingPath({ postLogin: true }));
+    redirect("/dashboard/launch-review");
   }
 
   const rawError = sp.error;

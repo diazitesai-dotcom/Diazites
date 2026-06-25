@@ -31,6 +31,7 @@ import type {
 import { materializeCommandCenterLaunch } from "@/services/onboarding/command-center-launch.service";
 import { sendEmail } from "@/services/email/email.service";
 
+const LAUNCH_REVIEW_PATH = "/dashboard/launch-review";
 const PRODUCTION_LAUNCH_REVIEW_URL = "https://www.diazites.com/dashboard/launch-review";
 
 type PauseSnapshot = {
@@ -564,7 +565,7 @@ export async function startAiLaunchSetupAction(input: {
 
   return {
     success: true as const,
-    redirectTo: PRODUCTION_LAUNCH_REVIEW_URL,
+    redirectTo: LAUNCH_REVIEW_PATH,
     progress: buildAiLaunchProgress(completed, needsReview),
   };
 }
@@ -605,7 +606,7 @@ export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) 
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  return { success: true as const, redirectTo: PRODUCTION_LAUNCH_REVIEW_URL };
+  return { success: true as const, redirectTo: LAUNCH_REVIEW_PATH };
 }
 
 export async function completeCommandCenterOnboardingAction(
@@ -766,7 +767,7 @@ export async function completeCommandCenterOnboardingAction(
 
   return {
     success: true as const,
-    redirectTo: PRODUCTION_LAUNCH_REVIEW_URL,
+    redirectTo: LAUNCH_REVIEW_PATH,
   };
 }
 
@@ -1057,5 +1058,5 @@ export async function saveOnboardingAction(formData: FormData) {
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  redirect(PRODUCTION_LAUNCH_REVIEW_URL);
+  redirect(LAUNCH_REVIEW_PATH);
 }
