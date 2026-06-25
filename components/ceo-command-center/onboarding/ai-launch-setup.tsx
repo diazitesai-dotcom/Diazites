@@ -37,6 +37,7 @@ export function AiLaunchSetup({
   const [steps, setSteps] = useState<AiLaunchSetupProgressStep[]>(SETUP_STEPS);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [launchReviewHref, setLaunchReviewHref] = useState<string | null>(null);
+  const [setupRunning, setSetupRunning] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const completedCount = useMemo(
@@ -59,16 +60,16 @@ export function AiLaunchSetup({
       return total;
     }, 0);
 
-    return Math.min(100, Math.max(isPending ? 8 : 0, Math.round((weighted / steps.length) * 100)));
-  }, [isPending, steps]);
+    return Math.min(100, Math.max(setupRunning ? 8 : 0, Math.round((weighted / steps.length) * 100)));
+  }, [setupRunning, steps]);
   const setupComplete = Boolean(launchReviewHref);
 
   useEffect(() => {
-    if (!isPending) return;
+    if (!setupRunning || setupComplete) return;
 
     const timer = window.setInterval(() => {
       setActiveIndex((current) => {
-        const next = Math.min(current + 1, SETUP_STEPS.length - 1);
+        const next = current < 0 ? 0 : Math.min(current + 1, SETUP_STEPS.length - 1);
         setSteps((currentSteps) =>
           currentSteps.map((step, index) => {
             if (index < next) return { ...step, status: "complete" };
@@ -81,11 +82,25 @@ export function AiLaunchSetup({
     }, 1100);
 
     return () => window.clearInterval(timer);
-  }, [isPending]);
+  }, [setupComplete, setupRunning]);
 
   const startSetup = () => {
+    if (setupRunning) return;
+
+    const trimmedWebsite = websiteUrl.trim();
+    const trimmedEmail = email.trim();
+    if (!trimmedWebsite) {
+      setError("Enter your website URL to start AI setup.");
+      return;
+    }
+    if (!trimmedEmail) {
+      setError("Enter your email address to start AI setup.");
+      return;
+    }
+
     setError(null);
     setLaunchReviewHref(null);
+    setSetupRunning(true);
     setActiveIndex(0);
     setSteps((current) =>
       current.map((step, index) => ({
@@ -96,29 +111,47 @@ export function AiLaunchSetup({
     );
 
     startTransition(async () => {
-      const result = await startAiLaunchSetupAction({
-        websiteUrl,
-        email,
-        businessName,
-      });
+      try {
+        const result = await startAiLaunchSetupAction({
+          websiteUrl: trimmedWebsite,
+          email: trimmedEmail,
+          businessName,
+        });
 
-      if (!result.success) {
-        setError(result.error);
-        if ("progress" in result && result.progress) {
-          setSteps(result.progress);
-        } else {
-          setSteps((current) =>
-            current.map((step, index) =>
-              index === activeIndex ? { ...step, status: "failed" } : step,
-            ),
-          );
+        if (!result.success) {
+          setError(result.error);
+          setSetupRunning(false);
+          if ("progress" in result && result.progress) {
+            setSteps(result.progress);
+          } else {
+            setSteps((current) =>
+              current.map((step, index) =>
+                index === Math.max(activeIndex, 0) ? { ...step, status: "failed" } : step,
+              ),
+            );
+          }
+          return;
         }
-        return;
-      }
 
-      setSteps(result.progress);
-      setActiveIndex(SETUP_STEPS.length - 1);
-      setLaunchReviewHref(result.redirectTo);
+        setSteps(result.progress);
+        setActiveIndex(SETUP_STEPS.length - 1);
+        setLaunchReviewHref(result.redirectTo);
+        setSetupRunning(false);
+      } catch (e) {
+        setSetupRunning(false);
+        setError(
+          e instanceof Error
+            ? e.message
+            : "AI setup could not finish. Please try again or open onboarding manually.",
+        );
+        setSteps((current) =>
+          current.map((step, index) =>
+            index === Math.max(activeIndex, 0)
+              ? { ...step, status: "failed", message: "This step could not complete." }
+              : step,
+          ),
+        );
+      }
     });
   };
 
@@ -223,11 +256,11 @@ export function AiLaunchSetup({
             <button
               type="button"
               onClick={startSetup}
-              disabled={isPending}
+              disabled={setupRunning || isPending}
               className="mt-8 inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-violet-600 to-cyan-500 px-5 py-4 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-[0_22px_70px_rgba(79,70,229,0.42)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
             >
-              {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Rocket className="h-5 w-5" />}
-              {isPending ? "AI setup running" : "Start AI Setup"}
+              {setupRunning || isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Rocket className="h-5 w-5" />}
+              {setupRunning || isPending ? "AI setup running" : "Start AI Setup"}
             </button>
           )}
         </section>

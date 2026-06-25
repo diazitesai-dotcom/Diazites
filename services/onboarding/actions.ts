@@ -95,6 +95,24 @@ function buildAiLaunchProgress(
   });
 }
 
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 function deriveOfferGoals(profile: BusinessProfileFields): OfferGoalsFields {
   const combined = `${profile.industry} ${profile.services} ${profile.mainOffer} ${profile.businessDescription}`.toLowerCase();
   const isNonprofit = /nonprofit|donation|donor|sponsor|volunteer|community|youth|program/.test(combined);
@@ -408,11 +426,21 @@ export async function startAiLaunchSetupAction(input: {
 
   let profile: BusinessProfileFields = createEmptyBusinessProfile(websiteUrl);
 
-  const scanResult = await autofillCeoBusinessProfileFromWebsite(
-    supabase,
-    websiteUrl,
-    createEmptyBusinessProfile(websiteUrl),
-  );
+  const scanResult = await withTimeout(
+    autofillCeoBusinessProfileFromWebsite(
+      supabase,
+      websiteUrl,
+      createEmptyBusinessProfile(websiteUrl),
+    ),
+    20_000,
+    "Website scan took too long. Review the business profile after setup.",
+  ).catch((e) => ({
+    success: false as const,
+    error:
+      e instanceof Error
+        ? e.message
+        : "Website scan could not complete. Review the business profile after setup.",
+  }));
 
   if (scanResult.success) {
     profile = scanResult.data.profile;
@@ -443,7 +471,13 @@ export async function startAiLaunchSetupAction(input: {
     profile,
     offerGoals,
     launchPayload,
-  );
+  ).catch((e) => ({
+    success: false as const,
+    error:
+      e instanceof Error
+        ? e.message
+        : "AI setup could not be saved. Please try again.",
+  }));
 
   if (!completion.success) {
     return {
