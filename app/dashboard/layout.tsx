@@ -90,7 +90,9 @@ export default async function DashboardLayout({
         <AdminAccessDeniedBanner />
         <OnboardingCompleteBanner />
         <AgentDeploymentShell>
-          <div className="flex min-h-0 flex-1 flex-col px-4 py-6 md:px-6 md:py-8">{children}</div>
+          <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-hidden px-3 py-5 sm:px-4 md:px-6 md:py-8">
+            {children}
+          </div>
         </AgentDeploymentShell>
       </Suspense>
     </CeoCommandCenterShell>

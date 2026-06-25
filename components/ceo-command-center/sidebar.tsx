@@ -11,7 +11,6 @@ import {
   CreditCard,
   Crosshair,
   Globe,
-  Home,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -31,12 +30,11 @@ import { cn } from "@/lib/utils";
 import { signOutAction } from "@/services/auth/actions";
 
 const TOP_NAV_ITEMS = [
-  { href: "/dashboard?section=home", label: "Home", icon: Home },
-  { href: "/dashboard/launch-review", label: "Launch Review", icon: Rocket },
-  { href: "/dashboard", label: "Full Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
 ] as const;
 
 const BUSINESS_TOOL_ITEMS = [
+  { href: "/dashboard/launch-review", label: "Onboarding Review", icon: Rocket },
   { href: "/dashboard/analytics", label: "Revenue Center", icon: TrendingUp },
   { href: "/dashboard/leads", label: "Leads & CRM", icon: Users },
   { href: "/dashboard/calendar", label: "Calendars", icon: Calendar },
@@ -64,7 +62,7 @@ type NavItem =
 export function Sidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [toolsOpen, setToolsOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isActive = (href: string) => {
@@ -74,7 +72,7 @@ export function Sidebar() {
     const currentSection = searchParams.get("section");
 
     if (routePath === "/dashboard") {
-      return pathname === "/dashboard" && currentSection === routeSection;
+      return pathname === "/dashboard" && (!routeSection || currentSection === routeSection);
     }
 
     return pathname === routePath || pathname.startsWith(`${routePath}/`);
@@ -200,8 +198,8 @@ export function Sidebar() {
       <nav className="fixed inset-x-3 bottom-3 z-50 grid grid-cols-4 gap-1 rounded-2xl border border-white/[0.08] bg-[#070b14]/95 p-1.5 shadow-2xl backdrop-blur-xl md:hidden">
         {[
           TOP_NAV_ITEMS[0],
-          TOP_NAV_ITEMS[1],
-          TOP_NAV_ITEMS[2],
+          BUSINESS_TOOL_ITEMS[0],
+          BUSINESS_TOOL_ITEMS[1],
           BOTTOM_NAV_ITEMS[0],
         ].map((item) => {
           const Icon = item.icon;
@@ -219,7 +217,9 @@ export function Sidebar() {
               )}
             >
               <Icon className={cn("h-4 w-4", active ? "text-violet-300" : "text-slate-500")} />
-              <span className="max-w-full truncate">{item.label.replace("Full ", "")}</span>
+              <span className="max-w-full truncate">
+                {item.label === "Onboarding Review" ? "Review" : item.label}
+              </span>
             </Link>
           );
         })}

@@ -9,7 +9,6 @@ import {
 } from "react";
 
 import { AgentDeploymentUrlBridge } from "@/components/agents/agent-deployment-url-bridge";
-import { AiOperatorConsole } from "@/components/ai-operator/ai-operator-console";
 import type {
   AgentDeploymentContext,
   DeploymentLaunchParams,
@@ -90,7 +89,6 @@ export function AgentDeploymentProvider({
         onOpenChange={setOpen}
         onClose={closeDeployment}
       />
-      <AiOperatorConsole open={operatorOpen} onOpenChange={setOperatorOpen} />
     </DeploymentContext.Provider>
   );
 }

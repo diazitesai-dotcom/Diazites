@@ -26,6 +26,7 @@ type TrialSignupWizardProps = {
   initialStep?: 1 | 2;
   initialPlan?: BillingPlanName;
   initialEmail?: string;
+  initialPhone?: string;
   initialCompanyName?: string;
   nextPath?: string;
   stripeEnabled?: boolean;
@@ -36,6 +37,7 @@ export function TrialSignupWizard({
   initialStep = 1,
   initialPlan = "Starter",
   initialEmail = "",
+  initialPhone = "",
   initialCompanyName = "",
   nextPath = "/onboarding?welcome=trial",
   stripeEnabled = false,
@@ -45,7 +47,7 @@ export function TrialSignupWizard({
   const [companyName] = useState(initialCompanyName);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState(initialEmail);
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(initialPhone);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [promoCode, setPromoCode] = useState("");

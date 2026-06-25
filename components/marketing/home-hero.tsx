@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Cpu, Globe2, Mail, Play, Sparkles } from "lucide-react";
+import { ArrowRight, Cpu, Globe2, Mail, Phone, Play, Sparkles } from "lucide-react";
 
 import { HeroBackgroundVideo } from "@/components/marketing/hero-background-video";
 import { TrustBadgesRow } from "@/components/marketing/trust-badges-row";
@@ -26,6 +26,7 @@ export function HomeHero() {
   const tagline = headlineParts[1] ?? "The AI Growth Operating System";
   const [website, setWebsite] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [isLaunching, setIsLaunching] = useState(false);
   const [launchStepIndex, setLaunchStepIndex] = useState(0);
   const currentLaunchStep = HOMEPAGE_AI_SETUP_STEPS[launchStepIndex] ?? HOMEPAGE_AI_SETUP_STEPS[0]!;
@@ -46,6 +47,7 @@ export function HomeHero() {
         source: "ai-launch",
         website,
         email,
+        phone,
       });
       window.location.assign(`/signup?${params.toString()}`);
     }, 2900);
@@ -54,7 +56,7 @@ export function HomeHero() {
       window.clearInterval(intervalId);
       window.clearTimeout(redirectId);
     };
-  }, [email, isLaunching, website]);
+  }, [email, isLaunching, phone, website]);
 
   function startHomepageAiSetup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,12 +76,12 @@ export function HomeHero() {
           Try the AI Launch Setup free
         </span>
         <p className="text-sm leading-6 text-slate-300">
-          Enter your website and email. After signup, Diazites scans your business,
+          Enter your website, phone, and email. After signup, Diazites scans your business,
           builds your setup, and shows how your AI agents can capture and follow up with leads.
         </p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[1.2fr_1fr]">
+      <div className="grid gap-3 md:grid-cols-[1.15fr_0.85fr_1fr]">
         <label className="block">
           <span className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
             <Globe2 className="size-3.5 text-violet-300" />
@@ -92,6 +94,22 @@ export function HomeHero() {
             value={website}
             onChange={(event) => setWebsite(event.target.value)}
             placeholder="https://yourbusiness.com"
+            className="w-full rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/40 focus:ring-2 focus:ring-cyan-300/15"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            <Phone className="size-3.5 text-violet-300" />
+            Phone
+          </span>
+          <input
+            name="phone"
+            type="tel"
+            required
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            placeholder="(555) 123-4567"
+            autoComplete="tel"
             className="w-full rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/40 focus:ring-2 focus:ring-cyan-300/15"
           />
         </label>

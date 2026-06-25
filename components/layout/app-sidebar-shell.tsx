@@ -40,8 +40,6 @@ import type { PlatformServiceKey } from "@/types/access-control";
 
 import type { AccountContext } from "@/lib/auth/account-context";
 
-import { AskAiHeaderButton } from "@/components/ai-operator/ask-ai-header-button";
-
 import { AccountMenu } from "./account-menu";
 import { NotificationBell } from "./notification-bell";
 
@@ -186,7 +184,7 @@ export function AppSidebarShell({
     const postLogin = params.get(POST_LOGIN_SESSION_PARAM) === POST_LOGIN_SESSION_VALUE;
     const onboardingComplete = params.get("onboarding") === "complete";
     if (postLogin || onboardingComplete) {
-      setCollapsed(true);
+      window.setTimeout(() => setCollapsed(true), 0);
     }
     if (postLogin) {
       params.delete(POST_LOGIN_SESSION_PARAM);
@@ -398,10 +396,7 @@ export function AppSidebarShell({
           <span className="hidden md:block" aria-hidden />
           <div className="flex items-center gap-2">
             {variant === "dashboard" ? (
-              <>
-                <AskAiHeaderButton />
-                <NotificationBell />
-              </>
+              <NotificationBell />
             ) : null}
             {account ? <AccountMenu account={account} variant={variant} /> : null}
           </div>

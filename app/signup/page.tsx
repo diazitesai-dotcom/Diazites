@@ -19,6 +19,7 @@ export default async function SignupPage({
   const rawError = sp.error;
   const rawSuccess = sp.success;
   const rawEmail = sp.email;
+  const rawPhone = sp.phone;
   const rawStep = sp.step;
   const rawPlan = sp.plan;
   const rawWebsite = sp.website;
@@ -41,6 +42,7 @@ export default async function SignupPage({
   const errorMsg = typeof rawError === "string" ? safeDecode(rawError) : null;
   const successType = typeof rawSuccess === "string" ? rawSuccess : null;
   const email = typeof rawEmail === "string" ? safeDecode(rawEmail) : null;
+  const phone = typeof rawPhone === "string" ? safeDecode(rawPhone) : "";
   const website = typeof rawWebsite === "string" ? safeDecode(rawWebsite) : "";
   const businessName = typeof rawBusinessName === "string" ? safeDecode(rawBusinessName) : "";
   const onboardingParams = new URLSearchParams({ welcome: "trial" });
@@ -101,6 +103,7 @@ export default async function SignupPage({
           initialStep={initialStep}
           initialPlan={initialPlan}
           initialEmail={email ?? ""}
+          initialPhone={phone}
           initialCompanyName={businessName}
           nextPath={nextPath}
           stripeEnabled={stripeEnabled}
