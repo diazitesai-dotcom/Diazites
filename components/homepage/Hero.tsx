@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Star } from "lucide-react";
+import { Sparkles, Star } from "lucide-react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { fadeUp, staggerContainer } from "@/lib/motion";
 import { HERO_VIDEO_EMBED } from "@/lib/homepage-data";
@@ -56,16 +56,6 @@ export function Hero() {
             variants={fadeUp}
             className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"
           >
-            <Link href="/signup">
-              <Button
-                variant="gradient"
-                size="lg"
-                className="w-full gap-2 rounded-2xl px-8 shadow-[0_12px_48px_-16px_rgba(99,102,241,0.55)] sm:w-auto"
-              >
-                Start Free
-                <ArrowRight className="size-4" aria-hidden />
-              </Button>
-            </Link>
             <Link
               href="/contact"
               className={cn(

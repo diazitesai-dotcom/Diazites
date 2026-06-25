@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { fadeUp } from "@/lib/motion";
 
@@ -39,15 +37,6 @@ export function FinalCta() {
               variants={fadeUp}
               className="mt-11 flex flex-col items-center justify-center gap-3 sm:flex-row"
             >
-              <Link href="/signup">
-                <Button
-                  size="lg"
-                  className="w-full rounded-2xl border-0 bg-white px-8 text-violet-900 shadow-xl hover:bg-white/95 sm:w-auto"
-                >
-                  Start Free
-                  <ArrowRight className="size-4" aria-hidden />
-                </Button>
-              </Link>
               <Link
                 href="/contact"
                 className={cn(
