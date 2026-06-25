@@ -18,6 +18,28 @@ export type KpiCardData = {
 
 export type ProgressStepStatus = "completed" | "active" | "review" | "pending";
 
+export type AiLaunchSetupStepStatus =
+  | "pending"
+  | "running"
+  | "complete"
+  | "failed"
+  | "needs_review";
+
+export type AiLaunchSetupProgressStep = {
+  id:
+    | "scan_website"
+    | "business_profile"
+    | "offer_goals"
+    | "website"
+    | "pipeline"
+    | "workflows"
+    | "ai_agents"
+    | "launch_review";
+  label: string;
+  status: AiLaunchSetupStepStatus;
+  message?: string;
+};
+
 export type ProgressStep = {
   id: number;
   label: string;

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { AiLaunchSetup } from "@/components/ceo-command-center/onboarding/ai-launch-setup";
 import { OnboardingCommandCenter } from "@/components/ceo-command-center/onboarding/onboarding-command-center";
 import { Button } from "@/components/ui/button";
 import { getOnboardingCommandCenterMockData } from "@/lib/ceo-command-center/mock-data";
@@ -104,7 +105,11 @@ export default async function OnboardingPage({
         </p>
       ) : null}
 
-      <OnboardingCommandCenter initialData={initialData} />
+      {requestedStep ? (
+        <OnboardingCommandCenter initialData={initialData} />
+      ) : (
+        <AiLaunchSetup defaultEmail={user.email ?? ""} />
+      )}
     </div>
   );
 }

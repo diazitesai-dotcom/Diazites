@@ -13,12 +13,17 @@ import { completeOnboardingProfile } from "@/services/onboarding/onboarding-comp
 import { autofillOnboardingFromWebsite } from "@/services/onboarding/website-autofill.service";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
 import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
+import {
+  autofillCeoBusinessProfileFromWebsite,
+} from "@/lib/ceo-command-center/business-profile-autofill";
+import { createEmptyBusinessProfile } from "@/lib/ceo-command-center/business-profile-utils";
 import { createBusinessRepository } from "@/repositories/business.repository";
 import { createOnboardingRepository } from "@/repositories/onboarding.repository";
 import type { BillingPlanName } from "@/types/backend";
 import type { CampaignGoalId, OnboardingWizardPayload } from "@/types/platform-growth";
 import type { CommandCenterLaunchPayload } from "@/lib/onboarding/command-center-payload";
 import type {
+  AiLaunchSetupProgressStep,
   BusinessProfileFields,
   OfferGoalsFields,
 } from "@/types/ceo-command-center";
@@ -60,6 +65,161 @@ function fallbackBusinessName(profile: BusinessProfileFields, email?: string | n
   if (fromProfile) return fromProfile;
   const fromEmail = email?.split("@")[0]?.replace(/[._-]+/g, " ").trim();
   return fromEmail || "Diazites Business";
+}
+
+const AI_LAUNCH_PROGRESS_LABELS: Array<Pick<AiLaunchSetupProgressStep, "id" | "label">> = [
+  { id: "scan_website", label: "Scanning website" },
+  { id: "business_profile", label: "Building business profile" },
+  { id: "offer_goals", label: "Creating offer and goals" },
+  { id: "website", label: "Generating landing page / website" },
+  { id: "pipeline", label: "Setting up CRM pipeline" },
+  { id: "workflows", label: "Creating workflows" },
+  { id: "ai_agents", label: "Configuring AI agents" },
+  { id: "launch_review", label: "Preparing launch review" },
+];
+
+function buildAiLaunchProgress(
+  completed: AiLaunchSetupProgressStep["id"][],
+  needsReview: Partial<Record<AiLaunchSetupProgressStep["id"], string>> = {},
+): AiLaunchSetupProgressStep[] {
+  return AI_LAUNCH_PROGRESS_LABELS.map((step) => {
+    if (needsReview[step.id]) {
+      return { ...step, status: "needs_review", message: needsReview[step.id] };
+    }
+    return {
+      ...step,
+      status: completed.includes(step.id) ? "complete" : "pending",
+    };
+  });
+}
+
+function deriveOfferGoals(profile: BusinessProfileFields): OfferGoalsFields {
+  const combined = `${profile.industry} ${profile.services} ${profile.mainOffer} ${profile.businessDescription}`.toLowerCase();
+  const isNonprofit = /nonprofit|donation|donor|sponsor|volunteer|community|youth|program/.test(combined);
+  const isBooking = /appointment|consult|booking|schedule|medical|clinic|attorney|real estate/.test(combined);
+
+  return {
+    offerType: isNonprofit ? "donation" : isBooking ? "consultation" : "estimate",
+    primaryGoal: isNonprofit ? "donations_sponsors" : isBooking ? "bookings" : "leads",
+    monthlyTarget: isNonprofit
+      ? "50 donor, volunteer, or program inquiries"
+      : isBooking
+        ? "40 booked appointments"
+        : "100 qualified leads",
+    averageDealValue: isNonprofit
+      ? "Donation, volunteer signup, or enrolled participant"
+      : profile.mainOffer || "Value per conversion",
+    preferredConversionAction: isNonprofit ? "donation" : isBooking ? "booking" : "form",
+  };
+}
+
+function slugifySetup(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 48) || "ai-launch"
+  );
+}
+
+function buildAutoLaunchPayload(
+  profile: BusinessProfileFields,
+  offerGoals: OfferGoalsFields,
+): CommandCenterLaunchPayload {
+  const businessName = profile.businessName || "Your Business";
+  const ctaText =
+    offerGoals.preferredConversionAction === "booking"
+      ? "Book Now"
+      : offerGoals.preferredConversionAction === "donation"
+        ? "Support the Mission"
+        : "Get Started";
+
+  return {
+    landingTemplateId:
+      offerGoals.preferredConversionAction === "booking"
+        ? "booking"
+        : offerGoals.preferredConversionAction === "donation"
+          ? "lead_gen"
+          : "lead_gen",
+    landingDraft: {
+      heroHeadline: profile.seoMetaTitle || `${businessName} can help you get results faster`,
+      subheadline:
+        profile.seoMetaDescription ||
+        profile.businessDescription ||
+        profile.mainOffer ||
+        `AI-built Diazites funnel for ${businessName}.`,
+      ctaText,
+      offerDetails: profile.mainOffer || profile.services || `Connect with ${businessName}`,
+      benefits:
+        profile.services ||
+        "Clear offer, fast follow-up, automated CRM handoff, and AI-supported conversions.",
+      formFields: "Name, email, phone, message",
+      socialProof: "Trusted by the community. Add testimonials during review.",
+      faq: "What happens after I submit? Diazites creates a lead, pipeline record, and follow-up workflow.",
+      thankYouMessage: "Thanks. Our team will follow up shortly.",
+    },
+    landingSettings: {
+      ctaType:
+        offerGoals.preferredConversionAction === "checkout"
+          ? "checkout"
+          : offerGoals.preferredConversionAction === "booking"
+            ? "booking"
+            : offerGoals.preferredConversionAction === "call"
+              ? "call"
+              : "form",
+      buttonText: ctaText,
+      pageSlug: `${slugifySetup(businessName)}-ai-launch`,
+      trackingEvent: "ai_launch_form_submit",
+      thankYouRedirect: "/thank-you",
+      brandTone: "Professional, futuristic, helpful, conversion-focused",
+    },
+    pipelineWorkflow: {
+      pipelineType:
+        offerGoals.primaryGoal === "donations_sponsors"
+          ? "Donation"
+          : offerGoals.primaryGoal === "program_enrollments"
+            ? "Enrollment"
+            : offerGoals.primaryGoal === "bookings"
+              ? "Booking"
+              : "Sales",
+      leadOwner: "Diazites AI Setup",
+      responseSpeed: "Immediate",
+      followUpStyle: "Fast response",
+      followUpChannels: ["SMS", "Email", "Call"],
+      qualificationQuestions:
+        "What service or program are you interested in? What is your timeline? What is the best way to reach you?",
+      bookingAction:
+        offerGoals.preferredConversionAction === "booking"
+          ? "Book an appointment"
+          : "Capture lead and start follow-up",
+      lostLeadRule: "Move to nurture after 7 days without response",
+      stages: [
+        "New Lead",
+        "Contacted",
+        "Qualified",
+        offerGoals.preferredConversionAction === "booking" ? "Appointment Booked" : "Ready for Follow-Up",
+        "Won",
+        "Lost / Nurture",
+      ],
+      automations: [
+        { id: "create_lead_record", label: "Create lead record", enabled: true },
+        { id: "assign_owner_agent", label: "Assign owner/agent", enabled: true },
+        { id: "send_confirmation_email", label: "Send confirmation email", enabled: true },
+        { id: "send_sms_follow_up", label: "Send SMS follow-up", enabled: true },
+        { id: "notify_business_owner", label: "Notify business owner", enabled: true },
+        { id: "trigger_ai_follow_up", label: "Trigger AI follow-up", enabled: true },
+      ],
+      followUpMessages: {
+        firstSms: `Thanks for reaching out to ${businessName}. We received your request and will follow up shortly.`,
+        firstEmail: `Thanks for contacting ${businessName}. Here is what happens next: our team reviews your request and follows up with the best next step.`,
+        voicemailScript: `Hi, this is ${businessName}. We are following up on your request. Please call us back when you can.`,
+        followUpEmail: `Just checking in to see if you still need help from ${businessName}.`,
+        finalReminder: `Final reminder from ${businessName}. Reply when you are ready to continue.`,
+      },
+    },
+    pipelineTestPassed: false,
+  };
 }
 
 async function requireCurrentBusiness() {
@@ -161,6 +321,149 @@ export async function autofillOnboardingFromWebsiteAction(
 
   if (!result.success) return { success: false as const, error: result.error };
   return { success: true as const, data: result.data };
+}
+
+export async function startAiLaunchSetupAction(input: {
+  websiteUrl: string;
+  email: string;
+  businessName?: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false as const, error: "Not signed in." };
+
+  const websiteUrl = input.websiteUrl.trim();
+  const email = input.email.trim() || user.email || "";
+  const businessName = input.businessName?.trim() ?? "";
+  if (!websiteUrl) return { success: false as const, error: "Enter your website URL." };
+  if (!email) return { success: false as const, error: "Enter your email address." };
+
+  const needsReview: Partial<Record<AiLaunchSetupProgressStep["id"], string>> = {};
+  const completed: AiLaunchSetupProgressStep["id"][] = [];
+
+  const ensured = await ensurePublicUserRecord(user.id, user.email ?? email);
+  if (!ensured.success) {
+    return { success: false as const, error: ensured.error };
+  }
+
+  let profile: BusinessProfileFields = createEmptyBusinessProfile(websiteUrl);
+
+  const scanResult = await autofillCeoBusinessProfileFromWebsite(
+    supabase,
+    websiteUrl,
+    createEmptyBusinessProfile(websiteUrl),
+  );
+
+  if (scanResult.success) {
+    profile = scanResult.data.profile;
+    completed.push("scan_website", "business_profile");
+  } else {
+    needsReview.scan_website = scanResult.error;
+    needsReview.business_profile = "Website scan could not complete. Review this profile after setup.";
+  }
+
+  profile = {
+    ...profile,
+    businessName: businessName || profile.businessName || fallbackBusinessName(profile, email),
+    email: profile.email || email,
+    website: profile.website || websiteUrl,
+    mainOffer:
+      profile.mainOffer ||
+      profile.services ||
+      profile.businessDescription ||
+      "AI-built offer based on your website",
+  };
+
+  const offerGoals = deriveOfferGoals(profile);
+  completed.push("offer_goals");
+
+  const launchPayload = buildAutoLaunchPayload(profile, offerGoals);
+
+  const completion = await completeCommandCenterOnboardingAction(
+    profile,
+    offerGoals,
+    launchPayload,
+  );
+
+  if (!completion.success) {
+    return {
+      success: false as const,
+      error: completion.error,
+      progress: buildAiLaunchProgress(completed, {
+        ...needsReview,
+        launch_review: "Setup saved partially. Review and retry from the setup review page.",
+      }),
+    };
+  }
+
+  completed.push("website", "pipeline", "workflows", "ai_agents", "launch_review");
+
+  const businesses = createBusinessRepository(supabase);
+  const { data: business } = await businesses.getByOwnerUserId(user.id);
+  if (business?.id) {
+    const onboarding = createOnboardingRepository(supabase);
+    const { data: existing } = await supabase
+      .from("onboarding")
+      .select("profile_data")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const existingProfile =
+      existing?.profile_data && typeof existing.profile_data === "object"
+        ? (existing.profile_data as Record<string, unknown>)
+        : {};
+    await onboarding.upsertFull({
+      userId: user.id,
+      businessName: profile.businessName,
+      ownerName:
+        (user.user_metadata?.full_name as string | undefined) ??
+        (user.user_metadata?.name as string | undefined) ??
+        "",
+      email,
+      phone: profile.phone,
+      website: profile.website,
+      serviceArea: profile.address,
+      cityState: profile.address,
+      services: profile.services,
+      businessHours: profile.businessHours,
+      monthlyBudget: parseCurrency(offerGoals.averageDealValue),
+      stage: "live",
+      status: "completed",
+      profileData: {
+        ...existingProfile,
+        aiLaunchSetup: {
+          mode: "automatic",
+          websiteUrl,
+          email,
+          completedAt: new Date().toISOString(),
+          progress: buildAiLaunchProgress(completed, needsReview),
+          needsReview,
+        },
+      },
+      checklist: {
+        profile_complete: true,
+        integrations_connected: false,
+        agents_assigned: true,
+        campaign_built: true,
+        landing_page_ready: !needsReview.website,
+        ai_active: true,
+        team_invited: false,
+      },
+    });
+  }
+
+  revalidatePath("/", "layout");
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/dashboard/launch-review");
+  revalidatePath("/onboarding", "layout");
+
+  return {
+    success: true as const,
+    redirectTo: "/dashboard/launch-review?onboarding=complete&setup=ai-launch",
+    progress: buildAiLaunchProgress(completed, needsReview),
+  };
 }
 
 export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) {
