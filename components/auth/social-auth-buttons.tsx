@@ -104,11 +104,11 @@ export function SocialAuthButtons({
   return (
     <div className={cn("space-y-3", className)}>
       <p className="text-center text-xs text-muted-foreground">
-        {verb} with Google or Facebook, or use email below to enter card details now.
+        {configuredProviders.length > 0
+          ? `${verb} with Google or Facebook, or use email below to enter card details now.`
+          : "Social signup is coming soon. Use email below to enter card details and start now."}
       </p>
-      <div
-        className="grid grid-cols-2 gap-2"
-      >
+      <div className="grid grid-cols-2 gap-2">
         {visibleProviders.map((id) => {
           const meta = OAUTH_PROVIDER_META[id];
           const isConfigured = configuredProviders.includes(id);
@@ -116,22 +116,31 @@ export function SocialAuthButtons({
             <button
               key={id}
               type="button"
-              disabled={loading != null}
+              disabled={loading != null || !isConfigured}
               onClick={() => {
-                if (!isConfigured) {
-                  setError(`${meta.label} signup is not configured yet. Use email signup to enter your card and start now.`);
-                  return;
-                }
                 void signInWith(meta.supabaseProviderName);
               }}
-              className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm font-medium transition hover:bg-white/[0.06] disabled:opacity-50"
+              className={cn(
+                "flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm font-medium transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-55",
+                !isConfigured && "hover:bg-white/[0.03]",
+              )}
+              title={
+                isConfigured
+                  ? `${verb} with ${meta.label}`
+                  : `${meta.label} signup is coming soon. Use email signup for now.`
+              }
             >
               {loading === id ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 PROVIDER_ICONS[id]
               )}
-              {meta.label}
+              <span>{meta.label}</span>
+              {!isConfigured ? (
+                <span className="rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                  Soon
+                </span>
+              ) : null}
             </button>
           );
         })}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Cpu, Globe2, Mail, Play, Sparkles } from "lucide-react";
 
@@ -11,10 +12,56 @@ import { BRAND_HEADLINE, BRAND_SUBHEADLINE } from "@/lib/marketing/platform-data
 import { cn } from "@/lib/utils";
 import { fadeUp, staggerContainer } from "@/lib/motion";
 
+const HOMEPAGE_AI_SETUP_STEPS = [
+  "Locking onto your website signal",
+  "Preparing business profile scan",
+  "Mapping funnel and CRM setup",
+  "Staging AI agents for signup",
+  "Opening secure trial activation",
+];
+
 export function HomeHero() {
   const headlineParts = BRAND_HEADLINE.split(" — ");
   const title = headlineParts[0] ?? "Diazites";
   const tagline = headlineParts[1] ?? "The AI Growth Operating System";
+  const [website, setWebsite] = useState("");
+  const [email, setEmail] = useState("");
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [launchStepIndex, setLaunchStepIndex] = useState(0);
+  const currentLaunchStep = HOMEPAGE_AI_SETUP_STEPS[launchStepIndex] ?? HOMEPAGE_AI_SETUP_STEPS[0]!;
+  const progressPercent = Math.min(
+    96,
+    Math.round(((launchStepIndex + 1) / HOMEPAGE_AI_SETUP_STEPS.length) * 100),
+  );
+
+  useEffect(() => {
+    if (!isLaunching) return;
+
+    const intervalId = window.setInterval(() => {
+      setLaunchStepIndex((current) => Math.min(current + 1, HOMEPAGE_AI_SETUP_STEPS.length - 1));
+    }, 550);
+
+    const redirectId = window.setTimeout(() => {
+      const params = new URLSearchParams({
+        source: "ai-launch",
+        website,
+        email,
+      });
+      window.location.assign(`/signup?${params.toString()}`);
+    }, 2900);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.clearTimeout(redirectId);
+    };
+  }, [email, isLaunching, website]);
+
+  function startHomepageAiSetup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!event.currentTarget.reportValidity()) return;
+    setLaunchStepIndex(0);
+    setIsLaunching(true);
+  }
 
   return (
     <section className="relative min-h-[min(92vh,900px)] overflow-hidden border-b border-white/[0.06]">
@@ -53,7 +100,7 @@ export function HomeHero() {
 
           <motion.div variants={fadeUp} className="mt-10 w-full max-w-3xl">
             <form
-              action="/signup"
+              onSubmit={startHomepageAiSetup}
               className="rounded-3xl border border-violet-400/20 bg-black/30 p-4 text-left shadow-[0_24px_90px_rgba(124,58,237,0.24)] backdrop-blur-xl sm:p-5"
             >
               <div className="mb-4 flex flex-col gap-2 text-center sm:text-left">
@@ -76,6 +123,9 @@ export function HomeHero() {
                   <input
                     name="website"
                     type="url"
+                    required
+                    value={website}
+                    onChange={(event) => setWebsite(event.target.value)}
                     placeholder="https://yourbusiness.com"
                     className="w-full rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/40 focus:ring-2 focus:ring-cyan-300/15"
                   />
@@ -88,6 +138,9 @@ export function HomeHero() {
                   <input
                     name="email"
                     type="email"
+                    required
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
                     placeholder="you@business.com"
                     className="w-full rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/40 focus:ring-2 focus:ring-cyan-300/15"
                   />
@@ -96,11 +149,41 @@ export function HomeHero() {
               <input name="source" type="hidden" value="ai-launch" />
               <button
                 type="submit"
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 via-blue-600 to-cyan-500 px-5 py-3.5 text-sm font-bold uppercase tracking-[0.14em] text-white shadow-[0_18px_60px_rgba(34,211,238,0.2)] transition hover:scale-[1.01] sm:w-auto"
+                disabled={isLaunching}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 via-blue-600 to-cyan-500 px-5 py-3.5 text-sm font-bold uppercase tracking-[0.14em] text-white shadow-[0_18px_60px_rgba(34,211,238,0.2)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-80 sm:w-auto"
               >
-                Start AI Setup Free
+                {isLaunching ? "Starting AI Launch" : "Start AI Setup Free"}
                 <ArrowRight className="size-4" aria-hidden />
               </button>
+
+              {isLaunching ? (
+                <div className="mt-5 overflow-hidden rounded-3xl border border-cyan-300/20 bg-[#06111f]/90 p-4 shadow-[0_0_70px_rgba(34,211,238,0.16)]">
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
+                      <div className="absolute inset-0 animate-ping rounded-full bg-cyan-300/10" />
+                      <div className="absolute inset-1 animate-spin rounded-full border border-transparent border-t-cyan-300 border-r-violet-400" />
+                      <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-violet-600/40 text-cyan-100 shadow-[0_0_40px_rgba(124,58,237,0.65)]">
+                        <Sparkles className="size-5" aria-hidden />
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="truncate text-sm font-semibold text-white">{currentLaunchStep}</p>
+                        <span className="text-xs font-bold text-cyan-200">{progressPercent}%</span>
+                      </div>
+                      <div className="mt-3 h-3 overflow-hidden rounded-full border border-cyan-300/20 bg-black/40">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-violet-500 via-cyan-300 to-fuchsia-400 shadow-[0_0_28px_rgba(34,211,238,0.7)] transition-all duration-500"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Diazites is preparing your secure signup and AI agent setup workspace.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </form>
           </motion.div>
 
