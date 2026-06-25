@@ -25,23 +25,26 @@ type TrialSignupWizardProps = {
   action: (formData: FormData) => Promise<void>;
   initialStep?: 1 | 2;
   initialPlan?: BillingPlanName;
+  initialEmail?: string;
+  initialCompanyName?: string;
   nextPath?: string;
   stripeEnabled?: boolean;
   stripePublishableKey?: string | null;
 };
 
 export function TrialSignupWizard({
-  action: _action,
   initialStep = 1,
   initialPlan = "Starter",
+  initialEmail = "",
+  initialCompanyName = "",
   nextPath = "/onboarding?welcome=trial",
   stripeEnabled = false,
   stripePublishableKey = null,
 }: TrialSignupWizardProps) {
   const [step, setStep] = useState<1 | 2>(initialStep);
-  const [companyName, setCompanyName] = useState("");
+  const [companyName] = useState(initialCompanyName);
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -87,7 +90,7 @@ export function TrialSignupWizard({
           Start Building Your AI Growth System
         </h1>
         <p className="mt-2 text-center text-sm text-muted-foreground">
-          {DEFAULT_TRIAL_DAYS_SIGNUP}-day free trial · Step 1 of 6 — Create account
+          {DEFAULT_TRIAL_DAYS_SIGNUP}-day free trial · Create your account, then let AI build the setup
         </p>
       </div>
 
@@ -151,6 +154,7 @@ export function TrialSignupWizard({
             initialPlan={initialPlan}
             publishableKey={stripePublishableKey!}
             onError={setStepError}
+            nextPath={nextPath}
           />
         ) : (
           <StepTwoPaymentRequired />
@@ -363,6 +367,7 @@ function StepTwoWithStripe({
   initialPlan,
   publishableKey,
   onError,
+  nextPath,
 }: {
   companyName: string;
   fullName: string;
@@ -373,6 +378,7 @@ function StepTwoWithStripe({
   initialPlan: BillingPlanName;
   publishableKey: string;
   onError: (msg: string | null) => void;
+  nextPath: string;
 }) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loadingIntent, setLoadingIntent] = useState(true);
@@ -382,28 +388,32 @@ function StepTwoWithStripe({
 
   useEffect(() => {
     let cancelled = false;
-    setLoadingIntent(true);
-    onError(null);
-
-    void (async () => {
-      const result = await createSignupSetupIntentAction({
-        email,
-        fullName,
-        companyName,
-        planName: selectedPlan,
-      });
+    const timeoutId = window.setTimeout(() => {
       if (cancelled) return;
-      if (!result.success) {
-        onError(result.error);
-        setClientSecret(null);
-      } else {
-        setClientSecret(result.data.clientSecret);
-      }
-      setLoadingIntent(false);
-    })();
+      setLoadingIntent(true);
+      onError(null);
+
+      void (async () => {
+        const result = await createSignupSetupIntentAction({
+          email,
+          fullName,
+          companyName,
+          planName: selectedPlan,
+        });
+        if (cancelled) return;
+        if (!result.success) {
+          onError(result.error);
+          setClientSecret(null);
+        } else {
+          setClientSecret(result.data.clientSecret);
+        }
+        setLoadingIntent(false);
+      })();
+    }, 0);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
     };
   }, [email, fullName, companyName, selectedPlan, onError]);
 
@@ -430,6 +440,7 @@ function StepTwoWithStripe({
         selectedPlan={selectedPlan}
         onSelectPlan={setSelectedPlan}
         onError={onError}
+        nextPath={nextPath}
       />
     </TrialSignupStripeProvider>
   );
@@ -445,6 +456,7 @@ function StepTwoStripeForm({
   selectedPlan,
   onSelectPlan,
   onError,
+  nextPath,
 }: {
   companyName: string;
   fullName: string;
@@ -455,6 +467,7 @@ function StepTwoStripeForm({
   selectedPlan: BillingPlanName;
   onSelectPlan: (plan: BillingPlanName) => void;
   onError: (msg: string | null) => void;
+  nextPath: string;
 }) {
   const plan = SIGNUP_TRIAL_PLANS.find((p) => p.id === selectedPlan) ?? SIGNUP_TRIAL_PLANS[0]!;
   const [consent, setConsent] = useState(true);
@@ -494,6 +507,7 @@ function StepTwoStripeForm({
           selectedPlan,
           promoCode,
           setupIntentId: payment.setupIntentId,
+          nextPath,
         });
 
         if (!result.success) {

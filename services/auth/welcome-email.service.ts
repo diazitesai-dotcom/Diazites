@@ -23,7 +23,7 @@ export async function sendDiazitesWelcomeEmail(
   const confirmationBlock = input.confirmationPending
     ? `<p style="margin:16px 0;font-size:15px;line-height:1.6;color:#e2e8f0;">
         We sent a <strong>confirmation link</strong> from <strong>${AUTH_BRAND.fromName}</strong> to this address.
-        Open it to activate your account and start your free trial (check spam if needed).
+        Open it to activate your account, finish AI Launch Setup, and see how your agents can work for you (check spam if needed).
       </p>`
     : "";
 
@@ -43,14 +43,14 @@ export async function sendDiazitesWelcomeEmail(
         <p style="margin:0 0 12px;font-size:16px;color:#fff;">${first}</p>
         <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#e2e8f0;">
           Welcome to <strong>${AUTH_BRAND.productName}</strong>. Your account includes a
-          <strong>${DEFAULT_TRIAL_DAYS_SIGNUP}-day free trial</strong> with full access to CRM, AI agents,
-          workflows, funnels, and growth tools.
+          <strong>${DEFAULT_TRIAL_DAYS_SIGNUP}-day free trial</strong>. Next, Diazites can scan your website,
+          build your business profile, prepare your funnel, and stage AI agents for follow-up.
         </p>
         ${confirmationBlock}
         <p style="margin:20px 0 0;">
           <a href="${appUrl}/onboarding"
              style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:10px;">
-            Start setup
+            Start AI Launch Setup
           </a>
         </p>
         <p style="margin:20px 0 0;font-size:13px;line-height:1.5;color:#94a3b8;">
@@ -71,7 +71,7 @@ export async function sendDiazitesWelcomeEmail(
 
 Welcome to ${AUTH_BRAND.platformName}. You have a ${DEFAULT_TRIAL_DAYS_SIGNUP}-day free trial with full platform access.
 
-${input.confirmationPending ? "Please confirm your email using the link we sent (check spam).\n\n" : ""}Start setup: ${appUrl}/onboarding
+${input.confirmationPending ? "Please confirm your email using the link we sent, then finish AI Launch Setup to see your agents in action (check spam).\n\n" : ""}Start AI Launch Setup: ${appUrl}/onboarding
 
 Upgrade anytime: ${appUrl}/dashboard/organization?tab=billing
 

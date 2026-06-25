@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { AUTH_BRAND } from "@/lib/auth/auth-branding";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
 import { isStripeBillingConfigured } from "@/lib/stripe/plan-prices";
+import { sanitizeAppReturnPath } from "@/lib/ads-oauth-state";
 import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { completePostAuthSignup } from "@/services/auth/post-auth.service";
 import { createSignupSetupIntent } from "@/services/stripe/signup-setup-intent.service";
@@ -46,6 +47,7 @@ export async function completeTrialSignupWithPaymentAction(input: {
   selectedPlan: string;
   promoCode?: string;
   setupIntentId: string;
+  nextPath?: string;
 }): Promise<CompleteTrialSignupResult> {
   const email = input.email.trim();
   const password = input.password;
@@ -140,7 +142,7 @@ export async function completeTrialSignupWithPaymentAction(input: {
 
   const postAuth = await completePostAuthSignup(supabase, signInData.session.user, {
     promoCode,
-    defaultNext: "/onboarding?welcome=trial",
+    defaultNext: sanitizeAppReturnPath(input.nextPath ?? "", "/onboarding?welcome=trial"),
   });
   revalidatePath("/", "layout");
   const next = postAuth.redirectPath;

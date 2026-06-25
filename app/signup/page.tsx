@@ -21,6 +21,8 @@ export default async function SignupPage({
   const rawEmail = sp.email;
   const rawStep = sp.step;
   const rawPlan = sp.plan;
+  const rawWebsite = sp.website;
+  const rawBusinessName = sp.businessName ?? sp.business;
 
   const initialStep = rawStep === "2" ? (2 as const) : (1 as const);
   const initialPlan =
@@ -39,7 +41,12 @@ export default async function SignupPage({
   const errorMsg = typeof rawError === "string" ? safeDecode(rawError) : null;
   const successType = typeof rawSuccess === "string" ? rawSuccess : null;
   const email = typeof rawEmail === "string" ? safeDecode(rawEmail) : null;
-  const nextPath = "/onboarding?welcome=trial";
+  const website = typeof rawWebsite === "string" ? safeDecode(rawWebsite) : "";
+  const businessName = typeof rawBusinessName === "string" ? safeDecode(rawBusinessName) : "";
+  const onboardingParams = new URLSearchParams({ welcome: "trial" });
+  if (website) onboardingParams.set("website", website);
+  if (businessName) onboardingParams.set("businessName", businessName);
+  const nextPath = `/onboarding?${onboardingParams.toString()}`;
   const stripeEnabled = isStripeBillingConfigured();
   const stripePublishableKey = env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
 
@@ -59,7 +66,11 @@ export default async function SignupPage({
             ) : (
               " to your inbox"
             )}
-            . Click the link to activate your account and start your <strong>14-day free trial</strong>.
+            . Click the link to activate your account, finish the AI Launch Setup, and see how your
+            agents can build your funnel, CRM pipeline, and follow-up system.
+          </p>
+          <p className="rounded-2xl border border-violet-400/20 bg-violet-400/10 px-4 py-3 text-sm text-violet-100">
+            Next: your AI setup screen will scan your website and prepare your agents for launch.
           </p>
           <p className="text-xs text-muted-foreground">
             Did not receive it? Check spam, or wait a minute and try signing up again.
@@ -89,6 +100,8 @@ export default async function SignupPage({
           action={signupAction}
           initialStep={initialStep}
           initialPlan={initialPlan}
+          initialEmail={email ?? ""}
+          initialCompanyName={businessName}
           nextPath={nextPath}
           stripeEnabled={stripeEnabled}
           stripePublishableKey={stripePublishableKey}

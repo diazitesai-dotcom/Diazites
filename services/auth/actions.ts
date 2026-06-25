@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createBusinessRepository } from "@/repositories/business.repository";
-import { shouldRequireOnboarding, onboardingEntryPath, getOnboardingRoutingState } from "@/lib/auth/onboarding-routing";
+import { onboardingEntryPath } from "@/lib/auth/onboarding-routing";
 import { sanitizeAppReturnPath } from "@/lib/ads-oauth-state";
 import { AUTH_BRAND, signupEmailRedirectUrl } from "@/lib/auth/auth-branding";
 import { ensureBootstrapPlatformAdmin } from "@/lib/auth/bootstrap-platform-admin";
@@ -13,7 +13,6 @@ import { createUserProfile } from "@/lib/auth/user-profile";
 import { getPublicAppUrl } from "@/lib/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
-import type { BillingPlanName } from "@/types/backend";
 import {
   isMissionControlPath,
   missionControlLandingPath,
@@ -21,6 +20,29 @@ import {
 } from "@/lib/auth/mission-control-routing";
 import { completePostAuthSignup } from "@/services/auth/post-auth.service";
 import { sendDiazitesWelcomeEmail } from "@/services/auth/welcome-email.service";
+
+function authServiceUnavailableMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const cause =
+    error instanceof Error &&
+    "cause" in error &&
+    error.cause &&
+    typeof error.cause === "object" &&
+    "message" in error.cause
+      ? String(error.cause.message)
+      : "";
+
+  if (
+    message.toLowerCase().includes("fetch failed") ||
+    cause.includes("ENOTFOUND") ||
+    cause.includes("ECONNREFUSED") ||
+    cause.includes("ETIMEDOUT")
+  ) {
+    return "Sign-in is temporarily unavailable because the authentication service could not be reached. The Supabase project may be paused or still waking up. Please try again in a minute.";
+  }
+
+  return message || "Sign-in is temporarily unavailable. Please try again.";
+}
 
 export async function signupAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
@@ -105,10 +127,17 @@ export async function loginAction(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(msg)}`);
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  let signInResult;
+  try {
+    signInResult = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+  } catch (e) {
+    redirect(`/login?error=${encodeURIComponent(authServiceUnavailableMessage(e))}`);
+  }
+
+  const { data, error } = signInResult;
 
   if (error) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);

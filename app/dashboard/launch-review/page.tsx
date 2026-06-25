@@ -25,6 +25,7 @@ import {
   type LaunchReviewSection,
   type LaunchReviewStatus,
 } from "@/lib/ceo-command-center/launch-review-data";
+import { LaunchReviewOnboardingWorkspace } from "@/components/ceo-command-center/launch-review-onboarding-workspace";
 import {
   activateFullOnboardingSetupAction,
   pauseFullOnboardingSetupAction,
@@ -304,6 +305,8 @@ export default async function LaunchReviewPage() {
           </form>
         </div>
       </section>
+
+      <LaunchReviewOnboardingWorkspace sections={data.sections} />
 
       <section className="rounded-3xl border border-white/[0.08] bg-[#0c1222]/60 p-3 shadow-[0_12px_44px_rgba(0,0,0,0.22)] sm:p-4">
         <div className="mb-4 flex flex-col gap-3 px-1 sm:px-2">

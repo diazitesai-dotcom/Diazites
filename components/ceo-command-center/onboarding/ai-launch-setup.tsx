@@ -5,10 +5,7 @@ import { useRouter } from "next/navigation";
 import { Bot, CheckCircle2, Globe2, Loader2, Mail, Rocket, Sparkles, UserRound } from "lucide-react";
 
 import { startAiLaunchSetupAction } from "@/services/onboarding/actions";
-import type {
-  AiLaunchSetupProgressStep,
-  AiLaunchSetupStepStatus,
-} from "@/types/ceo-command-center";
+import type { AiLaunchSetupProgressStep } from "@/types/ceo-command-center";
 
 const SETUP_STEPS: AiLaunchSetupProgressStep[] = [
   { id: "scan_website", label: "Scanning website", status: "pending" },
@@ -23,22 +20,48 @@ const SETUP_STEPS: AiLaunchSetupProgressStep[] = [
 
 type AiLaunchSetupProps = {
   defaultEmail: string;
+  defaultWebsite?: string;
+  defaultBusinessName?: string;
 };
 
-export function AiLaunchSetup({ defaultEmail }: AiLaunchSetupProps) {
+export function AiLaunchSetup({
+  defaultEmail,
+  defaultWebsite = "",
+  defaultBusinessName = "",
+}: AiLaunchSetupProps) {
   const router = useRouter();
-  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState(defaultWebsite);
   const [email, setEmail] = useState(defaultEmail);
-  const [businessName, setBusinessName] = useState("");
+  const [businessName, setBusinessName] = useState(defaultBusinessName);
   const [error, setError] = useState<string | null>(null);
   const [steps, setSteps] = useState<AiLaunchSetupProgressStep[]>(SETUP_STEPS);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [launchReviewHref, setLaunchReviewHref] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const completedCount = useMemo(
     () => steps.filter((step) => step.status === "complete").length,
     [steps],
   );
+  const currentStep = useMemo(() => {
+    return (
+      steps.find((step) => step.status === "running") ??
+      steps.find((step) => step.status === "needs_review" || step.status === "failed") ??
+      steps[Math.max(0, Math.min(activeIndex, steps.length - 1))] ??
+      steps[0]
+    );
+  }, [activeIndex, steps]);
+  const progressPercent = useMemo(() => {
+    const weighted = steps.reduce((total, step) => {
+      if (step.status === "complete") return total + 1;
+      if (step.status === "running") return total + 0.55;
+      if (step.status === "needs_review") return total + 0.85;
+      return total;
+    }, 0);
+
+    return Math.min(100, Math.max(isPending ? 8 : 0, Math.round((weighted / steps.length) * 100)));
+  }, [isPending, steps]);
+  const setupComplete = Boolean(launchReviewHref);
 
   useEffect(() => {
     if (!isPending) return;
@@ -62,6 +85,7 @@ export function AiLaunchSetup({ defaultEmail }: AiLaunchSetupProps) {
 
   const startSetup = () => {
     setError(null);
+    setLaunchReviewHref(null);
     setActiveIndex(0);
     setSteps((current) =>
       current.map((step, index) => ({
@@ -93,7 +117,8 @@ export function AiLaunchSetup({ defaultEmail }: AiLaunchSetupProps) {
       }
 
       setSteps(result.progress);
-      router.push(result.redirectTo);
+      setActiveIndex(SETUP_STEPS.length - 1);
+      setLaunchReviewHref(result.redirectTo);
     });
   };
 
@@ -169,64 +194,105 @@ export function AiLaunchSetup({ defaultEmail }: AiLaunchSetupProps) {
             </p>
           ) : null}
 
-          <button
-            type="button"
-            onClick={startSetup}
-            disabled={isPending}
-            className="mt-8 inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-violet-600 to-cyan-500 px-5 py-4 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-[0_22px_70px_rgba(79,70,229,0.42)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
-          >
-            {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Rocket className="h-5 w-5" />}
-            {isPending ? "AI setup running" : "Start AI Setup"}
-          </button>
+          {setupComplete ? (
+            <div className="mt-8 rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-5 shadow-[0_0_55px_rgba(34,211,238,0.18)]">
+              <div className="flex gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-300/15 text-cyan-100">
+                  <Mail className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-base font-semibold text-white">Check your email</h2>
+                  <p className="mt-1 text-sm leading-6 text-cyan-50/75">
+                    We prepared your AI setup. Check your email for Diazites account messages,
+                    then review everything built for your agents before launch.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (launchReviewHref) router.push(launchReviewHref);
+                }}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-violet-600 px-5 py-3 text-sm font-bold uppercase tracking-[0.14em] text-white shadow-[0_18px_55px_rgba(34,211,238,0.25)] transition hover:scale-[1.01] md:w-auto"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Open Launch Review
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={startSetup}
+              disabled={isPending}
+              className="mt-8 inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-violet-600 to-cyan-500 px-5 py-4 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-[0_22px_70px_rgba(79,70,229,0.42)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70 md:w-auto"
+            >
+              {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Rocket className="h-5 w-5" />}
+              {isPending ? "AI setup running" : "Start AI Setup"}
+            </button>
+          )}
         </section>
 
-        <aside className="rounded-[2rem] border border-violet-500/20 bg-[#090e1d]/90 p-6 shadow-2xl backdrop-blur-xl">
-          <div className="relative mx-auto mb-8 flex h-36 w-36 items-center justify-center">
-            <div className="absolute inset-0 animate-ping rounded-full bg-violet-500/20" />
-            <div className="absolute inset-3 rounded-full border border-violet-400/30" />
-            <div className="absolute inset-6 animate-spin rounded-full border-2 border-transparent border-t-cyan-300 border-r-violet-400" />
-            <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-violet-600/30 shadow-[0_0_80px_rgba(124,58,237,0.65)]">
-              <Sparkles className="h-9 w-9 text-violet-100" />
+        <aside className="relative overflow-hidden rounded-[2rem] border border-cyan-300/15 bg-[#070d1d]/90 p-6 shadow-[0_30px_100px_rgba(34,211,238,0.14)] backdrop-blur-xl">
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(124,58,237,0.16),transparent_36%),radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.18),transparent_38%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:28px_28px] opacity-30" />
+          <div className="relative">
+            <div className="relative mx-auto mb-8 flex h-44 w-44 items-center justify-center">
+              <div className="absolute inset-0 rounded-full border border-cyan-300/15 bg-cyan-300/5 blur-sm" />
+              <div className="absolute inset-2 animate-spin rounded-full border border-transparent border-t-cyan-300/80 border-r-violet-400/70" />
+              <div className="absolute inset-7 animate-[spin_7s_linear_infinite_reverse] rounded-full border border-transparent border-b-fuchsia-300/70 border-l-cyan-200/60" />
+              <div className="absolute h-32 w-32 animate-pulse rounded-full bg-violet-500/15 shadow-[0_0_90px_rgba(124,58,237,0.55)]" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-violet-600/70 to-cyan-500/50 shadow-[0_0_70px_rgba(34,211,238,0.45)]">
+                <Sparkles className="h-9 w-9 text-white" />
+              </div>
             </div>
-          </div>
 
-          <div className="mb-5 flex items-center justify-between text-sm">
-            <span className="text-slate-400">Setup progress</span>
-            <span className="font-semibold text-violet-200">
-              {completedCount}/{steps.length}
-            </span>
-          </div>
+            <div className="mb-5 flex items-center justify-between text-sm">
+              <span className="text-slate-400">Neural setup progress</span>
+              <span className="font-semibold text-cyan-100">{progressPercent}%</span>
+            </div>
 
-          <div className="space-y-3">
-            {steps.map((step) => (
-              <ProgressRow key={step.id} step={step} />
-            ))}
+            <div className="rounded-3xl border border-white/[0.07] bg-black/25 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/80">
+                Current operation
+              </p>
+              <h2 className="mt-2 min-h-14 text-2xl font-semibold leading-tight text-white">
+                {setupComplete ? "AI setup prepared" : currentStep?.label}
+              </h2>
+              <p className="mt-2 text-xs leading-5 text-slate-400">
+                {setupComplete
+                  ? "Launch Review is ready. Check email for account messages."
+                  : "Diazites is syncing your profile, funnel, CRM, workflows, and agent defaults."}
+              </p>
+
+              <div className="mt-6">
+                <div className="relative h-4 overflow-hidden rounded-full border border-cyan-300/20 bg-slate-950 shadow-inner">
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)] animate-pulse" />
+                  <div
+                    className="relative h-full rounded-full bg-gradient-to-r from-violet-500 via-cyan-300 to-fuchsia-400 shadow-[0_0_35px_rgba(34,211,238,0.7)] transition-all duration-700"
+                    style={{ width: `${setupComplete ? 100 : progressPercent}%` }}
+                  />
+                </div>
+                <div className="mt-3 flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                  <span>Initialize</span>
+                  <span>{completedCount}/{steps.length} systems</span>
+                  <span>Launch</span>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-violet-300/15 bg-violet-300/10 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">
+                  2030 Agent Core
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  {setupComplete
+                    ? "Your AI agents are staged. Check your inbox, then review and activate them from Launch Review."
+                    : "Live automation engine is assembling the business profile, landing page, pipeline, and agent stack."}
+                </p>
+              </div>
+            </div>
           </div>
         </aside>
       </div>
     </div>
   );
-}
-
-function ProgressRow({ step }: { step: AiLaunchSetupProgressStep }) {
-  const icon = statusIcon(step.status);
-  return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3">
-      <div className="flex items-center gap-3">
-        {icon}
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-100">{step.label}</p>
-          <p className="mt-0.5 text-xs capitalize text-slate-500">{step.message || step.status.replace("_", " ")}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function statusIcon(status: AiLaunchSetupStepStatus) {
-  if (status === "complete") return <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-300" />;
-  if (status === "running") return <Loader2 className="h-5 w-5 shrink-0 animate-spin text-cyan-300" />;
-  if (status === "failed") return <span className="h-3 w-3 shrink-0 rounded-full bg-rose-400" />;
-  if (status === "needs_review") return <span className="h-3 w-3 shrink-0 rounded-full bg-amber-300" />;
-  return <span className="h-3 w-3 shrink-0 rounded-full bg-slate-700" />;
 }

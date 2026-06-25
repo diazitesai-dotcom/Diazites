@@ -34,6 +34,14 @@ function getRequestedOnboardingStep(step: string | string[] | undefined): Onboar
   return ONBOARDING_STEP_IDS.has(step as OnboardingStepId) ? (step as OnboardingStepId) : null;
 }
 
+function decodeSearchParam(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 export default async function OnboardingPage({
   searchParams,
 }: {
@@ -66,16 +74,11 @@ export default async function OnboardingPage({
   }
 
   const rawError = sp.error;
+  const rawWebsite = sp.website;
+  const rawBusinessName = sp.businessName ?? sp.business;
+  const rawEmail = sp.email;
   const errorMsg =
-    typeof rawError === "string"
-      ? (() => {
-          try {
-            return decodeURIComponent(rawError);
-          } catch {
-            return rawError;
-          }
-        })()
-      : null;
+    typeof rawError === "string" ? decodeSearchParam(rawError) : null;
 
   const savedData = await loadOnboardingCommandCenterData(supabase, user.id);
   const baseData = savedData ?? getOnboardingCommandCenterMockData();
@@ -108,7 +111,17 @@ export default async function OnboardingPage({
       {requestedStep ? (
         <OnboardingCommandCenter initialData={initialData} />
       ) : (
-        <AiLaunchSetup defaultEmail={user.email ?? ""} />
+        <AiLaunchSetup
+          defaultEmail={
+            typeof rawEmail === "string"
+              ? decodeSearchParam(rawEmail)
+              : user.email ?? ""
+          }
+          defaultWebsite={typeof rawWebsite === "string" ? decodeSearchParam(rawWebsite) : ""}
+          defaultBusinessName={
+            typeof rawBusinessName === "string" ? decodeSearchParam(rawBusinessName) : ""
+          }
+        />
       )}
     </div>
   );
