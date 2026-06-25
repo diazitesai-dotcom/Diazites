@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Bot, CheckCircle2, Globe2, Loader2, Mail, Rocket, Sparkles, UserRound } from "lucide-react";
 
 import { startAiLaunchSetupAction } from "@/services/onboarding/actions";
@@ -29,7 +28,6 @@ export function AiLaunchSetup({
   defaultWebsite = "",
   defaultBusinessName = "",
 }: AiLaunchSetupProps) {
-  const router = useRouter();
   const [websiteUrl, setWebsiteUrl] = useState(defaultWebsite);
   const [email, setEmail] = useState(defaultEmail);
   const [businessName, setBusinessName] = useState(defaultBusinessName);
@@ -244,7 +242,7 @@ export function AiLaunchSetup({
               <button
                 type="button"
                 onClick={() => {
-                  if (launchReviewHref) router.push(launchReviewHref);
+                  if (launchReviewHref) window.location.assign(launchReviewHref);
                 }}
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-violet-600 px-5 py-3 text-sm font-bold uppercase tracking-[0.14em] text-white shadow-[0_18px_55px_rgba(34,211,238,0.25)] transition hover:scale-[1.01] md:w-auto"
               >
@@ -312,16 +310,6 @@ export function AiLaunchSetup({
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-violet-300/15 bg-violet-300/10 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200">
-                  2030 Agent Core
-                </p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  {setupComplete
-                    ? "Your AI agents are staged. Check your inbox to finish onboarding, then activate them from Launch Review."
-                    : "Live automation engine is assembling the business profile, landing page, pipeline, and agent stack."}
-                </p>
-              </div>
             </div>
           </div>
         </aside>

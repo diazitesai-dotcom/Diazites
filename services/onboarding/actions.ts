@@ -31,6 +31,8 @@ import type {
 import { materializeCommandCenterLaunch } from "@/services/onboarding/command-center-launch.service";
 import { sendEmail } from "@/services/email/email.service";
 
+const PRODUCTION_LAUNCH_REVIEW_URL = "https://www.diazites.com/dashboard/launch-review";
+
 type PauseSnapshot = {
   pausedAt: string;
   platformAccountSettings?: {
@@ -248,7 +250,7 @@ async function sendAiLaunchRegistrationEmail(input: {
   websiteUrl: string;
 }) {
   const appUrl = getPublicAppUrl();
-  const reviewUrl = `${appUrl}/dashboard/launch-review?setup=ai-launch`;
+  const reviewUrl = PRODUCTION_LAUNCH_REVIEW_URL || `${appUrl}/dashboard/launch-review`;
   const registrationUrl = `${appUrl}/onboarding?step=business_profile`;
   const subject = "Your Diazites AI setup is ready to finish";
   const html = `
@@ -562,7 +564,7 @@ export async function startAiLaunchSetupAction(input: {
 
   return {
     success: true as const,
-    redirectTo: "/dashboard/launch-review?onboarding=complete&setup=ai-launch",
+    redirectTo: PRODUCTION_LAUNCH_REVIEW_URL,
     progress: buildAiLaunchProgress(completed, needsReview),
   };
 }
@@ -603,7 +605,7 @@ export async function completeOnboardingFromDraftAction(draft: OnboardingDraft) 
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  return { success: true as const, redirectTo: "/dashboard/launch-review?onboarding=complete" };
+  return { success: true as const, redirectTo: PRODUCTION_LAUNCH_REVIEW_URL };
 }
 
 export async function completeCommandCenterOnboardingAction(
@@ -764,7 +766,7 @@ export async function completeCommandCenterOnboardingAction(
 
   return {
     success: true as const,
-    redirectTo: "/dashboard/launch-review?onboarding=complete",
+    redirectTo: PRODUCTION_LAUNCH_REVIEW_URL,
   };
 }
 
@@ -1055,5 +1057,5 @@ export async function saveOnboardingAction(formData: FormData) {
 
   revalidatePath("/", "layout");
   revalidatePath("/dashboard", "layout");
-  redirect("/dashboard/launch-review?onboarding=complete");
+  redirect(PRODUCTION_LAUNCH_REVIEW_URL);
 }
