@@ -165,10 +165,6 @@ export function HomeHero() {
           animate="show"
           className="mx-auto flex max-w-4xl flex-col items-center text-center"
         >
-          <motion.div variants={fadeUp} className="mb-8 w-full max-w-3xl">
-            {aiLaunchSetupForm}
-          </motion.div>
-
           <motion.div variants={fadeUp}>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground backdrop-blur-md">
               <Cpu className="size-3.5 text-violet-400" aria-hidden />
@@ -178,11 +174,21 @@ export function HomeHero() {
 
           <motion.h1
             variants={fadeUp}
-            className="mt-8 text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl md:text-6xl"
+            className="mt-8 text-balance text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl"
           >
             <span className="block text-gradient-strong">{title}</span>
-            <span className="mt-2 block text-foreground/95">{tagline}</span>
           </motion.h1>
+
+          <motion.div variants={fadeUp} className="mt-6 w-full max-w-3xl">
+            {aiLaunchSetupForm}
+          </motion.div>
+
+          <motion.h2
+            variants={fadeUp}
+            className="mt-8 text-balance text-4xl font-semibold tracking-tight text-foreground/95 sm:text-5xl md:text-6xl"
+          >
+            {tagline}
+          </motion.h2>
 
           <motion.p
             variants={fadeUp}
