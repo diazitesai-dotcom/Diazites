@@ -112,11 +112,15 @@ export function TrialSignupPaymentElement({
           onCompleteChange?.(event.complete);
         }}
         options={{
-          layout: "auto",
+          layout: "tabs",
+          paymentMethodOrder: ["card"],
+          business: {
+            name: "Diazites",
+          },
           wallets: {
             applePay: "never",
             googlePay: "never",
-            link: "auto",
+            link: "never",
           },
           ...(billingDefaults ? { defaultValues: billingDefaults } : {}),
         }}
@@ -153,7 +157,14 @@ export function useTrialSignupPaymentConfirm() {
     });
 
     if (error) {
-      return { success: false, error: error.message ?? "Card confirmation failed." };
+      const message = error.message ?? "";
+      const genericProcessingError = /processing error/i.test(message);
+      return {
+        success: false,
+        error: genericProcessingError
+          ? "Card setup could not be completed. Please use a card payment method only and try again."
+          : message || "Card confirmation failed.",
+      };
     }
 
     if (!setupIntent?.id || setupIntent.status !== "succeeded") {
