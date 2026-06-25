@@ -12,6 +12,7 @@ import { saveOnboardingDraft } from "@/services/onboarding/draft.service";
 import { completeOnboardingProfile } from "@/services/onboarding/onboarding-completion.service";
 import { autofillOnboardingFromWebsite } from "@/services/onboarding/website-autofill.service";
 import { normalizeSignupPlan } from "@/lib/billing/signup-plans";
+import { getPublicAppUrl } from "@/lib/env";
 import { ensurePublicUserRecord } from "@/lib/auth/ensure-public-user";
 import {
   autofillCeoBusinessProfileFromWebsite,
@@ -28,6 +29,7 @@ import type {
   OfferGoalsFields,
 } from "@/types/ceo-command-center";
 import { materializeCommandCenterLaunch } from "@/services/onboarding/command-center-launch.service";
+import { sendEmail } from "@/services/email/email.service";
 
 type PauseSnapshot = {
   pausedAt: string;
@@ -220,6 +222,61 @@ function buildAutoLaunchPayload(
     },
     pipelineTestPassed: false,
   };
+}
+
+async function sendAiLaunchRegistrationEmail(input: {
+  to: string;
+  businessName: string;
+  websiteUrl: string;
+}) {
+  const appUrl = getPublicAppUrl();
+  const reviewUrl = `${appUrl}/dashboard/launch-review?setup=ai-launch`;
+  const registrationUrl = `${appUrl}/onboarding?step=business_profile`;
+  const subject = "Your Diazites AI setup is ready to finish";
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="margin:0;background:#070914;font-family:system-ui,-apple-system,sans-serif;color:#e5e7eb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;margin:0 auto;padding:32px 20px;">
+    <tr>
+      <td style="padding:28px;border:1px solid rgba(139,92,246,.28);border-radius:22px;background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(8,13,29,.96));">
+        <p style="margin:0 0 10px;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#67e8f9;font-weight:700;">Diazites AI Launch Setup</p>
+        <h1 style="margin:0;font-size:28px;line-height:1.15;color:#fff;">Your agents are staged for ${input.businessName}</h1>
+        <p style="margin:18px 0 0;font-size:15px;line-height:1.7;color:#cbd5e1;">
+          Diazites scanned <strong>${input.websiteUrl}</strong>, prepared your AI launch setup, and staged the next steps for your funnel, CRM pipeline, workflows, and agents.
+        </p>
+        <p style="margin:16px 0 0;font-size:15px;line-height:1.7;color:#cbd5e1;">
+          Use the full registration form to review or update the information before activating everything.
+        </p>
+        <p style="margin:24px 0 0;">
+          <a href="${registrationUrl}" style="display:inline-block;margin-right:10px;margin-bottom:10px;background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;text-decoration:none;font-weight:700;padding:13px 20px;border-radius:12px;">
+            Finish Full Registration
+          </a>
+          <a href="${reviewUrl}" style="display:inline-block;margin-bottom:10px;border:1px solid rgba(255,255,255,.16);color:#e9d5ff;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:12px;">
+            Open Launch Review
+          </a>
+        </p>
+        <p style="margin:18px 0 0;font-size:13px;line-height:1.6;color:#94a3b8;">
+          If you used Google or Facebook signup, you can add billing/card details from your dashboard billing area before activating paid features.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  const text = `Your Diazites AI setup is ready for ${input.businessName}.
+
+Diazites scanned ${input.websiteUrl} and prepared your funnel, CRM pipeline, workflows, and agents.
+
+Finish the full registration form:
+${registrationUrl}
+
+Open Launch Review:
+${reviewUrl}
+
+If you used Google or Facebook signup, you can add billing/card details from your dashboard billing area before activating paid features.`;
+
+  await sendEmail({ to: input.to, subject, html, text });
 }
 
 async function requireCurrentBusiness() {
@@ -452,6 +509,16 @@ export async function startAiLaunchSetupAction(input: {
         team_invited: false,
       },
     });
+  }
+
+  try {
+    await sendAiLaunchRegistrationEmail({
+      to: email,
+      businessName: profile.businessName,
+      websiteUrl,
+    });
+  } catch {
+    /* Email is helpful but should not block the completed AI setup. */
   }
 
   revalidatePath("/", "layout");

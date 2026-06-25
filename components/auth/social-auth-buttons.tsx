@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
-import { AUTH_BRAND } from "@/lib/auth/auth-branding";
 import {
   buildOAuthRedirectUrl,
   getConfiguredOAuthProviders,
+  OAUTH_PROVIDER_IDS,
   OAUTH_PROVIDER_META,
   type OAuthProviderId,
 } from "@/lib/auth/oauth-providers";
@@ -54,7 +54,8 @@ export function SocialAuthButtons({
   promoCode,
   className,
 }: SocialAuthButtonsProps) {
-  const enabledProviders = useMemo(() => getConfiguredOAuthProviders(), []);
+  const configuredProviders = useMemo(() => getConfiguredOAuthProviders(), []);
+  const visibleProviders = OAUTH_PROVIDER_IDS;
   const [loading, setLoading] = useState<OAuthProviderId | null>(null);
   const [error, setError] = useState("");
 
@@ -100,38 +101,29 @@ export function SocialAuthButtons({
 
   const verb = mode === "signup" ? "Sign up" : "Continue";
 
-  if (enabledProviders.length === 0) {
-    return (
-      <div className={cn("rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3", className)}>
-        <p className="text-center text-sm text-muted-foreground">
-          {mode === "signup" ? "Create your account" : "Sign in"} with{" "}
-          <span className="font-medium text-foreground">email and password</span> below.
-          Social sign-in is available once Google or Facebook is configured in Supabase and your
-          app environment.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className={cn("space-y-3", className)}>
       <p className="text-center text-xs text-muted-foreground">
-        {verb} with {AUTH_BRAND.platformName}
+        {verb} with Google or Facebook, or use email below to enter card details now.
       </p>
       <div
-        className={cn(
-          "grid gap-2",
-          enabledProviders.length === 1 ? "grid-cols-1" : "grid-cols-2",
-        )}
+        className="grid grid-cols-2 gap-2"
       >
-        {enabledProviders.map((id) => {
+        {visibleProviders.map((id) => {
           const meta = OAUTH_PROVIDER_META[id];
+          const isConfigured = configuredProviders.includes(id);
           return (
             <button
               key={id}
               type="button"
               disabled={loading != null}
-              onClick={() => signInWith(meta.supabaseProviderName)}
+              onClick={() => {
+                if (!isConfigured) {
+                  setError(`${meta.label} signup is not configured yet. Use email signup to enter your card and start now.`);
+                  return;
+                }
+                void signInWith(meta.supabaseProviderName);
+              }}
               className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm font-medium transition hover:bg-white/[0.06] disabled:opacity-50"
             >
               {loading === id ? (

@@ -203,8 +203,8 @@ export function AiLaunchSetup({
                 <div>
                   <h2 className="text-base font-semibold text-white">Check your email</h2>
                   <p className="mt-1 text-sm leading-6 text-cyan-50/75">
-                    We prepared your AI setup. Check your email for Diazites account messages,
-                    then review everything built for your agents before launch.
+                    We prepared your AI setup and sent the full registration form to your email.
+                    Finish it there or open Launch Review now to see what the agents built.
                   </p>
                 </div>
               </div>
@@ -260,7 +260,7 @@ export function AiLaunchSetup({
               </h2>
               <p className="mt-2 text-xs leading-5 text-slate-400">
                 {setupComplete
-                  ? "Launch Review is ready. Check email for account messages."
+                  ? "Launch Review is ready. Full registration email sent."
                   : "Diazites is syncing your profile, funnel, CRM, workflows, and agent defaults."}
               </p>
 
@@ -285,7 +285,7 @@ export function AiLaunchSetup({
                 </p>
                 <p className="mt-2 text-sm leading-6 text-slate-300">
                   {setupComplete
-                    ? "Your AI agents are staged. Check your inbox, then review and activate them from Launch Review."
+                    ? "Your AI agents are staged. Check your inbox to finish onboarding, then activate them from Launch Review."
                     : "Live automation engine is assembling the business profile, landing page, pipeline, and agent stack."}
                 </p>
               </div>

@@ -90,7 +90,7 @@ export function TrialSignupWizard({
           Start Building Your AI Growth System
         </h1>
         <p className="mt-2 text-center text-sm text-muted-foreground">
-          {DEFAULT_TRIAL_DAYS_SIGNUP}-day free trial · Create your account, then let AI build the setup
+          {DEFAULT_TRIAL_DAYS_SIGNUP}-day free trial · Sign up, add card details, then watch AI build your setup
         </p>
       </div>
 
@@ -101,7 +101,7 @@ export function TrialSignupWizard({
         </StepTab>
         <StepTab active={step === 2} onClick={() => (validateStep1() ? setStep(2) : undefined)} bordered>
           Step 2
-          <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Activate Trial</span>
+          <span className="mt-0.5 block text-xs font-normal text-muted-foreground">Card + Trial</span>
         </StepTab>
       </div>
 
@@ -319,7 +319,7 @@ function StepOne({
         onClick={onContinue}
         className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 py-3.5 text-sm font-semibold text-white transition hover:opacity-95"
       >
-        {cardRequired ? "Go To Step #2 — Add Payment" : "Go To Step #2"}
+        {cardRequired ? "Continue to secure card details" : "Continue to trial activation"}
       </button>
 
       <p className="text-center text-xs text-muted-foreground">
