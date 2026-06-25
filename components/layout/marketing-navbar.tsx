@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const links = [
@@ -45,14 +44,9 @@ export function MarketingNavbar() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link href="/login">
-            <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
+            <span className="hidden rounded-xl px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground sm:inline-flex">
               Log in
-            </Button>
-          </Link>
-          <Link href="/signup">
-            <Button variant="gradient" size="sm" className="rounded-xl px-4">
-              Start free
-            </Button>
+            </span>
           </Link>
         </div>
       </div>

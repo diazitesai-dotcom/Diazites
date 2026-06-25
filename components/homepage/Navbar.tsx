@@ -5,9 +5,7 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { Button, buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "#how-it-works", label: "How It Works" },
@@ -51,11 +49,6 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link href="/signup" className="hidden sm:block">
-            <Button variant="gradient" size="sm" className="rounded-2xl px-5 shadow-lg shadow-violet-500/20">
-              Start Free
-            </Button>
-          </Link>
           <button
             type="button"
             className="inline-flex items-center justify-center rounded-xl border border-border/80 bg-muted/40 p-2 md:hidden"
@@ -90,16 +83,6 @@ export function Navbar() {
                   {l.label}
                 </Link>
               ))}
-              <Link
-                href="/signup"
-                className={cn(
-                  buttonVariants({ variant: "gradient", size: "default" }),
-                  "mt-2 justify-center rounded-xl",
-                )}
-                onClick={() => setOpen(false)}
-              >
-                Start Free
-              </Link>
             </div>
           </motion.div>
         ) : null}

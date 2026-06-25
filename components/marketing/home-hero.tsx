@@ -20,6 +20,12 @@ const HOMEPAGE_AI_SETUP_STEPS = [
   "Opening secure trial activation",
 ];
 
+function normalizeWebsiteForSignup(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
 export function HomeHero() {
   const headlineParts = BRAND_HEADLINE.split(" — ");
   const title = headlineParts[0] ?? "Diazites";
@@ -45,7 +51,7 @@ export function HomeHero() {
     const redirectId = window.setTimeout(() => {
       const params = new URLSearchParams({
         source: "ai-launch",
-        website,
+        website: normalizeWebsiteForSignup(website),
         email,
         phone,
       });
@@ -89,11 +95,13 @@ export function HomeHero() {
           </span>
           <input
             name="website"
-            type="url"
+            type="text"
             required
             value={website}
             onChange={(event) => setWebsite(event.target.value)}
-            placeholder="https://yourbusiness.com"
+            placeholder="yourbusiness.com"
+            inputMode="url"
+            autoComplete="url"
             className="w-full rounded-2xl border border-white/10 bg-black/45 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/40 focus:ring-2 focus:ring-cyan-300/15"
           />
         </label>
